@@ -426,6 +426,12 @@ final class ApiController
 
     private function handleAdmin(string $method, string $path): array
     {
+        if ($method === 'POST' && $path === '/api/admin/realtime-ticket') {
+            $ticket = Realtime::issueAdminTicket((string) $this->user['id']);
+            $url = trim((string) Env::get('WEBSOCKET_URL', ''));
+            if ($url === '' || !preg_match('#^wss://#i', $url)) throw new HttpException(503, 'WebSocket WSS chưa được cấu hình.');
+            return self::response(['ticket' => $ticket, 'url' => $url, 'expiresInSeconds' => 60]);
+        }
         if ($method === 'GET' && $path === '/api/admin/overview') {
             return self::response([
                 'users' => (int) Database::value('SELECT COUNT(*) FROM users'),
@@ -891,6 +897,7 @@ final class ApiController
 
     private function audit(string $action, string $target, array $details): void
     {
+        Realtime::publish('admin.' . $action, ['target' => $target, 'details' => $details]);
         Database::run(
             'INSERT INTO admin_audit (admin_user_id, action, target, details) VALUES (?, ?, ?, ?::jsonb)',
             [(string) $this->user['id'], $action, $target, json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]
