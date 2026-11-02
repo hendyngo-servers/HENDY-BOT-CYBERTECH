@@ -13,7 +13,14 @@ final class AdminRealtimeServer implements MessageComponentInterface
 {
     private SplObjectStorage $clients; private int $lastId = 0;
     public function __construct() { $this->clients = new SplObjectStorage(); $this->lastId = (int) Database::value('SELECT COALESCE(MAX(id),0) FROM realtime_events'); }
-    public function onOpen(ConnectionInterface $conn): void { $conn->authenticated = false; $this->clients->attach($conn); $conn->send(json_encode(['type'=>'auth.required'])); }
+    public function onOpen(ConnectionInterface $conn): void {
+        $origin = $conn->httpRequest->getHeaderLine('Origin');
+        $allowed = array_filter(array_map('trim', explode(',', (string) Env::get('ALLOWED_ORIGINS', ''))));
+        $appUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        if ($appUrl !== '') $allowed[] = $appUrl;
+        if ($origin === '' || !in_array(rtrim($origin, '/'), $allowed, true)) { $conn->close(); return; }
+        $conn->authenticated = false; $this->clients->attach($conn); $conn->send(json_encode(['type'=>'auth.required']));
+    }
     public function onMessage(ConnectionInterface $from, \Ratchet\RFC6455\Messaging\MessageInterface $msg): void
     {
         $data = json_decode((string)$msg, true);
