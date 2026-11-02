@@ -38,6 +38,8 @@ services:
         generateValue: true
       - key: BANK_WEBHOOK_SECRET
         generateValue: true
+      - key: WEBHOOK_AUTO_REGISTER
+        value: "true"
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
         value: "86400"
       - key: BOT_USERNAME
