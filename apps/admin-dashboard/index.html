@@ -460,7 +460,7 @@
       '<div class="stat"><small>Đơn hàng 30 ngày</small><b>' + (d.ordersLast30Days || 0) + '</b></div>' +
       '<div class="stat"><small>Ticket cần xử lý</small><b>' + (d.openTickets || 0) + '</b></div></div>' +
       '<div class="card"><div class="list-row"><b>Giá trị đơn đã hoàn tất</b><strong class="price">' + money(d.completedOrderValue) + '</strong></div>' +
-      '<div class="notice warn">Không nhập BOTCHINH_TOKEN, DATABASE_URL hoặc secret vào biểu mẫu này. Secret hệ thống được quản lý tại Render Environment.</div></div>';
+      '<div class="notice warn">Không nhập BOT1_TOKEN, DATABASE_URL hoặc secret vào biểu mẫu này. Secret hệ thống được quản lý tại Render Environment.</div></div>';
   }
 
   function adminProducts() {
@@ -530,7 +530,7 @@
       field('referral_commission_percent','Hoa hồng giới thiệu (%)','number') +
       '<div class="field"><label>Lời nhắn CSKH</label><textarea name="support_message">' + escapeHtml(s.support_message || '') + '</textarea></div>' +
       '<button class="primary">Lưu cấu hình</button></form>' +
-      '<div class="notice warn">Các trường trên là cấu hình nghiệp vụ không phải secret. BOTCHINH_TOKEN, DATABASE_URL, WEBHOOK_SECRET và API key chỉ thay đổi trong Render Environment, không lưu ở cơ sở dữ liệu ứng dụng.</div>';
+      '<div class="notice warn">Các trường trên là cấu hình nghiệp vụ không phải secret. BOT1_TOKEN, DATABASE_URL, WEBHOOK_SECRET và API key chỉ thay đổi trong Render Environment, không lưu ở cơ sở dữ liệu ứng dụng.</div>';
   }
 
 
@@ -539,7 +539,7 @@
     const json = value => escapeHtml(JSON.stringify(value || {}, null, 2));
     return '<div class="notice">Mỗi bot có cấu hình độc lập. Reply Keyboard là lưới nút cố định dưới ô nhập; Inline Keyboard nằm ngay dưới tin nhắn. Thay đổi được lưu PostgreSQL và áp dụng ở lần mở menu tiếp theo.</div>' +
       menus.map(menu => {
-        const title = menu.botKey === 'primary' ? 'BOT CHÍNH · BOTCHINH_TOKEN' : 'BOT THỨ HAI · BOTPHU_TOKEN';
+        const title = menu.botKey === 'primary' ? 'BOT CHÍNH · BOT1_TOKEN' : 'BOT THỨ HAI · BOT2_TOKEN';
         const selected = value => menu.menuMode === value ? ' selected' : '';
         return '<form class="card form" id="admin-bot-menu-form" data-bot-key="' + escapeHtml(menu.botKey) + '">' +
           '<div class="record-top"><div><b>' + title + '</b><small class="muted">Key: ' + escapeHtml(menu.botKey) + '</small></div>' +
@@ -558,7 +558,7 @@
           '<button class="primary">Lưu cấu hình ' + (menu.botKey === 'primary' ? 'Bot chính' : 'Bot thứ hai') + '</button>' +
           '</form>';
       }).join('') +
-      '<div class="notice warn">Không nhập BOTCHINH_TOKEN, BOTPHU_TOKEN, DATABASE_URL hoặc webhook secret tại đây. Các token được quản lý riêng trong Render Environment.</div>';
+      '<div class="notice warn">Không nhập BOT1_TOKEN, BOT2_TOKEN, DATABASE_URL hoặc webhook secret tại đây. Các token được quản lý riêng trong Render Environment.</div>';
   }
 
 
@@ -639,43 +639,27 @@
   }
 
   function connectAdminRealtime() {
-    if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped) return;
-    if (realtimeSocket && (realtimeSocket.readyState === WebSocket.OPEN || realtimeSocket.readyState === WebSocket.CONNECTING)) return;
-    const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    realtimeSocket = new WebSocket(scheme + '//' + location.host + '/ws');
-    realtimeSocket.addEventListener('open',() => {
-      realtimeSocket.send(JSON.stringify({type:'authenticate',botKey,initData}));
-    });
-    realtimeSocket.addEventListener('message',event => {
-      let message;
-      try { message = JSON.parse(event.data); } catch { return; }
-      if (message.type === 'authenticated') {
-        setRealtimeStatus('Realtime đã xác thực · ' + message.botKey,true);
-      } else if (message.type === 'runtime.snapshot' || message.type === 'runtime.heartbeat') {
-        const bots = message.payload && message.payload.bots || [];
-        const current = bots.find(item => item.key === botKey);
-        setRealtimeStatus(current ? 'Realtime · ' + botKey + ' · ' + current.status : 'Realtime đã kết nối',true);
-      } else if (message.type === 'bot.menu.updated') {
-        const menu = message.payload || {};
-        if (menu.botKey === botKey) {
-          toast('Cấu hình menu ' + botKey + ' vừa được cập nhật.');
-          if (state.page === 'admin' && state.adminTab === 'bot-menus') renderPage();
-        }
-      } else if (message.type === 'bot.status') {
-        const bots = message.payload && message.payload.bots || [];
-        const current = bots.find(item => item.key === botKey);
-        if (current) setRealtimeStatus('Bot ' + botKey + ' · ' + current.status,true);
+    if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped || window.__hendyRuntimePolling) return;
+    window.__hendyRuntimePolling = true;
+    const pollRuntime = async () => {
+      if (realtimeStopped || !state.boot || !state.boot.isAdmin) {
+        window.__hendyRuntimePolling = false;
+        return;
       }
-    });
-    realtimeSocket.addEventListener('close',() => {
-      setRealtimeStatus('Realtime mất kết nối · đang thử lại',false);
-      realtimeSocket = null;
-      if (!realtimeStopped && state.boot && state.boot.isAdmin) {
-        window.clearTimeout(realtimeRetry);
-        realtimeRetry = window.setTimeout(connectAdminRealtime,5000);
+      try {
+        const snapshot = await api('/api/admin/runtime');
+        const bots = snapshot.bots || [];
+        const current = bots.find(item => item.key === botKey);
+        setRealtimeStatus(
+          current ? 'PHP · ' + botKey + ' · ' + current.status : 'PHP server online',
+          Boolean(current && current.configured)
+        );
+      } catch (error) {
+        setRealtimeStatus('Không lấy được trạng thái máy chủ', false);
       }
-    });
-    realtimeSocket.addEventListener('error',() => setRealtimeStatus('Realtime có lỗi kết nối',false));
+      window.setTimeout(pollRuntime, 5000);
+    };
+    pollRuntime();
   }
 
   function navigate(page) {

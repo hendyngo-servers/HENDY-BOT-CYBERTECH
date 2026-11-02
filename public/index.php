@@ -1,0 +1,232 @@
+<?php
+declare(strict_types=1);
+
+use Hendy\ApiController;
+use Hendy\BotService;
+use Hendy\Database;
+use Hendy\Env;
+use Hendy\HttpException;
+use Hendy\TelegramApi;
+use Hendy\TelegramAuth;
+
+require dirname(__DIR__) . '/app/Env.php';
+require dirname(__DIR__) . '/app/Database.php';
+require dirname(__DIR__) . '/app/TelegramApi.php';
+require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/BotService.php';
+require dirname(__DIR__) . '/app/ApiController.php';
+
+Env::load(dirname(__DIR__) . '/.env');
+
+function respond(array $payload, int $status = 200): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+function normalizedSecret(string $secret): string
+{
+    return substr((string) preg_replace('/[^A-Za-z0-9_-]/', '', $secret), 0, 256);
+}
+
+function processBankDeposit(array $body): array
+{
+    $secret = (string) Env::get('BANK_WEBHOOK_SECRET', '');
+    $received = (string) ($_SERVER['HTTP_X_BANK_WEBHOOK_SECRET'] ?? '');
+    if ($secret === '' || !hash_equals(normalizedSecret($secret), normalizedSecret($received))) {
+        throw new HttpException(401, 'Webhook secret không hợp lệ.');
+    }
+
+    $amount = filter_var($body['amountIn'] ?? null, FILTER_VALIDATE_INT);
+    $reference = trim((string) ($body['referenceCode'] ?? ''));
+    $content = trim((string) ($body['content'] ?? ''));
+    if (!preg_match('/^NAP\s+(\d{5,20})$/i', $content, $match) ||
+        $amount === false || $amount <= 0 || $amount > 9000000000000000 ||
+        $reference === '' || mb_strlen($reference) > 128) {
+        throw new HttpException(400, 'Dữ liệu giao dịch không hợp lệ.');
+    }
+
+    $userId = $match[1];
+    $result = Database::transaction(function () use ($userId, $amount, $reference): array {
+        $inserted = Database::run(
+            'INSERT INTO deposit_events (reference_code, user_id, amount) VALUES (?, ?, ?) ON CONFLICT (reference_code) DO NOTHING RETURNING reference_code',
+            [$reference, $userId, $amount]
+        );
+        if ($inserted->rowCount() === 0) {
+            return ['duplicate' => true];
+        }
+
+        Database::run('INSERT INTO users (user_id) VALUES (?) ON CONFLICT DO NOTHING', [$userId]);
+        $user = Database::one(
+            'UPDATE users SET balance = balance + ?, total_deposited = total_deposited + ?, ' .
+            'vip_level = CASE WHEN total_deposited + ? >= 5000000 THEN 3 WHEN total_deposited + ? >= 2000000 THEN 2 WHEN total_deposited + ? >= 500000 THEN 1 ELSE 0 END ' .
+            'WHERE user_id = ? RETURNING balance, vip_level, total_deposited, ref_by',
+            [$amount, $amount, $amount, $amount, $amount, $userId]
+        );
+
+        Database::run(
+            "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'DEPOSIT', ?, 'paid')",
+            [$userId, $amount, $reference]
+        );
+        Database::run(
+            "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'DEPOSIT', ?)",
+            ['deposit:' . $reference, $userId, $amount, 'Nạp tiền qua ngân hàng']
+        );
+
+        $rate = max(0.0, min(30.0, (float) (Database::value("SELECT value FROM app_settings WHERE key = 'referral_commission_percent'") ?? 0)));
+        $referrer = (string) ($user['ref_by'] ?? '');
+        $reward = (int) floor($amount * $rate / 100);
+        if ($referrer !== '' && $reward > 0) {
+            Database::run('UPDATE users SET balance = balance + ? WHERE user_id = ?', [$reward, $referrer]);
+            Database::run(
+                "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'REFERRAL_REWARD', ?)",
+                ['referral:' . $reference, $referrer, $reward, 'Hoa hồng giới thiệu từ giao dịch ' . $reference]
+            );
+            Database::run(
+                "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'REFERRAL_REWARD', ?, 'paid')",
+                [$referrer, $reward, $reference]
+            );
+        }
+
+        return ['duplicate' => false, 'balance' => (int) $user['balance']];
+    });
+
+    if ($result['duplicate']) {
+        return ['status' => 'duplicate', 'referenceCode' => $reference];
+    }
+
+    try {
+        $token = TelegramAuth::token('primary');
+        if ($token !== '') {
+            (new TelegramApi($token))->sendMessage(
+                $userId,
+                '🎉 <b>NẠP TIỀN THÀNH CÔNG</b>' . "\n" .
+                'Số tiền nhận: <b>+' . number_format($amount, 0, ',', '.') . ' VNĐ</b>' . "\n" .
+                'Mã giao dịch: <code>' . htmlspecialchars($reference, ENT_QUOTES, 'UTF-8') . '</code>' . "\n" .
+                'Số dư hiện tại: <b>' . number_format((int) $result['balance'], 0, ',', '.') . ' VNĐ</b>'
+            );
+        }
+    } catch (Throwable $error) {
+        error_log('Đã ghi nhận nạp tiền nhưng không gửi được Telegram: ' . $error->getMessage());
+    }
+
+    return ['status' => 'success', 'referenceCode' => $reference];
+}
+
+try {
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('X-Frame-Options: SAMEORIGIN');
+
+    $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+    $allowedOrigins = array_filter(array_map(
+        static fn (string $value): string => rtrim(trim($value), '/'),
+        explode(',', (string) Env::get('ALLOWED_ORIGINS', ''))
+    ));
+    $baseUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+    if ($baseUrl !== '') {
+        $allowedOrigins[] = $baseUrl;
+    }
+    if ($origin !== '') {
+        $localAllowed = Env::get('APP_ENV', 'production') !== 'production'
+            && (bool) preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#i', $origin);
+        if (!in_array(rtrim($origin, '/'), $allowedOrigins, true) && !$localAllowed) {
+            respond(['error' => 'Origin không được phép.'], 403);
+        }
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+        header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, x-telegram-init-data, x-telegram-bot-key, x-bank-webhook-secret, x-telegram-bot-api-secret-token');
+    }
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+
+    if ($method === 'GET' && ($path === '/' || $path === '/index.html')) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-cache');
+        readfile(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
+        exit;
+    }
+    if ($method === 'GET' && $path === '/styles/buttons.css') {
+        header('Content-Type: text/css; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        readfile(dirname(__DIR__) . '/apps/admin-dashboard/styles/buttons.css');
+        exit;
+    }
+    if ($method === 'GET' && $path === '/healthz') {
+        Database::check();
+        respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
+    }
+
+    if ($method === 'POST' && $path === '/webhook/bank') {
+        $body = json_decode((string) file_get_contents('php://input'), true);
+        if (!is_array($body)) {
+            throw new HttpException(400, 'Dữ liệu JSON không hợp lệ.');
+        }
+        respond(processBankDeposit($body));
+    }
+
+    if ($method === 'POST' && in_array($path, ['/webhook/telegram', '/webhook/telegram/secondary'], true)) {
+        $botKey = $path === '/webhook/telegram/secondary' ? 'secondary' : 'primary';
+        $token = TelegramAuth::token($botKey);
+        if ($token === '') {
+            throw new HttpException(404, 'Bot được yêu cầu chưa được bật.');
+        }
+        $secretName = $botKey === 'secondary' ? 'TELEGRAM_SECOND_WEBHOOK_SECRET' : 'TELEGRAM_WEBHOOK_SECRET';
+        $expected = normalizedSecret((string) Env::get($secretName, ''));
+        $received = normalizedSecret((string) ($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? ''));
+        if ($expected === '' || !hash_equals($expected, $received)) {
+            throw new HttpException(401, 'Webhook secret không hợp lệ.');
+        }
+
+        $rawUpdate = (string) file_get_contents('php://input');
+        $update = json_decode($rawUpdate, true);
+        if (!is_array($update)) {
+            throw new HttpException(400, 'Telegram update không hợp lệ.');
+        }
+        (new BotService($botKey))->handle($update);
+        respond(['ok' => true]);
+    }
+
+    if (str_starts_with($path, '/api/')) {
+        $raw = (string) file_get_contents('php://input');
+        if (strlen($raw) > 262144) {
+            throw new HttpException(413, 'Dữ liệu gửi lên quá lớn.');
+        }
+        $body = $raw !== '' ? json_decode($raw, true) : [];
+        if (!is_array($body)) {
+            throw new HttpException(400, 'Dữ liệu JSON không hợp lệ.');
+        }
+        $headers = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
+        if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            foreach ($headers as $name => $value) {
+                if (strcasecmp((string) $name, 'Authorization') === 0) {
+                    $_SERVER['HTTP_AUTHORIZATION'] = (string) $value;
+                    break;
+                }
+            }
+        }
+        if (empty($_SERVER['HTTP_AUTHORIZATION']) && !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $_SERVER['HTTP_AUTHORIZATION'] = (string) $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+        $controller = new ApiController($_GET, $body, $headers);
+        $result = $controller->handle($method, $path);
+        respond($result['body'] ?? [], (int) ($result['status'] ?? 200));
+    }
+
+    throw new HttpException(404, 'Không tìm thấy trang.');
+} catch (HttpException $error) {
+    respond(['error' => $error->getMessage()], $error->status);
+} catch (Throwable $error) {
+    error_log('[hendy-bot-tele] ' . $error::class . ': ' . $error->getMessage());
+    $status = $error instanceof PDOException ? 503 : 500;
+    respond(['error' => $status === 503 ? 'Dịch vụ dữ liệu tạm thời không khả dụng.' : 'Lỗi máy chủ. Vui lòng thử lại.'], $status);
+}

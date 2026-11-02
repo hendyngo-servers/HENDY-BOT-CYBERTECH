@@ -1,23 +1,24 @@
-# Environment and secrets
+# Secrets
 .env
 .env.*
 !.env.example
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-coverage/
+# PHP
+/vendor/
+/.phpunit.cache/
+/coverage/
 
-# Build output
-dist/
-.output/
-
-# Logs and local files
+# Runtime / logs
 *.log
+storage/
+tmp/
+
+# Editors / OS
 .DS_Store
 Thumbs.db
-.vscode/
 .idea/
-*.swp
+.vscode/
+
+# Local frontend/build artifacts
+node_modules/
+dist/
