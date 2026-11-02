@@ -7,11 +7,12 @@ use React\EventLoop\Loop; use React\Socket\SocketServer;
 require dirname(__DIR__) . '/vendor/autoload.php';
 foreach (['Env.php','Database.php','Realtime.php'] as $file) require dirname(__DIR__) . '/app/' . $file;
 Env::load(dirname(__DIR__) . '/.env');
+Database::migrate();
 
 final class AdminRealtimeServer implements MessageComponentInterface
 {
     private SplObjectStorage $clients; private int $lastId = 0;
-    public function __construct() { $this->clients = new SplObjectStorage(); }
+    public function __construct() { $this->clients = new SplObjectStorage(); $this->lastId = (int) Database::value('SELECT COALESCE(MAX(id),0) FROM realtime_events'); }
     public function onOpen(ConnectionInterface $conn): void { $conn->authenticated = false; $this->clients->attach($conn); $conn->send(json_encode(['type'=>'auth.required'])); }
     public function onMessage(ConnectionInterface $from, \Ratchet\RFC6455\Messaging\MessageInterface $msg): void
     {
