@@ -81,6 +81,10 @@ jobs:
           grep -q '^BOT1_TOKEN=' .env.example
           grep -q '^BOT2_TOKEN=' .env.example
           ! grep -Eq '^(BOTCHINH_TOKEN|BOTPHU_TOKEN|BOT_TOKEN|BOT_SECOND_TOKEN)=' .env.example
+          ! grep -Eq '^BOT[12]_TOKEN=[0-9]+:' .env.example
+          ! grep -Eq '^DATABASE_URL=.*(PGPASSWORD=|[[:space:]]psql[[:space:]])' .env.example
+          grep -q 'preDeployCommand: php bin/migrate.php' render.yaml
+          ! grep -q 'php bin/migrate.php' docker/start.sh
 
       - name: Verify deployment files
         run: |

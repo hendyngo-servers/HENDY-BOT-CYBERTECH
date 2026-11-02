@@ -129,20 +129,20 @@ Local polling cần chạy ở terminal riêng: php bin/polling.php. Polling s�
 PHP không có runtime native trên Render trong Blueprint này; Dockerfile cung cấp PHP 8.3, Apache và các extension PostgreSQL/cURL/mbstring cần thiết.
 
 1. Mở Render Blueprint tại https://dashboard.render.com/blueprint/new?repo=https://github.com/hendyngo-servers/Hendy-Bot-Tele.
-2. Kiểm tra Web Service hendy-bot-tele chạy Docker tại Singapore và database hendy-bot-tele-db.
+2. Kiểm tra Web Service, realtime service và PostgreSQL ở cùng một region (Blueprint mẫu dùng Singapore). Render chỉ phân giải Internal Database URL giữa các service cùng workspace và cùng region; nếu database hiện hữu ở Oregon thì phải chọn URL/region tương ứng, không dùng hostname nội bộ khác region.
 3. Kiểm tra plan/chi phí hiển thị trước khi Apply.
 4. Thiết lập BOT1_TOKEN, ADMIN_ID; thiết lập thêm BOT2_TOKEN nếu bật bot thứ hai.
 5. Điền thông tin VietQR và liên kết cộng đồng nếu nghiệp vụ cần.
 6. Render tạo webhook secret ngẫu nhiên và nối DATABASE_URL tới PostgreSQL.
 7. Deploy hoàn tất, kiểm tra https://<service>.onrender.com/healthz và mở URL gốc để kiểm tra Dashboard.
 
-Blueprint chạy các bước này khi container khởi động: kiểm tra cấu hình, tạo/cập nhật schema (chỉ CREATE/ALTER IF NOT EXISTS, không xóa dữ liệu), đăng ký webhook cho từng token có cấu hình, rồi chạy Apache.
+Blueprint chạy migration bằng `preDeployCommand: php bin/migrate.php` trước khi phát hành phiên bản mới. Container Web Service chỉ kiểm tra cấu hình, đăng ký webhook và chạy Apache; migration không còn chạy lặp lại mỗi lần container khởi động. Realtime service chờ PostgreSQL và bảng `realtime_events` sẵn sàng thay vì tự chạy migration cạnh tranh với Web Service. Nếu service được tạo thủ công và không quản lý bằng Blueprint, nhập chính lệnh `php bin/migrate.php` vào trường Pre-Deploy Command trong Settings của Web Service; không đưa lệnh này vào Docker Start Command.
 
 ### Chuyển service Render đang tồn tại từ Node sang Docker
 
 Khi thay Blueprint trên một service đã tồn tại, đừng giả định các biến môi trường cũ sẽ tự bị xóa chỉ vì chúng không còn ở render.yaml. Mở Render → Service → Environment, nhập BOT1_TOKEN / BOT2_TOKEN, sau đó chủ động xóa các biến token cũ BOTCHINH_TOKEN, BOTPHU_TOKEN, BOT_TOKEN, BOT_SECOND_TOKEN và BOTPHU_ADMIN_ID / BOT_SECOND_ADMIN_ID nếu chúng còn tồn tại. Bản PHP không đọc các tên cũ.
 
-Nếu dùng chính PostgreSQL hiện tại, giữ đúng connection string đang chứa dữ liệu; không tạo database mới thay thế trước khi sao lưu và đối soát. Blueprint dùng database tên hendy-bot-tele-db; nếu Render báo xung đột resource khi áp dụng, cần ghép service với database hiện hữu trong Dashboard thay vì xóa database đang có.
+Nếu dùng chính PostgreSQL hiện tại, giữ đúng database đang có dữ liệu; không tạo database mới thay thế trước khi sao lưu và đối soát. Mở database → Connect để lấy đúng URL: Render service cùng region/workspace dùng Internal Database URL; local/CI hoặc service khác region phải dùng External Database URL đầy đủ với `sslmode=require` và `DATABASE_SSL=true`. Blueprint mẫu tạo database `hendy-bot-tele-db` tại Singapore; nếu database hiện tại ở Oregon thì không áp dụng nguyên xi cấu hình này lên service đang chạy. Nếu Render báo xung đột resource, hãy ghép service với database hiện hữu thay vì xóa database.
 
 ## Realtime, module và kho ứng dụng\n\nDashboard Admin có tab Tệp & Module. Tệp tải lên (JSON/MD/TXT/CSS/HTML/ảnh, tối đa 2 MB) được lưu ở vùng cách ly riêng trong persistent disk, kiểm tra MIME và SHA-256, trạng thái ban đầu pending_review; không có chức năng thực thi code hoặc tự ghi đè production. Mọi thay đổi mã nguồn phải qua Pull Request và CI.\n\nRealtime dùng PHP Ratchet trong service Render riêng. Sau khi Blueprint tạo service `hendy-bot-tele-realtime`, đặt `WEBSOCKET_URL` ở service API thành URL `wss://...` của service realtime.\n\nCác adapter App Store Connect, Google Play và Microsoft Store mới là khung tích hợp. Chưa có credential/API permissions hoặc luồng upload/submit/publish hoạt động; cần thiết lập riêng theo tài khoản nhà phát hành. Xem `docs/REALTIME-MODULES-AND-STORES.md`.\n\n## Endpoint chính
 
