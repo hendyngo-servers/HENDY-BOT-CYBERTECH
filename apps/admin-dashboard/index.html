@@ -199,6 +199,70 @@
     admin:['Bảng điều khiển Admin','Quản lý sản phẩm, đơn hàng, thành viên và cấu hình.']
   };
 
+  // Tự động gắn hiệu ứng cho emoji trong giao diện mà không thay đổi nội dung text an toàn.
+  const ANIMATED_ICON_PATTERN = /(⚙️|⚡|💎|🎟️|🚀|🎁|🏆|👑|🧰|🎛️|💳|⚔️|🎬|🎊|🗣️|📢|🧑‍💻)/gu;
+  const ICON_ANIMATION_CLASS = new Map([
+    ['⚙️','icon-spin'],
+    ['⚡','icon-flash'],['💎','icon-flash'],['🎟️','icon-flash'],
+    ['🚀','icon-rocket'],
+    ['🎁','icon-bounce'],['🏆','icon-bounce'],['👑','icon-bounce'],
+    ['🧰','icon-swing'],['🎛️','icon-swing'],['💳','icon-swing'],
+    ['⚔️','icon-clash'],
+    ['🎬','icon-pulse'],['🎊','icon-pulse'],
+    ['🗣️','icon-wave'],['📢','icon-wave'],
+    ['🧑‍💻','icon-tech']
+  ]);
+
+  function decorateIconTextNode(node) {
+    const value = node.nodeValue || '';
+    if (!value || !node.parentElement ||
+        node.parentElement.closest('script,style,textarea,input,option,.animated-icon,[contenteditable="true"]')) return;
+    ANIMATED_ICON_PATTERN.lastIndex = 0;
+    if (!ANIMATED_ICON_PATTERN.test(value)) return;
+    ANIMATED_ICON_PATTERN.lastIndex = 0;
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+    for (const match of value.matchAll(ANIMATED_ICON_PATTERN)) {
+      const position = match.index || 0;
+      if (position > cursor) fragment.appendChild(document.createTextNode(value.slice(cursor, position)));
+      const icon = document.createElement('span');
+      icon.className = 'animated-icon ' + (ICON_ANIMATION_CLASS.get(match[0]) || '');
+      icon.dataset.icon = match[0];
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = match[0];
+      fragment.appendChild(icon);
+      cursor = position + match[0].length;
+    }
+    if (cursor < value.length) fragment.appendChild(document.createTextNode(value.slice(cursor)));
+    node.parentNode.replaceChild(fragment, node);
+  }
+
+  function scanForAnimatedIcons(root) {
+    if (root.nodeType === Node.TEXT_NODE) {
+      decorateIconTextNode(root);
+      return;
+    }
+    if (root.nodeType !== Node.ELEMENT_NODE ||
+        root.matches('script,style,textarea,input,option,.animated-icon')) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    textNodes.forEach(decorateIconTextNode);
+  }
+
+  function installVisualEffects() {
+    if (!document.body || installVisualEffects.installed) return;
+    installVisualEffects.installed = true;
+    scanForAnimatedIcons(document.body);
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes) scanForAnimatedIcons(node);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+
   async function api(path, method, body) {
     if (!initData) throw new Error('Hãy mở Mini App từ Telegram Bot để xác thực tài khoản.');
     const response = await fetch(path, {
@@ -828,6 +892,16 @@
     const form = event.target;
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
+    const submitButton = event.submitter instanceof HTMLButtonElement
+      ? event.submitter
+      : form.querySelector('button[type="submit"],button:not([type])');
+    const wasDisabled = Boolean(submitButton && submitButton.disabled);
+    let submitSucceeded = false;
+    if (submitButton) {
+      submitButton.classList.remove('is-success');
+      submitButton.classList.add('is-loading');
+      submitButton.disabled = true;
+    }
     try {
       if (form.id === 'admin-module-upload') {
         const file = form.elements.file.files[0];
@@ -921,7 +995,19 @@
         toast('Đã điều chỉnh số dư.');
         await renderPage();
       }
-    } catch (error) { toast(error.message); }
+      submitSucceeded = true;
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      if (submitButton) {
+        submitButton.classList.remove('is-loading');
+        submitButton.disabled = wasDisabled;
+        if (submitSucceeded) {
+          submitButton.classList.add('is-success');
+          window.setTimeout(() => submitButton.classList.remove('is-success'), 1400);
+        }
+      }
+    }
   });
 
   $('menu-button').addEventListener('click',()=>{
@@ -969,6 +1055,7 @@
     window.clearTimeout(realtimeRetry);
     if (realtimeSocket) realtimeSocket.close();
   });
+  installVisualEffects();
   start();
 })();
 </script>
