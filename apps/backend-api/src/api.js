@@ -1,7 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { pool, getUser } = require('./database');
-const { authenticateTelegram, requireAdmin } = require('./telegramAuth');
+const { authenticateTelegram, requireAdmin, tokenForBot } = require('./telegramAuth');
 
 const router = express.Router();
 const categories = ['minigame', 'tools', 'codes', 'otp', 'proxy', 'vip'];
@@ -825,7 +825,7 @@ router.patch('/api/admin/giftcodes/:code', asyncRoute(async (req, res) => {
 
 router.get('/api/admin/bot-menus', asyncRoute(async (req,res)=>{
   const result=await pool.query('SELECT * FROM bot_menu_configs ORDER BY bot_key');
-  const configs={primary:process.env.BOT_TOKEN?true:false,secondary:process.env.BOT_SECOND_TOKEN?true:false};
+  const configs={primary:Boolean(tokenForBot('primary')),secondary:Boolean(tokenForBot('secondary'))};
   res.json({
     menus:result.rows.map(row=>({
       botKey:row.bot_key,
@@ -846,7 +846,7 @@ router.get('/api/admin/bot-menus', asyncRoute(async (req,res)=>{
 router.patch('/api/admin/bot-menus/:botKey', asyncRoute(async (req,res)=>{
   const botKey=String(req.params.botKey||'');
   if(!['primary','secondary'].includes(botKey)) throw httpError(400,'Bot không hợp lệ.');
-  if(botKey==='secondary'&&!process.env.BOT_SECOND_TOKEN) throw httpError(409,'BOT_SECOND_TOKEN chưa được cấu hình trong Render Environment.');
+  if(botKey==='secondary'&&!tokenForBot('secondary')) throw httpError(409,'BOTPHU_TOKEN (hoặc bí danh BOT2_TOKEN/BOT_SECOND_TOKEN) chưa được cấu hình trong Render Environment.');
   const body=req.body||{};
   const mode=body.menuMode;
   const columns=Number(body.menuColumns);

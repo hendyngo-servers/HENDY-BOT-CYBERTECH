@@ -17,13 +17,14 @@ const {
 const { setupBotClient } = require('./botClient');
 const { setupBotAdmin } = require('./botAdmin');
 const { validateTelegramInitData } = require('./telegramAuth');
+const { getBotToken, getAdminId } = require('./botConfig');
 const apiRouter = require('./api');
 
 const PORT = Number(process.env.PORT || 8000);
-const BOT_TOKEN = process.env.BOT_TOKEN || '';
-const ADMIN_ID = String(process.env.ADMIN_ID || '');
-const BOT_SECOND_TOKEN = process.env.BOT_SECOND_TOKEN || '';
-const BOT_SECOND_ADMIN_ID = String(process.env.BOT_SECOND_ADMIN_ID || ADMIN_ID);
+const BOT_TOKEN = getBotToken('primary');
+const ADMIN_ID = getAdminId('primary');
+const BOT_SECOND_TOKEN = getBotToken('secondary');
+const BOT_SECOND_ADMIN_ID = getAdminId('secondary');
 const RENDER_EXTERNAL_URL = (process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 const SECOND_WEBHOOK_SECRET = process.env.TELEGRAM_SECOND_WEBHOOK_SECRET || '';
@@ -55,7 +56,7 @@ if (BOT_SECOND_TOKEN) {
   });
 }
 if (new Set(botConfigs.map(item=>item.token)).size !== botConfigs.length) {
-  throw new Error('BOT_TOKEN và BOT_SECOND_TOKEN phải là hai token khác nhau.');
+  throw new Error('Token của BOTCHINH và BOTPHU phải là hai token khác nhau.');
 }
 botConfigs.forEach(validateBotConfig);
 
