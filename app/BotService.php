@@ -209,7 +209,7 @@ final class BotService
         ]);
 
         $this->telegram->sendMessage($chatId, $text, [
-            'reply_markup' => $this->replyMenu($items, $config),
+            'reply_markup' => $this->menuMarkup($items, $config),
         ]);
     }
 
@@ -257,6 +257,39 @@ final class BotService
         return $items;
     }
 
+    private function menuMarkup(array $items, array $config): array
+    {
+        $columns = max(1, min(3, (int) ($config['menu_columns'] ?? 2)));
+        if (($config['menu_mode'] ?? 'reply_keyboard') === 'inline_keyboard') {
+            $rows = [];
+            foreach (array_chunk($items, $columns) as $chunk) {
+                $row = [];
+                foreach ($chunk as $item) {
+                    $button = [
+                        'text' => $item['label'],
+                        'style' => in_array($item['style'] ?? '', ['primary', 'success', 'danger'], true)
+                            ? $item['style']
+                            : 'primary',
+                    ];
+                    if ($item['action'] === 'admin') {
+                        $url = $this->webAppUrl('admin');
+                        if ($url !== '') {
+                            $button['web_app'] = ['url' => $url];
+                        } else {
+                            $button['callback_data'] = 'member:admin';
+                        }
+                    } else {
+                        $button['callback_data'] = 'member:' . $item['action'];
+                    }
+                    $row[] = $button;
+                }
+                $rows[] = $row;
+            }
+            return ['inline_keyboard' => $rows];
+        }
+        return $this->replyMenu($items, $config);
+    }
+
     private function replyMenu(array $items, array $config): array
     {
         $columns = max(1, min(3, (int) ($config['menu_columns'] ?? 2)));
@@ -264,7 +297,12 @@ final class BotService
         foreach (array_chunk($items, $columns) as $chunk) {
             $row = [];
             foreach ($chunk as $item) {
-                $button = ['text' => $item['label']];
+                $button = [
+                    'text' => $item['label'],
+                    'style' => in_array($item['style'] ?? '', ['primary', 'success', 'danger'], true)
+                        ? $item['style']
+                        : 'primary',
+                ];
                 if ($item['action'] === 'admin') {
                     $url = $this->webAppUrl('admin');
                     if ($url !== '') {
@@ -278,8 +316,8 @@ final class BotService
 
         return [
             'keyboard' => $rows,
-            'resize_keyboard' => filter_var($config['resize_keyboard'] ?? true, FILTER_VALIDATE_BOOLEAN),
-            'is_persistent' => filter_var($config['persistent_keyboard'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'resize_keyboard' => $this->toBool($config['resize_keyboard'] ?? true),
+            'is_persistent' => $this->toBool($config['persistent_keyboard'] ?? true),
             'input_field_placeholder' => 'Chọn chức năng Hendy Bot',
         ];
     }
