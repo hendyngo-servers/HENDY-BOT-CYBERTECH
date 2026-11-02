@@ -136,7 +136,7 @@ PHP không có runtime native trên Render trong Blueprint này; Dockerfile cung
 6. Render tạo webhook secret ngẫu nhiên và nối DATABASE_URL tới PostgreSQL.
 7. Deploy hoàn tất, kiểm tra https://<service>.onrender.com/healthz và mở URL gốc để kiểm tra Dashboard.
 
-Blueprint chạy migration bằng `preDeployCommand: php bin/migrate.php` trước khi phát hành phiên bản mới. Container Web Service chỉ kiểm tra cấu hình, đăng ký webhook và chạy Apache; migration không còn chạy lặp lại mỗi lần container khởi động. Realtime service chờ PostgreSQL và bảng `realtime_events` sẵn sàng thay vì tự chạy migration cạnh tranh với Web Service.
+Blueprint chạy migration bằng `preDeployCommand: php bin/migrate.php` trước khi phát hành phiên bản mới. Container Web Service chỉ kiểm tra cấu hình, đăng ký webhook và chạy Apache; migration không còn chạy lặp lại mỗi lần container khởi động. Realtime service chờ PostgreSQL và bảng `realtime_events` sẵn sàng thay vì tự chạy migration cạnh tranh với Web Service. Nếu service được tạo thủ công và không quản lý bằng Blueprint, nhập chính lệnh `php bin/migrate.php` vào trường Pre-Deploy Command trong Settings của Web Service; không đưa lệnh này vào Docker Start Command.
 
 ### Chuyển service Render đang tồn tại từ Node sang Docker
 
