@@ -23,8 +23,25 @@ if ($bot1 !== '' && $bot2 !== '' && hash_equals($bot1, $bot2)) {
 if (!preg_match('/^\d{5,20}$/', $admin)) {
     $errors[] = 'ADMIN_ID phải là Telegram user ID dạng số.';
 }
-if (Hendy\Env::get('DATABASE_URL') === null) {
-    $errors[] = 'Thiếu DATABASE_URL.';
+
+$dbUrl = Hendy\Env::get('DATABASE_URL');
+$dbParts = false;
+if ($dbUrl !== null) {
+    try {
+        $dbParts = parse_url($dbUrl);
+    } catch (Throwable) {
+        $dbParts = false;
+    }
+}
+$dbScheme = is_array($dbParts) ? strtolower((string) ($dbParts['scheme'] ?? '')) : '';
+$dbPath = is_array($dbParts) ? (string) ($dbParts['path'] ?? '') : '';
+if (
+    !is_array($dbParts) ||
+    !in_array($dbScheme, ['postgres', 'postgresql'], true) ||
+    empty($dbParts['host']) ||
+    trim($dbPath, '/') === ''
+) {
+    $errors[] = 'DATABASE_URL phải là URI PostgreSQL dạng postgresql://USER:PASSWORD@HOST:5432/DB. Không dán câu lệnh PGPASSWORD=... psql -h ... vào biến này.';
 }
 
 if ($errors !== []) {
