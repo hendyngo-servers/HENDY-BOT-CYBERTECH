@@ -436,7 +436,9 @@ final class ApiController
 
     private function handleAdmin(string $method, string $path): array
     {
-        if ($method === 'GET' && $path === '/api/admin/modules') {\n            return self::response(['artifacts' => Database::all('SELECT id, module_key, original_name, mime_type, sha256, status, created_at FROM module_artifacts ORDER BY created_at DESC LIMIT 100')]);\n        }\n        if ($method === 'POST' && $path === '/api/admin/realtime-ticket') {
+        if ($method === 'GET' && $path === '/api/admin/modules') {
+            return self::response(['artifacts' => Database::all('SELECT id, module_key, original_name, mime_type, sha256, status, created_at FROM module_artifacts ORDER BY created_at DESC LIMIT 100')]);
+        }\n        if ($method === 'POST' && $path === '/api/admin/realtime-ticket') {
             $ticket = Realtime::issueAdminTicket((string) $this->user['id']);
             $url = trim((string) Env::get('WEBSOCKET_URL', ''));
             if ($url === '' || !preg_match('#^wss://#i', $url)) throw new HttpException(503, 'WebSocket WSS chưa được cấu hình.');
