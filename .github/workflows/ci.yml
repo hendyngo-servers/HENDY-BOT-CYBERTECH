@@ -2,7 +2,11 @@ name: PHP CI
 
 on:
   push:
-    branches: [main, php-backend-migration, feature/realtime-modular-platform-review, feature/button-theme-animated-icons]
+    branches:
+      - main
+      - php-backend-migration
+      - feature/realtime-modular-platform-review
+      - feature/button-theme-animated-icons
   pull_request:
     branches: [main]
 
@@ -53,7 +57,7 @@ jobs:
           php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\\n;\\n", $matches[1]));'
           node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-dashboard.js";')"
 
-      - name: Verify Mini App button theme and Docker Composer tools
+      - name: Verify dashboard buttons and Docker tools
         run: |
           grep -q -- '--btn-primary-start' apps/admin-dashboard/styles/buttons.css
           grep -q -- '.ripple' apps/admin-dashboard/styles/buttons.css
@@ -76,50 +80,30 @@ jobs:
       - name: Build Docker image
         run: docker build --pull -t hendy-bot-tele:ci .
 
-      - name: Verify bot token configuration names
+      - name: Verify bot token configuration and deployment commands
         run: |
+          set -euo pipefail
           grep -q '^BOT1_TOKEN=' .env.example
           grep -q '^BOT2_TOKEN=' .env.example
           ! grep -Eq '^(BOTCHINH_TOKEN|BOTPHU_TOKEN|BOT_TOKEN|BOT_SECOND_TOKEN)=' .env.example
           ! grep -Eq '^BOT[12]_TOKEN=[0-9]+:' .env.example
           ! grep -Eq '^DATABASE_URL=.*(PGPASSWORD=|[[:space:]]psql[[:space:]])' .env.example
+          ! grep -Eq '^(TELEGRAM_WEBHOOK_SECRET|TELEGRAM_SECOND_WEBHOOK_SECRET|BANK_WEBHOOK_SECRET)=(?!REPLACE_)' .env.example
           grep -q 'dockerCommand: /var/www/app/docker/start.sh' render.yaml
           ! grep -q 'preDeployCommand:' render.yaml
           grep -q 'RUN_MIGRATIONS_ON_START' render.yaml
           grep -q 'bin/wait-for-database.php' docker/start.sh
           grep -q 'php bin/migrate.php' docker/start.sh
-          grep -q '^EXPOSE 10000
+          grep -q '^EXPOSE 10000$' Dockerfile
           grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
           grep -q 'getMe()' bin/register-webhooks.php
           grep -q '401 Unauthorized' bin/register-webhooks.php
           grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
-
-      - name: Verify deployment files
-        run: |
-          test -s Dockerfile
-          test -s render.yaml
-          test -s database/schema.sql
- Dockerfile
-          grep -q '^PORT=10000
-          grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
-          grep -q 'getMe()' bin/register-webhooks.php
-          grep -q '401 Unauthorized' bin/register-webhooks.php
-          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
-
-      - name: Verify deployment files
-        run: |
-          test -s Dockerfile
-          test -s render.yaml
-          test -s database/schema.sql
- .env.example || grep -q 'PORT' render.yaml
           bash -n docker/start.sh
-          grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
-          grep -q 'getMe()' bin/register-webhooks.php
-          grep -q '401 Unauthorized' bin/register-webhooks.php
-          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
 
       - name: Verify deployment files
         run: |
           test -s Dockerfile
           test -s render.yaml
           test -s database/schema.sql
+          test -s bin/wait-for-database.php
