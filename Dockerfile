@@ -1,3 +1,5 @@
+FROM composer:2 AS composer
+
 FROM php:8.3-apache
 
 RUN apt-get update \
@@ -8,6 +10,8 @@ RUN apt-get update \
 
 WORKDIR /var/www/app
 COPY . /var/www/app
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 RUN chown -R www-data:www-data /var/www/app \
     && chmod -R 755 /var/www/app/public \
