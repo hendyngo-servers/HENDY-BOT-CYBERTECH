@@ -104,6 +104,7 @@ Token mẫu chỉ là placeholder. Không commit .env, token Telegram, mật kh�
 | TELEGRAM_WEBHOOK_SECRET | Có khi deploy webhook | Secret bảo vệ webhook bot 1 |
 | TELEGRAM_SECOND_WEBHOOK_SECRET | Khi bật bot 2 | Secret bảo vệ webhook bot 2 |
 | BANK_WEBHOOK_SECRET | Khi dùng nạp tự động | Secret riêng do nhà cung cấp callback ngân hàng gửi |
+| WEBHOOK_AUTO_REGISTER | Không | Mặc định `true`; đặt `false` để bỏ qua đăng ký webhook tự động khi khởi động |
 | VIETQR_* | Khi dùng VietQR | Thông tin tài khoản nhận tiền |
 | GROUP_URL, CHANNEL_URL | Không | Liên kết cộng đồng |
 | APP_URL / RENDER_EXTERNAL_URL | Khi deploy | URL HTTPS để đăng ký webhook |
