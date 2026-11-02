@@ -53,7 +53,7 @@ $files = [
 if ($category !== 'dashboard') {
     $class = str_replace(' ', '', $title) . 'Feature';
     $files[$base . '/' . $class . '.php'] =
-        "<?php\ndeclare(strict_types=1);\n\nnamespace Hendy\\\\Features\\\\{$class};\n\n" .
+        "<?php\ndeclare(strict_types=1);\n\nnamespace Hendy\\Features\\{$class};\n\n" .
         "final class {$class}\n{\n" .
         "    public const ENABLED = false;\n\n" .
         "    public function register(): void\n    {\n" .
