@@ -12,6 +12,23 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hendy
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: hendy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hendy -d hendy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://hendy:ci-only-password@127.0.0.1:5432/hendy_test
+      DATABASE_SSL: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +47,19 @@ jobs:
 
       - name: Run PHP tests
         run: php tests/run.php
+
+      - name: Run PostgreSQL migration and smoke tests
+        run: |
+          php bin/migrate.php
+          php tests/database-smoke.php
+
+      - name: Smoke test feature scaffold
+        run: |
+          php scripts/scaffold-feature.php --name ci-smoke-check --category api --description "CI scaffold test"
+          php -l app/features/ci-smoke-check/CiSmokeCheckFeature.php
+
+      - name: Build Docker image
+        run: docker build --pull -t hendy-bot-tele:ci .
 
       - name: Verify bot token configuration names
         run: |
