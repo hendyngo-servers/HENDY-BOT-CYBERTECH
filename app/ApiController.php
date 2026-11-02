@@ -194,6 +194,9 @@ final class ApiController
         }
         if ($path === '/api/wallet/payment-info' && $method === 'GET') {
             $amount = $this->parseMoney($this->query['amount'] ?? 50000, false);
+            if ($amount < 10000 || $amount > 500000000) {
+                throw new HttpException(400, 'Số tiền nạp phải từ 10.000 đến 500.000.000 VNĐ.');
+            }
             $settings = $this->settings(['VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'], true);
             $bank = $settings['VIETQR_BANK_ID'] ?: (string) Env::get('VIETQR_BANK_ID', '');
             $account = $settings['VIETQR_ACCOUNT_NO'] ?: (string) Env::get('VIETQR_ACCOUNT_NO', '');
