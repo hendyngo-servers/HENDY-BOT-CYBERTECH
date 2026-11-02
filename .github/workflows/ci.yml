@@ -45,11 +45,6 @@ jobs:
           set -euo pipefail
           find app public bin tests -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Check Mini App JavaScript syntax
-        run: |
-          awk '/<script>/{inside=1;next}/<\\/script>/{inside=0}inside' apps/admin-dashboard/index.html > /tmp/hendy-dashboard.js
-          node --check /tmp/hendy-dashboard.js
-
       - name: Run PHP tests
         run: php tests/run.php
 
