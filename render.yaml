@@ -1,80 +1,57 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+# Blueprint cho Hendy Bot Tele: một Web Service + PostgreSQL Managed tại Singapore.
+
 services:
   - type: web
     name: hendy-bot-tele
     runtime: node
     plan: starter
-    buildCommand: npm install --include=dev --no-audit --no-fund && npm run build
+    region: singapore
+    branch: main
+    buildCommand: npm install && npm run check && npm run build
     startCommand: npm start
-    healthCheckPath: /health
-    autoDeploy: true
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 60
+    autoDeployTrigger: checksPass
     envVars:
-      - key: NODE_VERSION
-        value: "24"
       - key: NODE_ENV
         value: production
-      - key: SET_WEBHOOK_ON_START
-        value: "true"
-      - key: TELEGRAM_AUTH_MAX_AGE_SECONDS
-        value: "86400"
+      - key: NODE_VERSION
+        value: "22"
       - key: BOT_TOKEN
         sync: false
-      - key: BOT_USERNAME
-        sync: false
-      - key: WEBHOOK_SECRET
-        sync: false
-      - key: ADMIN_TELEGRAM_IDS
+      - key: ADMIN_ID
         sync: false
       - key: BOT_SECOND_TOKEN
         sync: false
-      - key: BOT_SECOND_USERNAME
-        sync: false
       - key: BOT_SECOND_ADMIN_ID
         sync: false
-      - key: ADMIN_TELEGRAM_IDS_SECONDARY
+      - key: BOT_SECOND_USERNAME
         sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hendy-bot-tele-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "false"
+      - key: PGPOOL_MAX
+        value: "10"
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
       - key: TELEGRAM_SECOND_WEBHOOK_SECRET
+        generateValue: true
+      - key: BANK_WEBHOOK_SECRET
+        generateValue: true
+      - key: LEGACY_ACCOUNT_URL
         sync: false
-      - key: BASE_URL
+      - key: LEGACY_SESSION_SECRET
+        generateValue: true
+      - key: BOT_USERNAME
         sync: false
-      - key: WEBAPP_URL
-        sync: false
-      - key: ADMIN_WEBAPP_URL
-        sync: false
-      - key: ALLOWED_ORIGINS
-        sync: false
-      - key: CLOUDFLARE_ACCOUNT_ID
-        sync: false
-      - key: CLOUDFLARE_D1_DATABASE_ID
-        sync: false
-      - key: CLOUDFLARE_D1_API_TOKEN
-        sync: false
-      - key: BACKUP_WORKER_URL
-        sync: false
-      - key: BACKUP_TRIGGER_SECRET
-        sync: false
-      - key: R2_UPLOAD_WORKER_URL
-        sync: false
-      - key: R2_UPLOAD_SECRET
-        sync: false
-      - key: RENDER_API_KEY
-        sync: false
-      - key: RENDER_SERVICE_ID
-        sync: false
-      - key: GITHUB_CONFIG_TOKEN
-        sync: false
-      - key: GITHUB_REPOSITORY_OWNER
-        value: hendyngo-servers
-      - key: GITHUB_REPOSITORY_NAME
-        value: Hendy-Bot-Tele
-      - key: VIETQR_BANK_ID
-        sync: false
-      - key: VIETQR_ACCOUNT_NO
-        sync: false
-      - key: VIETQR_ACCOUNT_NAME
-        sync: false
-      - key: GROUP_CHAT_URL
-        sync: false
-      - key: NEWS_CHANNEL_URL
-        sync: false
-      - key: SUPPORT_URL
-        sync: false
+
+databases:
+  - name: hendy-bot-tele-db
+    databaseName: hendy_bot_tele
+    user: hendy_bot_tele
+    plan: basic-256mb
+    region: singapore

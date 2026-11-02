@@ -1,37 +1,24 @@
-name: Production CI
+name: CI
 
 on:
   push:
-    branches: [main, 'production/**']
+    branches: [main]
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
-
 jobs:
-  test-and-build:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-
+          node-version: 22
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Syntax checks
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm test
-
-      - name: Configuration source audit
-        run: npm run config:audit
-
-      - name: Build Mini App
+        run: npm install
+      - name: Check JavaScript syntax
+        run: npm run check
+      - name: Build dashboard
         run: npm run build

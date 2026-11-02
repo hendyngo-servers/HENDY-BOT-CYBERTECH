@@ -1,9 +1,0 @@
-{
-  "name": "Hendy Bot Telegram - Cloudflare Edition",
-  "description": "Hệ thống quản trị và phân phối Telegram Bot tích hợp Render, Cloudflare (D1, R2, Pages) và App Store Mini App",
-  "version": "1.0.0",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ],
-  "permissions": []
-}
