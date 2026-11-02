@@ -9,6 +9,10 @@ services:
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    disk:
+      name: hendy-module-storage
+      mountPath: /var/www/app/storage
+      sizeGB: 1
     healthCheckPath: /healthz
     autoDeployTrigger: checksPass
     envVars:
