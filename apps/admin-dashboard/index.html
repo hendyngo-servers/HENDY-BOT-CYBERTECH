@@ -437,6 +437,7 @@
   async function adminLoad(tab) {
     state.adminTab = tab;
     if (tab === 'overview') state.adminData.overview = await api('/api/admin/overview');
+    if (tab === 'modules') state.adminData.modules = (await api('/api/admin/modules')).artifacts || [];
     if (tab === 'products') state.adminData.products = (await api('/api/admin/products')).products;
     if (tab === 'orders') state.adminData.orders = (await api('/api/admin/orders')).orders;
     if (tab === 'tickets') state.adminData.tickets = (await api('/api/admin/tickets')).tickets;
@@ -447,10 +448,20 @@
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
+  }
+
+  function adminModules() {
+    const rows = state.adminData.modules || [];
+    return '<div class="notice warn">Tệp tải lên chỉ được lưu trong vùng cách ly, không tự chạy và không tự ghi đè mã nguồn. Mã PHP/JavaScript thực thi, tệp nén và secret bị từ chối. Phát hành code phải qua Pull Request và CI.</div>' +
+      '<form class="card form" id="admin-module-upload"><b>Tải tài nguyên/module lên vùng chờ</b>' +
+      '<div class="field"><label>Mã module</label><input name="module" pattern="[a-z][a-z0-9-]{1,62}" maxlength="63" placeholder="customer-center" required></div>' +
+      '<div class="field"><label>Tệp (JSON, MD, TXT, CSS, HTML hoặc ảnh; tối đa 2 MB)</label><input type="file" name="file" accept=".json,.md,.txt,.css,.html,.svg,.png,.jpg,.jpeg,.webp" required></div>' +
+      '<button class="primary">Tải lên để kiểm duyệt</button></form>' +
+      '<div class="card"><b>Tệp đang chờ</b>' + (rows.length ? rows.map(item => '<div class="list-row"><div><b>' + escapeHtml(item.original_name) + '</b><small>' + escapeHtml(item.module_key) + ' · SHA256 ' + escapeHtml(item.sha256) + '</small></div><span class="status pending">' + escapeHtml(item.status) + '</span></div>').join('') : '<p class="small muted">Chưa có tệp nào.</p>') + '</div>';
   }
 
   function adminOverview() {
@@ -590,6 +601,7 @@
     await adminLoad(state.adminTab);
     let body = '';
     if (state.adminTab === 'overview') body = adminOverview();
+    if (state.adminTab === 'modules') body = adminModules();
     if (state.adminTab === 'products') body = adminProducts();
     if (state.adminTab === 'orders') body = adminOrders();
     if (state.adminTab === 'tickets') body = adminTickets();
@@ -801,7 +813,7 @@
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
     try {
-      if (form.id === 'custom-topup') {
+      if (form.id === 'admin-module-upload') {\n        const file = form.elements.file.files[0];\n        if (!file) throw new Error('Chọn tệp cần tải lên.');\n        const payload = new FormData(form);\n        const response = await fetch('/api/admin/modules/upload',{method:'POST',headers:{'x-telegram-init-data':initData,'x-telegram-bot-key':botKey},body:payload});\n        const result = await response.json();\n        if (!response.ok) throw new Error(result.error || 'Không thể tải tệp lên.');\n        toast(result.message); await renderPage();\n      } else if (form.id === 'custom-topup') {
         const amount = Number(data.amount);
         if (!Number.isSafeInteger(amount) || amount < 10000) throw new Error('Số tiền tối thiểu là 10.000 VNĐ.');
         await showQr(amount);
