@@ -8,3 +8,6 @@ Upload -> vùng cách ly -> kiểm tra MIME/kích thước -> pending_review -> 
 
 ## App Store, Google Play, Microsoft Store
 Các adapter khai báo cho App Store Connect, Google Play Developer API và Microsoft Store submission API. Đây là điểm mở rộng, chưa phải kết nối tài khoản nhà phát hành. Cần developer account, API permissions, key/certificate, bundle/package/product ID và metadata riêng. Secret nằm trong secret manager. Capability mặc định chỉ đọc metadata; upload binary, submit review và publish đều tắt cho tới khi adapter tương ứng được triển khai và kiểm thử theo API/chính sách hiện hành.
+
+
+The main API service uses a persistent Render disk mounted at /var/www/app/storage for staged module files. Keep the disk attached when changing plans or replacing services; it is not a substitute for off-site backups.
