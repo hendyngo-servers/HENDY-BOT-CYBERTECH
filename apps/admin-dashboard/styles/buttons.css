@@ -183,4 +183,6 @@ button:hover .animated-icon,
     animation-iteration-count: 1 !important;
   }
   button { transition-duration: .01ms !important; }
+  button:hover .animated-icon,
+  .service-tile:hover .animated-icon { animation-duration: .01ms !important; }
 }
