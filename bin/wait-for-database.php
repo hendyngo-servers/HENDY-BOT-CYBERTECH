@@ -4,8 +4,8 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
 
-use Hendy\\Database;
-use Hendy\\Env;
+use Hendy\Database;
+use Hendy\Env;
 
 Env::load(dirname(__DIR__) . '/.env');
 
@@ -53,7 +53,7 @@ do {
     $attempt++;
     try {
         Database::check();
-        fwrite(STDOUT, "PostgreSQL đã sẵn sàng sau {$attempt} lần thử.\\n");
+        fwrite(STDOUT, "PostgreSQL đã sẵn sàng sau {$attempt} lần thử.\n");
         exit(0);
     } catch (Throwable $error) {
         $lastError = $error;
@@ -65,7 +65,7 @@ do {
     }
 
     if ($now >= $nextNotice) {
-        fwrite(STDOUT, "Đang chờ PostgreSQL... (lần thử {$attempt}/, tối đa {$timeout}s)\\n");
+        fwrite(STDOUT, "Đang chờ PostgreSQL... (lần thử {$attempt}/, tối đa {$timeout}s)\n");
         $nextNotice = $now + 10;
     }
 
@@ -77,6 +77,6 @@ $hint = databaseFailureHint($lastError);
 fwrite(
     STDERR,
     "Không thể kết nối PostgreSQL sau {$timeout}s ({$errorType}). {$hint} " .
-    "Không ghi connection string hoặc thông tin bí mật vào log.\\n"
+    "Không ghi connection string hoặc thông tin bí mật vào log.\n"
 );
 exit(1);
