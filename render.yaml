@@ -1,32 +1,24 @@
-# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
-# Blueprint cho Hendy Bot Tele: một Web Service + PostgreSQL Managed tại Singapore.
-
+# Render Blueprint — PHP 8.3 + Apache + PostgreSQL.
+# PHP chạy qua Docker vì Render không cung cấp native PHP runtime.
 services:
   - type: web
     name: hendy-bot-tele
-    runtime: node
+    runtime: docker
     plan: starter
     region: singapore
     branch: main
-    buildCommand: npm install && npm run check && npm run build
-    startCommand: npm start
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /healthz
-    maxShutdownDelaySeconds: 60
     autoDeployTrigger: checksPass
     envVars:
-      - key: NODE_ENV
+      - key: APP_ENV
         value: production
-      - key: NODE_VERSION
-        value: "22"
-      - key: BOTCHINH_TOKEN
+      - key: BOT1_TOKEN
+        sync: false
+      - key: BOT2_TOKEN
         sync: false
       - key: ADMIN_ID
-        sync: false
-      - key: BOTPHU_TOKEN
-        sync: false
-      - key: BOTPHU_ADMIN_ID
-        sync: false
-      - key: BOT_SECOND_USERNAME
         sync: false
       - key: DATABASE_URL
         fromDatabase:
@@ -34,20 +26,28 @@ services:
           property: connectionString
       - key: DATABASE_SSL
         value: "false"
-      - key: PGPOOL_MAX
-        value: "10"
       - key: TELEGRAM_WEBHOOK_SECRET
         generateValue: true
       - key: TELEGRAM_SECOND_WEBHOOK_SECRET
         generateValue: true
       - key: BANK_WEBHOOK_SECRET
         generateValue: true
-      - key: LEGACY_ACCOUNT_URL
+      - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
+        value: "86400"
+      - key: BOT_USERNAME
+        sync: false
+      - key: VIETQR_BANK_ID
+        sync: false
+      - key: VIETQR_ACCOUNT_NO
+        sync: false
+      - key: VIETQR_ACCOUNT_NAME
+        sync: false
+      - key: GROUP_URL
+        sync: false
+      - key: CHANNEL_URL
         sync: false
       - key: LEGACY_SESSION_SECRET
         generateValue: true
-      - key: BOT_USERNAME
-        sync: false
 
 databases:
   - name: hendy-bot-tele-db

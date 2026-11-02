@@ -1,24 +1,44 @@
-name: CI
+name: PHP CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, php-backend-migration]
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
         with:
-          node-version: 22
-      - name: Install dependencies
-        run: npm install
-      - name: Check JavaScript syntax
-        run: npm run check
-      - name: Build dashboard
-        run: npm run build
+          php-version: "8.3"
+          extensions: curl, mbstring, pdo, pdo_pgsql
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          set -euo pipefail
+          find app public bin tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run PHP tests
+        run: php tests/run.php
+
+      - name: Verify bot token configuration names
+        run: |
+          grep -q '^BOT1_TOKEN=' .env.example
+          grep -q '^BOT2_TOKEN=' .env.example
+          ! grep -Eq '^(BOTCHINH_TOKEN|BOTPHU_TOKEN|BOT_TOKEN|BOT_SECOND_TOKEN)=' .env.example
+
+      - name: Verify deployment files
+        run: |
+          test -s Dockerfile
+          test -s render.yaml
+          test -s database/schema.sql
