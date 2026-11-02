@@ -83,8 +83,36 @@ jobs:
           ! grep -Eq '^(BOTCHINH_TOKEN|BOTPHU_TOKEN|BOT_TOKEN|BOT_SECOND_TOKEN)=' .env.example
           ! grep -Eq '^BOT[12]_TOKEN=[0-9]+:' .env.example
           ! grep -Eq '^DATABASE_URL=.*(PGPASSWORD=|[[:space:]]psql[[:space:]])' .env.example
-          grep -q 'preDeployCommand: php bin/migrate.php' render.yaml
-          ! grep -q 'php bin/migrate.php' docker/start.sh
+          grep -q 'dockerCommand: /var/www/app/docker/start.sh' render.yaml
+          ! grep -q 'preDeployCommand:' render.yaml
+          grep -q 'RUN_MIGRATIONS_ON_START' render.yaml
+          grep -q 'bin/wait-for-database.php' docker/start.sh
+          grep -q 'php bin/migrate.php' docker/start.sh
+          grep -q '^EXPOSE 10000
+          grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
+          grep -q 'getMe()' bin/register-webhooks.php
+          grep -q '401 Unauthorized' bin/register-webhooks.php
+          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
+
+      - name: Verify deployment files
+        run: |
+          test -s Dockerfile
+          test -s render.yaml
+          test -s database/schema.sql
+ Dockerfile
+          grep -q '^PORT=10000
+          grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
+          grep -q 'getMe()' bin/register-webhooks.php
+          grep -q '401 Unauthorized' bin/register-webhooks.php
+          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
+
+      - name: Verify deployment files
+        run: |
+          test -s Dockerfile
+          test -s render.yaml
+          test -s database/schema.sql
+ .env.example || grep -q 'PORT' render.yaml
+          bash -n docker/start.sh
           grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
           grep -q 'getMe()' bin/register-webhooks.php
           grep -q '401 Unauthorized' bin/register-webhooks.php

@@ -19,8 +19,8 @@ foreach (['Env.php', 'Database.php', 'Realtime.php'] as $file) {
 Env::load(dirname(__DIR__) . '/.env');
 
 /**
- * The primary web service applies schema changes in its pre-deploy command.
- * The realtime service waits for that schema instead of racing migrations.
+ * The primary web service waits for PostgreSQL and applies the idempotent schema
+ * during startup. The realtime service waits for that schema instead of racing migrations.
  */
 $waitSeconds = max(0, Env::int('DB_STARTUP_WAIT_SECONDS', 90));
 $deadline = microtime(true) + $waitSeconds;

@@ -11,11 +11,12 @@ RUN apt-get update \
 WORKDIR /var/www/app
 COPY . /var/www/app
 COPY --from=composer /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative
+RUN composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative --no-progress
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 RUN chown -R www-data:www-data /var/www/app \
     && chmod -R 755 /var/www/app/public \
     && chmod +x /var/www/app/docker/start.sh
 
-EXPOSE 80
+# Render's default web-service port is 10000.
+EXPOSE 10000
 CMD ["/var/www/app/docker/start.sh"]

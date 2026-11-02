@@ -109,7 +109,16 @@ final class Database
         if (!is_file($schema)) {
             throw new RuntimeException('Không tìm thấy database/schema.sql.');
         }
-        self::connection()->exec((string) file_get_contents($schema));
+
+        $pdo = self::connection();
+        $lockKey = 'hendy-bot-tele-schema';
+        self::run('SELECT pg_advisory_lock(hashtext(?))', [$lockKey]);
+
+        try {
+            $pdo->exec((string) file_get_contents($schema));
+        } finally {
+            self::run('SELECT pg_advisory_unlock(hashtext(?))', [$lockKey]);
+        }
     }
 
     public static function check(): bool

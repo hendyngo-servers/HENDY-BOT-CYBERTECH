@@ -127,17 +127,43 @@ Local polling cần chạy ở terminal riêng: php bin/polling.php. Polling s�
 
 ## Triển khai Render
 
-PHP không có runtime native trên Render trong Blueprint này; Dockerfile cung cấp PHP 8.3, Apache và các extension PostgreSQL/cURL/mbstring cần thiết.
+PHP không có runtime native trong Blueprint này; Dockerfile cung cấp PHP 8.3, Apache và các extension PostgreSQL/cURL/mbstring cần thiết.
 
-1. Mở Render Blueprint tại https://dashboard.render.com/blueprint/new?repo=https://github.com/hendyngo-servers/Hendy-Bot-Tele.
-2. Kiểm tra Web Service, realtime service và PostgreSQL ở cùng một region (Blueprint mẫu dùng Singapore). Render chỉ phân giải Internal Database URL giữa các service cùng workspace và cùng region; nếu database hiện hữu ở Oregon thì phải chọn URL/region tương ứng, không dùng hostname nội bộ khác region.
-3. Kiểm tra plan/chi phí hiển thị trước khi Apply.
-4. Thiết lập BOT1_TOKEN, ADMIN_ID; thiết lập thêm BOT2_TOKEN nếu bật bot thứ hai.
-5. Điền thông tin VietQR và liên kết cộng đồng nếu nghiệp vụ cần.
-6. Render tạo webhook secret ngẫu nhiên và nối DATABASE_URL tới PostgreSQL.
-7. Deploy hoàn tất, kiểm tra https://<service>.onrender.com/healthz và mở URL gốc để kiểm tra Dashboard.
+### Thiết lập Web Service
 
-Webhook được đăng ký tự động khi container khởi động nếu `WEBHOOK_AUTO_REGISTER=true` (mặc định). Ứng dụng gọi `getMe` để xác thực token trước khi gọi `setWebhook`. Nếu Telegram trả về `401 Unauthorized`, log sẽ chỉ rõ bot nào bị từ chối và yêu cầu cập nhật `BOT1_TOKEN`/`BOT2_TOKEN` trong Render; Dashboard/Apache vẫn khởi động, nhưng bot tương ứng chưa nhận update cho tới khi token hợp lệ và webhook được đăng ký lại. Đặt `WEBHOOK_AUTO_REGISTER=false` để tắt thao tác này khi cần. Blueprint chạy migration bằng `preDeployCommand: php bin/migrate.php` trước khi phát hành phiên bản mới. Container Web Service chỉ kiểm tra cấu hình, đăng ký webhook và chạy Apache; migration không còn chạy lặp lại mỗi lần container khởi động. Realtime service chờ PostgreSQL và bảng `realtime_events` sẵn sàng thay vì tự chạy migration cạnh tranh với Web Service. Nếu service được tạo thủ công và không quản lý bằng Blueprint, nhập chính lệnh `php bin/migrate.php` vào trường Pre-Deploy Command trong Settings của Web Service; không đưa lệnh này vào Docker Start Command.
+1. Runtime: **Docker**; Dockerfile: `./Dockerfile`; Docker Context: `.`.
+2. **Build Command để trống** vì Render tự build Dockerfile.
+3. **Docker Command / Start Command**: để trống để dùng `CMD` trong Dockerfile, hoặc đặt chính xác `/var/www/app/docker/start.sh`.
+4. HTTP port: `10000` (đọc từ biến môi trường `PORT`, mặc định của Render).
+5. Health Check Path: `/healthz`.
+6. Không nhập `preDeployCommand: php bin/migrate.php` vào Docker Command. Đây là cấu hình sai và sẽ khiến Render cố chạy nguyên chuỗi đó như tên chương trình.
+
+Blueprint khai báo Docker Command chính xác là `/var/www/app/docker/start.sh`. Với Web Service đã tạo thủ công, mở **Settings → Build & Deploy → Docker Command**, xóa nội dung sai đang có và để trống hoặc nhập đúng đường dẫn trên, sau đó lưu và deploy lại. Push code không tự xóa một Docker Command override đã lưu trực tiếp trong Dashboard.
+
+### Migration và khởi động
+
+Entrypoint chạy theo thứ tự: kiểm tra cấu hình → cấu hình Apache trên `PORT` → chờ PostgreSQL → áp dụng schema idempotent có PostgreSQL advisory lock → đăng ký webhook (lỗi Telegram được ghi cảnh báo, không chặn Apache) → chạy Apache foreground.
+
+Mặc định `RUN_MIGRATIONS_ON_START=true`, phù hợp cả Render Free vì **Pre-Deploy Command chỉ khả dụng trên dịch vụ trả phí**. Với dịch vụ trả phí, có thể chuyển migration sang Pre-Deploy Command `php bin/migrate.php` và đặt `RUN_MIGRATIONS_ON_START=false`; không chạy cả hai cơ chế đồng thời. Realtime service chỉ chờ bảng `realtime_events` sẵn sàng và không chạy migration riêng.
+
+### PostgreSQL, vùng triển khai và dữ liệu
+
+Web Service và PostgreSQL phải cùng workspace và region để sử dụng Internal Database URL. Không dùng hostname nội bộ giữa hai region. Nếu buộc phải kết nối khác region, chỉ dùng External Database URL với TLS (`sslmode=require`, `DATABASE_SSL=true`) và cho phép các outbound IP của Web Service trong IP allow-list của database.
+
+Region của PostgreSQL hiện hữu không thể đổi trực tiếp. Trước khi tạo database mới hoặc thay URL, hãy sao lưu và xác minh dữ liệu; không xóa database hiện tại khi chưa đối soát số dư, ledger, đơn hàng và referral. Nếu tạo Web Service mới để cùng region với database hiện có, cần kiểm tra lại URL công khai, webhook Telegram và cấu hình Mini App.
+
+Blueprint dùng gói Starter và persistent disk cho vùng Tệp & Module. Việc Apply Blueprint có thể phát sinh chi phí; kiểm tra giá trước khi áp dụng. Web Service Free không có persistent disk, vì vậy tệp được upload vào filesystem trên gói Free không được bảo đảm tồn tại sau redeploy hoặc restart.
+
+### Checklist triển khai
+
+1. Mở Render Blueprint: https://dashboard.render.com/blueprint/new?repo=https://github.com/hendyngo-servers/Hendy-Bot-Tele.
+2. Xác nhận Web Service, realtime service và PostgreSQL ở cùng region; kiểm tra plan/chi phí.
+3. Thiết lập `BOT1_TOKEN`, `ADMIN_ID`; thêm `BOT2_TOKEN` nếu bật bot thứ hai.
+4. Xác nhận `DATABASE_URL` trỏ đúng database cần dùng. Internal URL chỉ dùng cùng workspace/region; External URL cần TLS và IP allow-list.
+5. Kiểm tra `PORT=10000`, `RUN_MIGRATIONS_ON_START=true`, `DB_STARTUP_WAIT_SECONDS=120`.
+6. Deploy, sau đó mở `/healthz` và trang Dashboard.
+
+Webhook đăng ký tự động khi `WEBHOOK_AUTO_REGISTER=true`. Ứng dụng gọi `getMe` trước `setWebhook`; nếu Telegram trả `401 Unauthorized`, log chỉ rõ bot nào bị từ chối nhưng không in token. Cập nhật token đúng biến `BOT1_TOKEN` hoặc `BOT2_TOKEN` trong Render Environment. Đặt `WEBHOOK_AUTO_REGISTER=false` để tắt đăng ký tự động khi cần.
 
 ### Chuyển service Render đang tồn tại từ Node sang Docker
 
