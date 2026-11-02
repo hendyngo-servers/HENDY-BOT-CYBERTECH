@@ -163,7 +163,7 @@ try {
         readfile(dirname(__DIR__) . '/apps/admin-dashboard/styles/buttons.css');
         exit;
     }
-    if ($method === 'GET' && $path === '/healthz') {
+    if ($method === 'GET' && in_array($path, ['/healthz', '/api/health'], true)) {
         Database::check();
         respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
     }
