@@ -8,6 +8,11 @@ const ROOT_FILES = [".env.example", "render.yaml", "wrangler.toml", "package.jso
 const IGNORED_DIRS = new Set(["node_modules", "dist", ".git", ".wrangler"]);
 
 export const CONFIG_DEFINITIONS = [
+  { key: "BOT_SECOND_TOKEN", kind: "secret", owner: "Render Web Service", storage: "Render environment secret", required: [".env.example", "render.yaml", "src/middlewares/telegramAuth.js", "src/routes/productionApi.js", "src/server.js"] },
+  { key: "BOT_SECOND_USERNAME", kind: "public", owner: "Render Web Service", storage: "Render environment variable", required: [".env.example", "render.yaml", "src/routes/productionApi.js"] },
+  { key: "BOT_SECOND_ADMIN_ID", kind: "public", owner: "Render Web Service", storage: "Render environment variable", required: [".env.example", "render.yaml", "src/middlewares/telegramAuth.js"] },
+  { key: "ADMIN_TELEGRAM_IDS_SECONDARY", kind: "sensitive-public", owner: "Render Web Service", storage: "Render environment variable; comma-separated admin IDs", required: [".env.example", "render.yaml", "src/middlewares/telegramAuth.js"] },
+  { key: "TELEGRAM_SECOND_WEBHOOK_SECRET", kind: "secret", owner: "Render Web Service", storage: "Render environment secret", required: [".env.example", "render.yaml", "src/routes/productionApi.js", "src/server.js"] },
   { key: "WEBHOOK_SECRET", kind: "secret", owner: "Render Web Service", storage: "Render environment secret", required: [".env.example", "render.yaml", "src/routes/productionApi.js", "src/server.js"] },
   { key: "VITE_API_BASE_URL", kind: "public", owner: "GitHub Actions → Cloudflare Pages build", storage: "GitHub Actions Repository Variable", required: [".env.example", ".github/workflows/deploy-cloudflare.yml", "mini-app/src/services/api.js"] },
   { key: "ADMIN_WEBAPP_URL", kind: "public", owner: "Render Web Service", storage: "Render environment variable", required: [".env.example", "render.yaml", "src/routes/productionApi.js"] },

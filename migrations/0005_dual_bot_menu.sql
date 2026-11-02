@@ -27,3 +27,9 @@ CREATE TABLE IF NOT EXISTS telegram_bot_menu_messages (
   PRIMARY KEY (bot_key,chat_id)
 );
 CREATE INDEX IF NOT EXISTS idx_telegram_bot_menu_messages_updated ON telegram_bot_menu_messages(bot_key,updated_at DESC);
+
+-- Preserve the single-bot webhook idempotency and menu history during upgrade.
+INSERT OR IGNORE INTO processed_telegram_updates(bot_key,update_id,processed_at)
+SELECT 'primary',update_id,processed_at FROM processed_updates;
+INSERT OR IGNORE INTO telegram_bot_menu_messages(bot_key,chat_id,message_id,updated_at)
+SELECT 'primary',chat_id,message_id,updated_at FROM telegram_menu_messages;
