@@ -638,28 +638,30 @@
     node.classList.toggle('offline',!online);
   }
 
-  function connectAdminRealtime() {
-    if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped || window.__hendyRuntimePolling) return;
-    window.__hendyRuntimePolling = true;
-    const pollRuntime = async () => {
-      if (realtimeStopped || !state.boot || !state.boot.isAdmin) {
-        window.__hendyRuntimePolling = false;
-        return;
-      }
-      try {
-        const snapshot = await api('/api/admin/runtime');
-        const bots = snapshot.bots || [];
-        const current = bots.find(item => item.key === botKey);
-        setRealtimeStatus(
-          current ? 'PHP · ' + botKey + ' · ' + current.status : 'PHP server online',
-          Boolean(current && current.configured)
-        );
-      } catch (error) {
-        setRealtimeStatus('Không lấy được trạng thái máy chủ', false);
-      }
-      window.setTimeout(pollRuntime, 5000);
-    };
-    pollRuntime();
+  async function connectAdminRealtime() {
+    if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped || realtimeSocket) return;
+    try {
+      const auth = await api('/api/admin/realtime-ticket','POST',{});
+      realtimeSocket = new WebSocket(auth.url);
+      realtimeSocket.addEventListener('open', () => realtimeSocket.send(JSON.stringify({type:'auth',ticket:auth.ticket})));
+      realtimeSocket.addEventListener('message', event => {
+        let message; try { message = JSON.parse(event.data); } catch { return; }
+        if (message.type === 'realtime.ready') { setRealtimeStatus('WebSocket · đang kết nối',true); return; }
+        if (message.type === 'auth.failed') { setRealtimeStatus('Xác thực realtime thất bại',false); return; }
+        if (message.type && message.type.startsWith('admin.')) {
+          setRealtimeStatus('WebSocket · vừa cập nhật',true);
+          if (state.page === 'admin') renderPage();
+        }
+      });
+      realtimeSocket.addEventListener('close', () => {
+        realtimeSocket = null;
+        if (!realtimeStopped) { setRealtimeStatus('Đang kết nối lại realtime…',false); realtimeRetry = window.setTimeout(connectAdminRealtime,3000); }
+      });
+      realtimeSocket.addEventListener('error', () => setRealtimeStatus('Realtime tạm thời gián đoạn',false));
+    } catch (error) {
+      setRealtimeStatus('WebSocket chưa sẵn sàng',false);
+      if (!realtimeStopped) realtimeRetry = window.setTimeout(connectAdminRealtime,5000);
+    }
   }
 
   function navigate(page) {
