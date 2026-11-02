@@ -8,12 +8,26 @@ function readInitData(req) {
   return String(req.headers["x-telegram-init-data"] || "").trim();
 }
 
+export function getTelegramBotToken(botKey = "primary") {
+  return String(botKey === "secondary" ? process.env.BOT_SECOND_TOKEN || "" : process.env.BOT_TOKEN || "").trim();
+}
+export function getTelegramAdminIds(botKey = "primary") {
+  const primary = String(process.env.ADMIN_TELEGRAM_IDS || "").split(",").map((value) => value.trim()).filter(Boolean);
+  if (botKey === "secondary") {
+    const secondary = String(process.env.ADMIN_TELEGRAM_IDS_SECONDARY || process.env.BOT_SECOND_ADMIN_ID || "").split(",").map((value) => value.trim()).filter(Boolean);
+    return secondary.length ? secondary : primary;
+  }
+  return primary;
+}
 export async function requireTelegramAuth(req, res, next) {
   try {
-    const token = process.env.BOT_TOKEN;
-    if (!token) {
-      return res.status(503).json({ error: "Xác thực Telegram chưa được cấu hình.", code: "AUTH_NOT_CONFIGURED" });
-    }
+    const requestedBot = String(req.headers["x-telegram-bot-key"] || "primary").trim();
+    if (!["primary", "secondary"].includes(requestedBot)) return res.status(400).json({ error: "Bot key không hợp lệ.", code: "BOT_KEY_INVALID" });
+    const token = getTelegramBotToken(requestedBot);
+    if (!token) return res.status(requestedBot === "secondary" ? 404 : 503).json({
+      error: requestedBot === "secondary" ? "Bot phụ chưa được cấu hình." : "Xác thực Telegram chưa được cấu hình.",
+      code: requestedBot === "secondary" ? "SECONDARY_BOT_NOT_CONFIGURED" : "AUTH_NOT_CONFIGURED"
+    });
     const initData = readInitData(req);
     const checked = verifyTelegramWebAppData(initData, token, {
       maxAgeSeconds: Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 86400)
@@ -28,6 +42,7 @@ export async function requireTelegramAuth(req, res, next) {
     }
     req.telegramUser = checked.user;
     req.telegramAuthDate = checked.authDate;
+    req.botKey = requestedBot;
     next();
   } catch (error) {
     next(error);
@@ -35,10 +50,7 @@ export async function requireTelegramAuth(req, res, next) {
 }
 
 export function requireAdmin(req, res, next) {
-  const configured = String(process.env.ADMIN_TELEGRAM_IDS || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const configured = getTelegramAdminIds(req.botKey || "primary");
   if (configured.length === 0) {
     return res.status(503).json({ error: "Chưa cấu hình ADMIN_TELEGRAM_IDS.", code: "ADMIN_NOT_CONFIGURED" });
   }
@@ -48,10 +60,6 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
-export function isTelegramAdmin(telegramId) {
-  const configured = String(process.env.ADMIN_TELEGRAM_IDS || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return configured.includes(String(telegramId));
+export function isTelegramAdmin(telegramId, botKey = "primary") {
+  return getTelegramAdminIds(botKey).includes(String(telegramId));
 }
