@@ -687,6 +687,22 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
+
+  // Ripple phản hồi thao tác cho mọi nút, không chặn sự kiện nghiệp vụ.
+  document.addEventListener('pointerdown', event => {
+    const button = event.target.closest('button:not(:disabled)');
+    if (!button || event.button !== 0) return;
+    const rect = button.getBoundingClientRect();
+    const diameter = Math.max(rect.width, rect.height);
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = diameter + 'px';
+    ripple.style.left = (event.clientX - rect.left - diameter / 2) + 'px';
+    ripple.style.top = (event.clientY - rect.top - diameter / 2) + 'px';
+    button.appendChild(ripple);
+    window.setTimeout(() => ripple.remove(), 650);
+  }, {passive:true});
+
   document.addEventListener('click', async event => {
     const pageButton = event.target.closest('[data-page]');
     if (pageButton) { navigate(pageButton.dataset.page); return; }
@@ -813,7 +829,15 @@
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
     try {
-      if (form.id === 'admin-module-upload') {\n        const file = form.elements.file.files[0];\n        if (!file) throw new Error('Chọn tệp cần tải lên.');\n        const payload = new FormData(form);\n        const response = await fetch('/api/admin/modules/upload',{method:'POST',headers:{'x-telegram-init-data':initData,'x-telegram-bot-key':botKey},body:payload});\n        const result = await response.json();\n        if (!response.ok) throw new Error(result.error || 'Không thể tải tệp lên.');\n        toast(result.message); await renderPage();\n      } else if (form.id === 'custom-topup') {
+      if (form.id === 'admin-module-upload') {
+        const file = form.elements.file.files[0];
+        if (!file) throw new Error('Chọn tệp cần tải lên.');
+        const payload = new FormData(form);
+        const response = await fetch('/api/admin/modules/upload',{method:'POST',headers:{'x-telegram-init-data':initData,'x-telegram-bot-key':botKey},body:payload});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Không thể tải tệp lên.');
+        toast(result.message); await renderPage();
+      } else if (form.id === 'custom-topup') {
         const amount = Number(data.amount);
         if (!Number.isSafeInteger(amount) || amount < 10000) throw new Error('Số tiền tối thiểu là 10.000 VNĐ.');
         await showQr(amount);
