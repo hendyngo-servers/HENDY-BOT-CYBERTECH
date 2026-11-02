@@ -41,9 +41,9 @@ jobs:
 
       - name: Create feature files
         env:
-          FEATURE_NAME: \${{ inputs.feature_name }}
-          FEATURE_CATEGORY: \${{ inputs.category }}
-          FEATURE_DESCRIPTION: \${{ inputs.description }}
+          FEATURE_NAME: ${{ inputs.feature_name }}
+          FEATURE_CATEGORY: ${{ inputs.category }}
+          FEATURE_DESCRIPTION: ${{ inputs.description }}
         run: |
           php scripts/scaffold-feature.php \
             --name "$FEATURE_NAME" \
@@ -53,14 +53,14 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: \${{ secrets.GITHUB_TOKEN }}
-          branch: scaffold/\${{ inputs.feature_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: scaffold/${{ inputs.feature_name }}
           delete-branch: true
-          commit-message: "chore(scaffold): add \${{ inputs.feature_name }} feature"
-          title: "Scaffold feature: \${{ inputs.feature_name }}"
+          commit-message: "chore(scaffold): add ${{ inputs.feature_name }} feature"
+          title: "Scaffold feature: ${{ inputs.feature_name }}"
           body: |
-            Tạo scaffold PHP cho feature \${{ inputs.feature_name }}.
-            Loại: \${{ inputs.category }}
-            Mô tả: \${{ inputs.description }}
+            Tạo scaffold PHP cho feature ${{ inputs.feature_name }}.
+            Loại: ${{ inputs.category }}
+            Mô tả: ${{ inputs.description }}
 
             Feature mặc định disabled. Cần review quyền, dữ liệu, migration và test trước khi bật.
