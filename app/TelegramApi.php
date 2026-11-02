@@ -47,11 +47,16 @@ final class TelegramApi
 
         $decoded = json_decode((string) $response, true);
         if (!is_array($decoded) || !($decoded['ok'] ?? false) || $status < 200 || $status >= 300) {
-            $description = is_array($decoded) ? (string) ($decoded['description'] ?? 'Telegram API trả về lỗi.') : 'Phản hồi Telegram không hợp lệ.';
-            throw new RuntimeException($description);
+            $description = is_array($decoded)
+                ? (string) ($decoded['description'] ?? 'Telegram API trả về lỗi.')
+                : 'Phản hồi Telegram không hợp lệ.';
+            $errorCode = is_array($decoded) ? (int) ($decoded['error_code'] ?? $status) : $status;
+            throw new RuntimeException('Telegram API lỗi ' . $errorCode . ': ' . $description);
         }
 
-        return is_array($decoded['result'] ?? null) ? $decoded['result'] : ['value' => $decoded['result'] ?? null];
+        return is_array($decoded['result'] ?? null)
+            ? $decoded['result']
+            : ['value' => $decoded['result'] ?? null];
     }
 
     public function sendMessage(string $chatId, string $text, array $options = []): array
