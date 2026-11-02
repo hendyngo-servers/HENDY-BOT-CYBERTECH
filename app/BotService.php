@@ -67,6 +67,8 @@ final class BotService
             $this->handleCallback($update['callback_query']);
         }
 
+        Realtime::publish('bot.update', ['botKey' => $this->botKey, 'updateId' => $updateId, 'kind' => isset($update['message']) ? 'message' : (isset($update['callback_query']) ? 'callback' : 'other')]);
+
         if ($updateId !== null) {
             Database::run(
                 'INSERT INTO telegram_updates (bot_key, update_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
