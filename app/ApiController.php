@@ -42,6 +42,16 @@ final class ApiController
         $this->headers = $headers;
     }
 
+    public function uploadModule(array $file, string $module): array
+    {
+        try { $this->user = TelegramAuth::authenticateRequest(); } catch (Throwable $error) { throw new HttpException(401, 'Yêu cầu xác thực Telegram.'); }
+        $this->requireAdmin();
+        try { $artifact = ModuleRegistry::stage($file, $module, (string) $this->user['id']); }
+        catch (Throwable $error) { throw new HttpException(400, $error->getMessage()); }
+        $this->audit('module.upload', (string) ($artifact['id'] ?? ''), ['module' => $module, 'status' => 'pending_review']);
+        return self::response(['artifact' => $artifact, 'message' => 'Tệp đã vào vùng chờ kiểm duyệt; chưa được thực thi hoặc phát hành.'], 201);
+    }
+
     public function handle(string $method, string $path): array
     {
         if ($method === 'GET' && $path === '/api/health') {
