@@ -144,7 +144,7 @@ Khi thay Blueprint trên một service đã tồn tại, đừng giả định c
 
 Nếu dùng chính PostgreSQL hiện tại, giữ đúng connection string đang chứa dữ liệu; không tạo database mới thay thế trước khi sao lưu và đối soát. Blueprint dùng database tên hendy-bot-tele-db; nếu Render báo xung đột resource khi áp dụng, cần ghép service với database hiện hữu trong Dashboard thay vì xóa database đang có.
 
-## Endpoint chính
+## Realtime, module và kho ứng dụng\n\nDashboard Admin có tab Tệp & Module. Tệp tải lên (JSON/MD/TXT/CSS/HTML/ảnh, tối đa 2 MB) được lưu ở vùng cách ly riêng trong persistent disk, kiểm tra MIME và SHA-256, trạng thái ban đầu pending_review; không có chức năng thực thi code hoặc tự ghi đè production. Mọi thay đổi mã nguồn phải qua Pull Request và CI.\n\nRealtime dùng PHP Ratchet trong service Render riêng. Sau khi Blueprint tạo service `hendy-bot-tele-realtime`, đặt `WEBSOCKET_URL` ở service API thành URL `wss://...` của service realtime.\n\nCác adapter App Store Connect, Google Play và Microsoft Store mới là khung tích hợp. Chưa có credential/API permissions hoặc luồng upload/submit/publish hoạt động; cần thiết lập riêng theo tài khoản nhà phát hành. Xem `docs/REALTIME-MODULES-AND-STORES.md`.\n\n## Endpoint chính
 
 - GET /: Dashboard / Telegram Mini App.
 - GET /healthz: Health check cho Render.
@@ -153,7 +153,7 @@ Nếu dùng chính PostgreSQL hiện tại, giữ đúng connection string đang
 - POST /webhook/telegram/secondary: webhook BOT2 (khi bật).
 - POST /webhook/bank: callback ngân hàng, yêu cầu header x-bank-webhook-secret.
 - /api/bootstrap, /api/products, /api/me, /api/orders, /api/wallet, /api/referrals, /api/giftcodes/redeem, /api/support/tickets, /api/matchmaking, /api/vip.
-- /api/admin/*: Dashboard quản trị; mọi yêu cầu phải có Telegram WebApp initData hợp lệ và trùng ADMIN_ID.
+- /api/admin/*: Dashboard quản trị; mọi yêu cầu phải có Telegram WebApp initData hợp lệ và trùng ADMIN_ID.\n- POST /api/admin/realtime-ticket: cấp ticket WebSocket ngắn hạn.\n- GET /api/admin/modules và POST /api/admin/modules/upload: quản lý tệp chờ kiểm duyệt.
 
 ## GitHub Actions / kiểm tra
 
