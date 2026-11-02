@@ -85,6 +85,10 @@ jobs:
           ! grep -Eq '^DATABASE_URL=.*(PGPASSWORD=|[[:space:]]psql[[:space:]])' .env.example
           grep -q 'preDeployCommand: php bin/migrate.php' render.yaml
           ! grep -q 'php bin/migrate.php' docker/start.sh
+          grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
+          grep -q 'getMe()' bin/register-webhooks.php
+          grep -q '401 Unauthorized' bin/register-webhooks.php
+          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
 
       - name: Verify deployment files
         run: |
