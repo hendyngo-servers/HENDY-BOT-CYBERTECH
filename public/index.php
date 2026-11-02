@@ -14,6 +14,7 @@ require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/BotService.php';
+require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ApiController.php';
 
 Env::load(dirname(__DIR__) . '/.env');
