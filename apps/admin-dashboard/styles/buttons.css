@@ -65,3 +65,15 @@ button:disabled {
 .nav-btn.active { color:#245bd0; background:#e8efff; }
 .icon-btn { color:#36568e; background:#fff; border:1px solid #dce5ff; }
 button:not(:disabled):hover { filter:brightness(1.035); }
+
+
+/* Ripple interaction layer */
+button { position:relative; overflow:hidden; isolation:isolate; }
+.ripple { position:absolute; z-index:0; border-radius:50%; pointer-events:none; transform:scale(0); background:rgba(255,255,255,.38); animation:ripple-effect 600ms linear; }
+.secondary .ripple,.tiny-btn .ripple,.icon-btn .ripple,.nav-btn .ripple,.admin-tab .ripple { background:rgba(20,50,110,.16); }
+@keyframes ripple-effect { to { transform:scale(4); opacity:0; } }
+button.is-loading { opacity:.72; cursor:wait; pointer-events:none; }
+button.is-loading::after { content:''; width:14px; height:14px; margin-left:8px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:button-spin .7s linear infinite; }
+button.is-success { background:linear-gradient(115deg,var(--btn-success-start),var(--btn-success-end)); color:#fff; }
+@keyframes button-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .ripple,button.is-loading::after { animation-duration:.01ms; } }
