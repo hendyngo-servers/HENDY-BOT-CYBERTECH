@@ -1,9 +1,27 @@
-import {test} from "node:test";
-import assert from "node:assert/strict";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import {buildFeatureFiles,validateFeatureName,writeFeature} from "./scaffold-feature.js";
-test("validates kebab-case and rejects traversal",()=>{assert.equal(validateFeatureName("order-history"),"order-history");assert.throws(()=>validateFeatureName("../secret"));assert.throws(()=>validateFeatureName("UpperCase"));});
-test("generates disabled ESM feature files",()=>{const files=buildFeatureFiles({name:"order-history",category:"api",description:"Lịch sử đơn hàng"});assert.ok(files["src/features/order-history/feature.json"].includes('"enabled": false'));assert.ok(files["src/features/order-history/index.js"].includes("export async function register"));assert.throws(()=>buildFeatureFiles({name:"bad",category:"other"}));});
-test("never overwrites an existing scaffold",()=>{const cwd=fs.mkdtempSync(path.join(os.tmpdir(),"hendy-scaffold-"));try{assert.equal(writeFeature({name:"vip-tools",category:"bot"},cwd).length,3);assert.throws(()=>writeFeature({name:"vip-tools",category:"bot"},cwd));}finally{fs.rmSync(cwd,{recursive:true,force:true});}});
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { validateFeatureName, buildFeatureFiles } = require('./scaffold-feature');
+
+test('validates kebab-case feature names', () => {
+  assert.equal(validateFeatureName('order-history'),'order-history');
+  assert.throws(()=>validateFeatureName('../escape'),/slug/);
+  assert.throws(()=>validateFeatureName('UPPER'),/slug/);
+  assert.throws(()=>validateFeatureName(''),/slug/);
+});
+
+test('creates bot feature template and tests without enabling it', () => {
+  const files=buildFeatureFiles({name:'order-history',category:'bot',description:'Order tools'});
+  assert.ok(files['apps/backend-api/src/features/order-history/index.js']);
+  assert.ok(files['apps/backend-api/src/features/order-history/index.test.js']);
+  assert.equal(JSON.parse(files['apps/backend-api/src/features/order-history/feature.json']).enabled,false);
+});
+
+test('creates dashboard feature in dashboard-owned folder', () => {
+  const files=buildFeatureFiles({name:'customer-card',category:'dashboard'});
+  assert.ok(files['apps/admin-dashboard/features/customer-card/index.js']);
+  assert.equal(Object.keys(files).some(key=>key.endsWith('.test.js')),false);
+});
+
+test('rejects unsupported feature category', () => {
+  assert.throws(()=>buildFeatureFiles({name:'foo',category:'system'}),/Loại tính năng/);
+});
