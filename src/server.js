@@ -110,24 +110,25 @@ server.listen(PORT, "0.0.0.0", async () => {
       console.error("[Hendy Bot] Không thể tự đăng ký webhook: thiếu BASE_URL, BOT_TOKEN hoặc WEBHOOK_SECRET.");
       return;
     }
-    try {
-      const endpoint = new URL("/api/telegram/webhook", baseUrl);
-      if (endpoint.protocol !== "https:") throw new Error("Webhook URL phải sử dụng HTTPS.");
-      const response = await fetch("https://api.telegram.org/bot" + token + "/setWebhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: endpoint.toString(),
-          secret_token: secret,
-          allowed_updates: ["message", "edited_message", "callback_query"]
-        }),
-        signal: AbortSignal.timeout(10000)
-      });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.description || "Telegram setWebhook thất bại.");
-      console.log("[Hendy Bot] Telegram webhook registered: " + endpoint.toString());
-    } catch (error) {
-      console.error("[Hendy Bot] Webhook registration failed: " + error.message);
+    const registrations = [{key:"primary",token,secret,path:"/api/telegram/webhook"}];
+    if (process.env.BOT_SECOND_TOKEN) registrations.push({
+      key:"secondary", token:process.env.BOT_SECOND_TOKEN,
+      secret:process.env.TELEGRAM_SECOND_WEBHOOK_SECRET, path:"/api/telegram/webhook/secondary"
+    });
+    for (const bot of registrations) {
+      if (!bot.secret) { console.error("[Hendy Bot] Webhook " + bot.key + " bỏ qua: thiếu secret riêng."); continue; }
+      try {
+        const endpoint = new URL(bot.path,baseUrl);
+        if (endpoint.protocol !== "https:") throw new Error("Webhook URL phải dùng HTTPS.");
+        const response = await fetch("https://api.telegram.org/bot" + bot.token + "/setWebhook", {
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({url:endpoint.toString(),secret_token:bot.secret,allowed_updates:["message","edited_message","callback_query"]}),
+          signal:AbortSignal.timeout(10000)
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.description || "Telegram setWebhook thất bại.");
+        console.log("[Hendy Bot] Telegram webhook registered (" + bot.key + "): " + endpoint.toString());
+      } catch (error) { console.error("[Hendy Bot] Webhook registration failed (" + bot.key + "): " + error.message); }
     }
   }
 });

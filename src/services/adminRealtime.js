@@ -38,7 +38,8 @@ function publicConfig(settings) {
     news_channel_url: settings.news_channel_url,
     support_url: settings.support_url,
     ui_theme: settings.ui_theme,
-    menu_config: settings.menu_config
+    menu_config: settings.menu_config,
+    bot_menu: settings.bot_menu
   };
 }
 
@@ -62,7 +63,7 @@ export function attachAdminRealtime(server) {
   });
 
   wss.on("connection", (socket) => {
-    const client = { socket, userId: null, isAdmin: false, authenticated: false, alive: true };
+    const client = { socket, userId: null, botKey: "primary", isAdmin: false, authenticated: false, alive: true };
     clients.add(client);
     const authTimeout = setTimeout(() => {
       if (!client.authenticated) socket.close(4001, "Telegram authentication required");
@@ -81,7 +82,7 @@ export function attachAdminRealtime(server) {
         }
         const checked = verifyTelegramWebAppData(
           message.initData,
-          process.env.BOT_TOKEN || "",
+          message.botKey === "secondary" ? process.env.BOT_SECOND_TOKEN || "" : process.env.BOT_TOKEN || "",
           { maxAgeSeconds: Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 86400) }
         );
         if (!checked.valid || !checked.user?.id) {
@@ -89,12 +90,13 @@ export function attachAdminRealtime(server) {
           return;
         }
         client.userId = String(checked.user.id);
-        client.isAdmin = isTelegramAdmin(client.userId);
+        client.botKey = message.botKey === "secondary" && process.env.BOT_SECOND_TOKEN ? "secondary" : "primary";
+        client.isAdmin = isTelegramAdmin(client.userId, client.botKey);
         client.authenticated = true;
         clearTimeout(authTimeout);
         try {
-          const settings = await getBotSettings();
-          send(socket, "auth.ok", { userId: client.userId, isAdmin: client.isAdmin });
+          const settings = await getBotSettings(client.botKey);
+          send(socket, "auth.ok", { userId: client.userId, isAdmin: client.isAdmin, botKey: client.botKey });
           send(socket, "public_config", publicConfig(settings));
           if (client.isAdmin) {
             send(socket, "admin.ready", { runtimeConfigAvailable: Boolean(process.env.RENDER_API_KEY && process.env.RENDER_SERVICE_ID) });

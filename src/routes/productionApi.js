@@ -1,7 +1,7 @@
 import express from "express";
 import crypto from "node:crypto";
 import multer from "multer";
-import { executeD1Query, d1First, getD1Health, getBotSettings, setBotSetting, writeAdminAudit } from "../services/productionD1.js";
+import { executeD1Query, d1First, getD1Health, getBotSettings, setBotSetting, setTelegramBotConfig, writeAdminAudit } from "../services/productionD1.js";
 import { requireTelegramAuth, requireAdmin, isTelegramAdmin } from "../middlewares/telegramAuth.js";
 import { buildMainKeyboard } from "../services/telegramKeyboard.js";
 import { broadcastPublicConfigUpdate, broadcastRealtime } from "../services/adminRealtime.js";
@@ -96,8 +96,8 @@ async function ensureUser(user) {
   return record;
 }
 
-async function sendTelegram(method, payload) {
-  const token = process.env.BOT_TOKEN;
+async function sendTelegram(method, payload, botKey = "primary") {
+  const token = botKey === "secondary" ? process.env.BOT_SECOND_TOKEN : process.env.BOT_TOKEN;
   if (!token) {
     const error = new Error("BOT_TOKEN chưa được cấu hình.");
     error.status = 503;
@@ -120,19 +120,20 @@ async function sendTelegram(method, payload) {
 
 
 
-async function handleTelegramUpdate(update) {
+async function handleTelegramUpdate(update, botKey = "primary") {
   const message = update.message || update.edited_message;
   const callback = update.callback_query;
-  const settings = await getBotSettings();
+  const settings = await getBotSettings(botKey);
+  const telegram = (method, payload) => telegram(method, payload, botKey);
 
   if (callback) {
-    await sendTelegram("answerCallbackQuery", { callback_query_id: callback.id });
+    await telegram("answerCallbackQuery", { callback_query_id: callback.id });
     const chatId = callback.message?.chat?.id;
     if (chatId && String(callback.data || "").startsWith("open_")) {
-      await sendTelegram("sendMessage", {
+      await telegram("sendMessage", {
         chat_id: chatId,
         text: "Vui lòng mở Mini App từ nút chức năng trong menu.",
-        reply_markup: buildMainKeyboard(process.env, settings)
+        reply_markup: buildMainKeyboard(process.env, settings, botKey)
       });
     }
     return;
@@ -151,17 +152,17 @@ async function handleTelegramUpdate(update) {
     [telegramId, from.username || null, text(from.first_name, 100), text(from.last_name, 100), text(from.language_code || "vi", 12)]
   );
 
-  const admin = isTelegramAdmin(telegramId);
+  const admin = isTelegramAdmin(telegramId, botKey);
   if (settings.maintenance_mode && !admin) {
     if (message.chat?.id) {
-      await sendTelegram("sendMessage", { chat_id: message.chat.id, text: settings.maintenance_message });
+      await telegram("sendMessage", { chat_id: message.chat.id, text: settings.maintenance_message });
     }
     return;
   }
 
   if (message.web_app_data?.data) {
     if (message.chat?.id) {
-      await sendTelegram("sendMessage", { chat_id: message.chat.id, text: "Đã nhận dữ liệu từ Mini App." });
+      await telegram("sendMessage", { chat_id: message.chat.id, text: "Đã nhận dữ liệu từ Mini App." });
     }
     return;
   }
@@ -169,12 +170,22 @@ async function handleTelegramUpdate(update) {
   const raw = text(message.text, 4000);
   const command = raw.split(/\s+/)[0].split("@")[0].toLowerCase();
   const chatId = message.chat?.id;
-  if (!chatId || !raw.startsWith("/")) return;
+  if (!chatId) return;
+  if (!raw.startsWith("/")) {
+    const community = {
+      "👥 NHÓM CHAT": settings.group_chat_url || process.env.GROUP_CHAT_URL,
+      "📢 KÊNH THÔNG BÁO": settings.news_channel_url || process.env.NEWS_CHANNEL_URL,
+      "☎️ LIÊN HỆ CSKH": settings.support_url || process.env.SUPPORT_URL
+    };
+    if (community[raw]) await telegram("sendMessage", { chat_id: chatId, text: community[raw] });
+    return;
+  }
 
   if (command === "/start") {
     const user = await d1First("SELECT balance FROM users WHERE telegram_id=?", [telegramId]);
     const lines = [
       settings.welcome_message,
+      settings.bot_menu?.intro_text || "",
       "",
       "Xin chào " + name + "!",
       "Số dư ví: " + Number(user?.balance || 0).toLocaleString("vi-VN") + " VNĐ",
@@ -182,37 +193,38 @@ async function handleTelegramUpdate(update) {
       "Chọn chức năng bạn cần ở menu bên dưới."
     ];
     if (admin) lines.push("", "Bạn có quyền quản trị. Sử dụng /admin để mở bảng điều khiển.");
-    const sent = await sendTelegram("sendMessage", { chat_id: chatId, text: lines.join("\n"), reply_markup: buildMainKeyboard(process.env, settings) });
+    const sent = await telegram("sendMessage", { chat_id: chatId, text: lines.join("\n"), reply_markup: buildMainKeyboard(process.env, settings, botKey) });
     if (sent?.message_id) {
       // Menu persistence is best-effort during a rolling deployment where the D1 migration may still be applying.
       await executeD1Query(
-        "INSERT INTO telegram_menu_messages(chat_id,message_id,updated_at) VALUES(?,?,datetime('now')) " +
-        "ON CONFLICT(chat_id) DO UPDATE SET message_id=excluded.message_id,updated_at=datetime('now')",
-        [String(chatId), Number(sent.message_id)]
+        "INSERT INTO telegram_bot_menu_messages(bot_key,chat_id,message_id,updated_at) VALUES(?,?,?,datetime('now')) " +
+        "ON CONFLICT(bot_key,chat_id) DO UPDATE SET message_id=excluded.message_id,updated_at=datetime('now')",
+        [botKey, String(chatId), Number(sent.message_id)]
       ).catch((error) => console.warn("Could not track Telegram menu message:", error.message));
     }
   } else if (command === "/help") {
-    await sendTelegram("sendMessage", {
+    await telegram("sendMessage", {
       chat_id: chatId,
       text: "/start - Mở menu dịch vụ\n/help - Hướng dẫn\n/id - Xem Telegram ID\n/wallet - Kiểm tra số dư" + (admin ? "\n/admin - Bảng quản trị" : "")
     });
   } else if (command === "/id") {
-    await sendTelegram("sendMessage", { chat_id: chatId, text: "Telegram ID: " + telegramId });
+    await telegram("sendMessage", { chat_id: chatId, text: "Telegram ID: " + telegramId });
   } else if (command === "/wallet") {
     const user = await d1First("SELECT balance,voucher_balance FROM users WHERE telegram_id=?", [telegramId]);
-    await sendTelegram("sendMessage", {
+    await telegram("sendMessage", {
       chat_id: chatId,
       text: "Số dư: " + Number(user?.balance || 0).toLocaleString("vi-VN") + " VNĐ\nVoucher: " + Number(user?.voucher_balance || 0).toLocaleString("vi-VN")
     });
   } else if (command === "/admin") {
     if (!admin) {
-      await sendTelegram("sendMessage", { chat_id: chatId, text: "Bạn không có quyền quản trị." });
+      await telegram("sendMessage", { chat_id: chatId, text: "Bạn không có quyền quản trị." });
     } else {
-      const target = process.env.ADMIN_WEBAPP_URL || process.env.WEBAPP_URL;
+      let target = process.env.ADMIN_WEBAPP_URL || process.env.WEBAPP_URL;
+      if (target) { const adminUrl = new URL(target); adminUrl.searchParams.set("bot", botKey); target = adminUrl.toString(); }
       if (!target) {
-        await sendTelegram("sendMessage", { chat_id: chatId, text: "Chưa cấu hình ADMIN_WEBAPP_URL." });
+        await telegram("sendMessage", { chat_id: chatId, text: "Chưa cấu hình ADMIN_WEBAPP_URL." });
       } else {
-        await sendTelegram("sendMessage", {
+        await telegram("sendMessage", {
           chat_id: chatId,
           text: "Trung tâm quản trị Hendy Bot",
           reply_markup: { inline_keyboard: [[{ text: "MỞ BẢNG QUẢN TRỊ", web_app: { url: target } }]] }
@@ -220,7 +232,7 @@ async function handleTelegramUpdate(update) {
       }
     }
   } else if (command === "/status") {
-    await sendTelegram("sendMessage", { chat_id: chatId, text: "Bot đang hoạt động. Dữ liệu nghiệp vụ được lưu tại Cloudflare D1." });
+    await telegram("sendMessage", { chat_id: chatId, text: "Bot đang hoạt động. Dữ liệu nghiệp vụ được lưu tại Cloudflare D1." });
   }
 }
 
@@ -237,34 +249,39 @@ router.get("/health", asyncRoute(async (_req, res) => {
 }));
 
 // Telegram webhook is authenticated by Telegram's dedicated secret header, not WebApp initData.
-router.post("/telegram/webhook", asyncRoute(async (req, res) => {
-  const expected = process.env.WEBHOOK_SECRET;
-  if (!expected || !constantTimeEqual(req.get("x-telegram-bot-api-secret-token"), expected)) {
+async function acceptTelegramWebhook(req,res,botKey) {
+  const expected = botKey === "secondary" ? process.env.TELEGRAM_SECOND_WEBHOOK_SECRET : process.env.WEBHOOK_SECRET;
+  if (!expected || !constantTimeEqual(req.get("x-telegram-bot-api-secret-token"), expected))
     return res.status(401).json({ error: "Webhook secret không hợp lệ." });
-  }
+  if (botKey === "secondary" && !process.env.BOT_SECOND_TOKEN)
+    return res.status(404).json({ error: "Bot phụ chưa được cấu hình." });
   const update = req.body || {};
-  if (update.update_id === undefined || update.update_id === null) {
+  if (update.update_id === undefined || update.update_id === null)
     return res.status(400).json({ error: "Telegram update thiếu update_id." });
-  }
   const updateId = String(update.update_id);
-  const inserted = await d1First("INSERT OR IGNORE INTO processed_updates(update_id) VALUES(?) RETURNING update_id", [updateId]);
+  const inserted = await d1First(
+    "INSERT OR IGNORE INTO processed_telegram_updates(bot_key,update_id) VALUES(?,?) RETURNING update_id",
+    [botKey, updateId]
+  );
   if (!inserted) return res.json({ ok: true, duplicate: true });
-
   const eventType = update.message ? "message" : update.callback_query ? "callback_query" : "other";
   const telegramId = update.message?.from?.id || update.callback_query?.from?.id || null;
+  const eventId = botKey + ":" + updateId;
   try {
-    await handleTelegramUpdate(update);
+    await handleTelegramUpdate(update, botKey);
     await executeD1Query(
-      "INSERT INTO bot_events(update_id,event_type,telegram_user_id) VALUES(?,?,?) " +
-      "ON CONFLICT(update_id) DO NOTHING",
-      [updateId, eventType, telegramId ? String(telegramId) : null]
+      "INSERT INTO bot_events(update_id,event_type,telegram_user_id) VALUES(?,?,?) ON CONFLICT(update_id) DO NOTHING",
+      [eventId, eventType, telegramId ? String(telegramId) : null]
     );
     return res.json({ ok: true });
   } catch (error) {
-    await executeD1Query("DELETE FROM processed_updates WHERE update_id=?", [updateId]).catch(() => {});
+    await executeD1Query("DELETE FROM processed_telegram_updates WHERE bot_key=? AND update_id=?", [botKey, updateId]).catch(() => {});
     throw error;
   }
-}));
+}
+router.post("/telegram/webhook", asyncRoute((req,res)=>acceptTelegramWebhook(req,res,"primary")));
+router.post("/telegram/webhook/secondary", asyncRoute((req,res)=>acceptTelegramWebhook(req,res,"secondary")));
+
 
 router.get("/catalog", asyncRoute(async (req, res) => {
   const category = text(req.query.category || req.query.module, 80);
@@ -821,6 +838,58 @@ router.post("/admin/settings", requireAdmin, asyncRoute(async (req, res) => {
     telegramMenus: menuRefresh
   }, { adminOnly: true });
   res.json({ success: true, settings, menuRefresh });
+}));
+
+function validateBotMenuPayload(value) {
+  const allowed = ["mini_game_live","app_tool","buy_code","wallet","otp_proxy","vip_tools","support","pairing","referral","giftcode"];
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Cấu hình menu không hợp lệ.");
+  if (!["reply_keyboard","inline_keyboard"].includes(value.menu_mode)) throw new Error("Kiểu menu không hợp lệ.");
+  const columns = Number(value.menu_columns);
+  if (!Number.isInteger(columns) || columns < 1 || columns > 3) throw new Error("Số cột menu phải từ 1 đến 3.");
+  const raw = value.button_config && typeof value.button_config === "object" && !Array.isArray(value.button_config) ? value.button_config : {};
+  const button_config = {};
+  for (const module of allowed) {
+    const item = raw[module] || {};
+    const label = text(item.label,48);
+    if (!label) throw new Error("Nhãn nút " + module + " không được để trống.");
+    button_config[module] = {
+      label, description: text(item.description,160),
+      style: ["primary","success","danger"].includes(item.style) ? item.style : "primary",
+      enabled: item.enabled !== false
+    };
+  }
+  return {
+    menu_mode:value.menu_mode, intro_text:text(value.intro_text,1000) || "Chào mừng bạn đến với Hendy Bot.",
+    menu_columns:columns, persistent_keyboard:value.persistent_keyboard !== false,
+    resize_keyboard:value.resize_keyboard !== false, button_config
+  };
+}
+router.get("/admin/bot-menu", requireAdmin, asyncRoute(async (_req,res) => {
+  const [primary,secondary] = await Promise.all([getBotSettings("primary"),getBotSettings("secondary")]);
+  res.json({
+    bots:[
+      {botKey:"primary",configured:Boolean(process.env.BOT_TOKEN),username:process.env.BOT_USERNAME || ""},
+      {botKey:"secondary",configured:Boolean(process.env.BOT_SECOND_TOKEN),username:process.env.BOT_SECOND_USERNAME || ""}
+    ],
+    configs:{primary:primary.bot_menu,secondary:secondary.bot_menu}
+  });
+}));
+router.post("/admin/bot-menu", requireAdmin, asyncRoute(async (req,res) => {
+  const target = text(req.body?.botKey,20);
+  if (!["primary","secondary"].includes(target)) return res.status(400).json({error:"Bot cần cập nhật không hợp lệ."});
+  let config;
+  try { config = validateBotMenuPayload(req.body?.config); }
+  catch (error) { return res.status(400).json({error:error.message}); }
+  const adminId = String(req.telegramUser.id);
+  await setTelegramBotConfig(target,config,adminId);
+  const settings = await getBotSettings(target);
+  let menuRefresh = {botKey:target,updated:0,failed:0,total:0,skipped:false};
+  try { menuRefresh = await refreshTelegramMenuMessages(settings,target); }
+  catch (error) { menuRefresh.warning = "Đã lưu cấu hình nhưng chưa đồng bộ menu đã gửi: " + error.message; }
+  await writeAdminAudit(adminId,"telegram.bot_menu.update","telegram_bot",target,{menuMode:config.menu_mode,columns:config.menu_columns});
+  broadcastRealtime("telegram.bot_menu.updated",{botKey:target,menuRefresh},{adminOnly:true});
+  await broadcastPublicConfigUpdate(settings);
+  res.json({success:true,config:settings.bot_menu,menuRefresh});
 }));
 
 router.get("/admin/config/registry", requireAdmin, asyncRoute(async (_req, res) => {
