@@ -1017,7 +1017,7 @@ final class ApiController
             'stock' => $row['stock'] === null ? null : (int) $row['stock'],
             'vipLevel' => (int) $row['vip_level'],
             'imageUrl' => $row['image_url'] ?? '',
-            'isActive' => in_array(strtolower((string) $row['is_active']), ['1', 't', 'true', 'yes', 'on'], true),
+            'isActive' => filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN),
             'metadata' => self::jsonArray($row['metadata'] ?? []),
         ];
     }

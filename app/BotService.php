@@ -1092,7 +1092,7 @@ final class BotService
 
     private function toBool(mixed $value): bool
     {
-        return in_array(strtolower((string) $value), ['1', 't', 'true', 'yes', 'on'], true);
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     private static function jsonArray(mixed $value): array
