@@ -24,6 +24,16 @@ services:
         sync: false
       - key: ADMIN_TELEGRAM_IDS
         sync: false
+      - key: BOT_SECOND_TOKEN
+        sync: false
+      - key: BOT_SECOND_USERNAME
+        sync: false
+      - key: BOT_SECOND_ADMIN_ID
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS_SECONDARY
+        sync: false
+      - key: TELEGRAM_SECOND_WEBHOOK_SECRET
+        sync: false
       - key: BASE_URL
         sync: false
       - key: WEBAPP_URL

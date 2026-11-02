@@ -84,27 +84,60 @@ export async function getD1Health() {
   };
 }
 
-export async function getBotSettings() {
-  const result = await executeD1Query("SELECT key, value, updated_at FROM bot_settings ORDER BY key");
-  const values = Object.fromEntries(result.results.map((row) => [row.key, row.value]));
+export async function getBotSettings(botKey = "primary") {
+  if (!["primary","secondary"].includes(botKey)) throw new Error("Bot key không hợp lệ.");
+  const result = await executeD1Query("SELECT key,value,updated_at FROM bot_settings ORDER BY key");
+  const values = Object.fromEntries(result.results.map((row) => [row.key,row.value]));
+  const botConfig = await d1First(
+    "SELECT bot_key,menu_mode,intro_text,menu_columns,persistent_keyboard,resize_keyboard,button_config,updated_at FROM telegram_bot_configs WHERE bot_key=?",
+    [botKey]
+  );
+  let buttonConfig = {};
+  try { buttonConfig = JSON.parse(botConfig?.button_config || "{}"); } catch { buttonConfig = {}; }
+  const legacyMenu = (() => { try { return JSON.parse(values.menu_config || "[]"); } catch { return []; } })();
+  if (!Object.keys(buttonConfig).length && Array.isArray(legacyMenu)) {
+    for (const item of legacyMenu) if (item?.module) buttonConfig[item.module] = {
+      label:item.label || "",description:"",style:"primary",enabled:item.enabled !== false
+    };
+  }
+  const botMenu = {
+    bot_key:botKey,
+    configured:botKey === "primary" ? Boolean(process.env.BOT_TOKEN) : Boolean(process.env.BOT_SECOND_TOKEN),
+    menu_mode:botConfig?.menu_mode || (botKey === "secondary" ? "reply_keyboard" : "inline_keyboard"),
+    intro_text:botConfig?.intro_text || values.welcome_message || "Chào mừng bạn đến với Hendy Bot.",
+    menu_columns:Number(botConfig?.menu_columns || 2),
+    persistent_keyboard:botConfig ? Number(botConfig.persistent_keyboard) === 1 : true,
+    resize_keyboard:botConfig ? Number(botConfig.resize_keyboard) === 1 : true,
+    button_config:buttonConfig,updated_at:botConfig?.updated_at || null
+  };
   return {
-    maintenance_mode: values.maintenance_mode === "1",
-    maintenance_message: values.maintenance_message || "Hệ thống đang bảo trì. Vui lòng quay lại sau.",
-    welcome_message: values.welcome_message || "Xin chào! Chào mừng bạn đến với Hendy Bot.",
-    support_telegram: values.support_telegram || "",
-    language: values.language || "vi",
-    vietqr_bank: values.vietqr_bank || process.env.VIETQR_BANK_ID || "",
-    vietqr_account_no: values.vietqr_account_no || process.env.VIETQR_ACCOUNT_NO || "",
-    vietqr_account_name: values.vietqr_account_name !== undefined ? values.vietqr_account_name : (process.env.VIETQR_ACCOUNT_NAME || ""),
-    group_chat_url: values.group_chat_url !== undefined ? values.group_chat_url : (process.env.GROUP_CHAT_URL || ""),
-    news_channel_url: values.news_channel_url !== undefined ? values.news_channel_url : (process.env.NEWS_CHANNEL_URL || ""),
-    support_url: values.support_url !== undefined ? values.support_url : (process.env.SUPPORT_URL || ""),
-    ui_theme: (() => { try { return JSON.parse(values.ui_theme || "{}"); } catch { return {}; } })(),
-    menu_config: (() => { try { return JSON.parse(values.menu_config || "[]"); } catch { return []; } })(),
-    updated_at: result.results.reduce((latest, row) => row.updated_at > latest ? row.updated_at : latest, "")
+    maintenance_mode:values.maintenance_mode === "1",
+    maintenance_message:values.maintenance_message || "Hệ thống đang bảo trì. Vui lòng quay lại sau.",
+    welcome_message:values.welcome_message || "Xin chào! Chào mừng bạn đến với Hendy Bot.",
+    support_telegram:values.support_telegram || "",language:values.language || "vi",
+    vietqr_bank:values.vietqr_bank || process.env.VIETQR_BANK_ID || "",
+    vietqr_account_no:values.vietqr_account_no || process.env.VIETQR_ACCOUNT_NO || "",
+    vietqr_account_name:values.vietqr_account_name !== undefined ? values.vietqr_account_name : (process.env.VIETQR_ACCOUNT_NAME || ""),
+    group_chat_url:values.group_chat_url !== undefined ? values.group_chat_url : (process.env.GROUP_CHAT_URL || ""),
+    news_channel_url:values.news_channel_url !== undefined ? values.news_channel_url : (process.env.NEWS_CHANNEL_URL || ""),
+    support_url:values.support_url !== undefined ? values.support_url : (process.env.SUPPORT_URL || ""),
+    ui_theme:(()=>{try{return JSON.parse(values.ui_theme || "{}");}catch{return {};}})(),
+    menu_config:legacyMenu,bot_menu:botMenu,
+    updated_at:result.results.reduce((latest,row)=>row.updated_at>latest?row.updated_at:latest,"")
   };
 }
-
+export async function setTelegramBotConfig(botKey,config,updatedBy=null) {
+  if (!["primary","secondary"].includes(botKey)) throw new Error("Bot key không hợp lệ.");
+  await executeD1Query(
+    "INSERT INTO telegram_bot_configs(bot_key,menu_mode,intro_text,menu_columns,persistent_keyboard,resize_keyboard,button_config,updated_by,updated_at) " +
+    "VALUES(?,?,?,?,?,?,?,?,datetime('now')) ON CONFLICT(bot_key) DO UPDATE SET " +
+    "menu_mode=excluded.menu_mode,intro_text=excluded.intro_text,menu_columns=excluded.menu_columns," +
+    "persistent_keyboard=excluded.persistent_keyboard,resize_keyboard=excluded.resize_keyboard," +
+    "button_config=excluded.button_config,updated_by=excluded.updated_by,updated_at=datetime('now')",
+    [botKey,config.menu_mode,config.intro_text,config.menu_columns,config.persistent_keyboard?1:0,
+     config.resize_keyboard?1:0,JSON.stringify(config.button_config || {}),updatedBy]
+  );
+}
 export async function setBotSetting(key, value, updatedBy = null) {
   await executeD1Query(
     "INSERT INTO bot_settings(key,value,updated_at,updated_by) VALUES(?,?,datetime('now'),?) " +

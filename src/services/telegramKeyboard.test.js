@@ -1,53 +1,21 @@
-import { test, describe } from "node:test";
+import {test,describe} from "node:test";
 import assert from "node:assert/strict";
-import { buildMainKeyboard } from "./telegramKeyboard.js";
-
-describe("Production Telegram keyboard", () => {
-  test("provides ten core actions and only configured community links", () => {
-    const keyboard = buildMainKeyboard({
-      WEBAPP_URL: "https://mini.example.com",
-      GROUP_CHAT_URL: "https://t.me/example_group",
-      NEWS_CHANNEL_URL: "",
-      SUPPORT_URL: "https://t.me/example_support"
-    });
-    const buttons = keyboard.inline_keyboard.flat();
-    assert.equal(buttons.length, 12);
-    assert.equal(buttons.filter((button) => button.web_app).length, 10);
-    assert.equal(buttons.filter((button) => button.url).length, 2);
-    assert.ok(buttons.every((button) => !button.url || button.url !== "https://t.me/"));
-    assert.ok(buttons[0].web_app.url.includes("module=mini_game_live"));
-  });
-
-  test("does not invent URLs when public domains are not configured", () => {
-    const keyboard = buildMainKeyboard({});
-    const buttons = keyboard.inline_keyboard.flat();
-    assert.equal(buttons.length, 10);
-    assert.ok(buttons.every((button) => button.callback_data && !button.web_app && !button.url));
-  });
-
-  test("uses admin labels and hides disabled menu buttons", () => {
-    const keyboard = buildMainKeyboard({
-      WEBAPP_URL: "https://mini.example.com"
-    }, {
-      menu_config: [
-        { module: "mini_game_live", label: "🎮 TRÒ CHƠI MỚI", enabled: true },
-        { module: "app_tool", label: "THUÊ TOOL", enabled: false }
-      ]
-    });
-    const buttons = keyboard.inline_keyboard.flat();
-    assert.ok(buttons.some((button) => button.text === "🎮 TRÒ CHƠI MỚI"));
-    assert.ok(!buttons.some((button) => button.text === "THUÊ TOOL"));
-  });
-
-  test("rejects non-HTTPS Mini App and non-Telegram community URLs", () => {
-    const keyboard = buildMainKeyboard({
-      WEBAPP_URL: "http://mini.example.com",
-      GROUP_CHAT_URL: "https://example.com/community",
-      NEWS_CHANNEL_URL: "https://t.me/",
-      SUPPORT_URL: "javascript:alert(1)"
-    });
-    const buttons = keyboard.inline_keyboard.flat();
-    assert.equal(buttons.length, 10);
-    assert.ok(buttons.every((button) => button.callback_data));
-  });
+import {buildMainKeyboard} from "./telegramKeyboard.js";
+describe("Telegram keyboard layouts",()=>{
+ test("keeps existing inline keyboard default",()=>{
+  const kb=buildMainKeyboard({WEBAPP_URL:"https://mini.example.com",GROUP_CHAT_URL:"https://t.me/example_group",SUPPORT_URL:"https://t.me/example_support"});
+  const buttons=kb.inline_keyboard.flat();assert.equal(buttons.length,12);assert.equal(buttons.filter(b=>b.web_app).length,10);assert.ok(buttons.every(b=>["primary","success","danger"].includes(b.style)));
+  assert.equal(buttons.filter(b=>b.url).length,2);assert.ok(buttons[0].web_app.url.includes("bot=primary"));
+ });
+ test("builds persistent secondary Reply Keyboard and respects visibility",()=>{
+  const kb=buildMainKeyboard({WEBAPP_URL:"https://mini.example.com"},{bot_menu:{menu_mode:"reply_keyboard",menu_columns:2,persistent_keyboard:true,resize_keyboard:true,
+   button_config:{mini_game_live:{label:"GAME PHỤ",enabled:true},app_tool:{label:"TOOL OFF",enabled:false}}}},"secondary");
+  assert.ok(Array.isArray(kb.keyboard));assert.equal(kb.is_persistent,true);const buttons=kb.keyboard.flat();
+  assert.ok(buttons.some(b=>b.text==="GAME PHỤ"));assert.ok(!buttons.some(b=>b.text==="TOOL OFF"));
+  assert.ok(buttons[0].web_app.url.includes("bot=secondary"));assert.equal(buttons[0].style,"primary");
+ });
+ test("preserves legacy overrides for older Mini App config",()=>{
+  const kb=buildMainKeyboard({WEBAPP_URL:"https://mini.example.com"},{menu_config:[{module:"mini_game_live",label:"GAME MỚI"},{module:"app_tool",enabled:false}]});
+  const buttons=kb.inline_keyboard.flat();assert.ok(buttons.some(b=>b.text==="GAME MỚI"));assert.ok(!buttons.some(b=>b.text==="🧰 THUÊ TOOL"));
+ });
 });

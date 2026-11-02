@@ -16,6 +16,9 @@ const BACKUP_TABLES = [
   "admin_audit_logs",
   "backup_runs",
   "telegram_menu_messages",
+  "telegram_bot_configs",
+  "processed_telegram_updates",
+  "telegram_bot_menu_messages",
   "referral_profiles",
   "referral_commissions",
   "voucher_ledger"

@@ -13,7 +13,8 @@
     "build": "vite build --config mini-app/vite.config.mjs",
     "test": "node --test",
     "lint": "node --check src/server.js && node --check src/routes/productionApi.js && node --check src/services/productionD1.js && node --check src/middlewares/telegramAuth.js && node --check src/security/telegramAuth.js && node --check src/services/telegramService.js && node --check src/services/telegramKeyboard.js && node --check cloudflare/worker.js && node --check src/services/adminRealtime.js && node --check src/services/runtimeConfigSync.js && node --check src/services/configScanner.js && node --check src/services/telegramMenuSync.js",
-    "config:audit": "node scripts/config-audit.js"
+    "config:audit": "node scripts/config-audit.js",
+    "scaffold:feature": "node scripts/scaffold-feature.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
