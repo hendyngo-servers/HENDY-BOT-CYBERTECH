@@ -4,7 +4,7 @@ import {buildMainKeyboard} from "./telegramKeyboard.js";
 describe("Telegram keyboard layouts",()=>{
  test("keeps existing inline keyboard default",()=>{
   const kb=buildMainKeyboard({WEBAPP_URL:"https://mini.example.com",GROUP_CHAT_URL:"https://t.me/example_group",SUPPORT_URL:"https://t.me/example_support"});
-  const buttons=kb.inline_keyboard.flat();assert.equal(buttons.length,12);assert.equal(buttons.filter(b=>b.web_app).length,10);
+  const buttons=kb.inline_keyboard.flat();assert.equal(buttons.length,12);assert.equal(buttons.filter(b=>b.web_app).length,10);assert.ok(buttons.every(b=>["primary","success","danger"].includes(b.style)));
   assert.equal(buttons.filter(b=>b.url).length,2);assert.ok(buttons[0].web_app.url.includes("bot=primary"));
  });
  test("builds persistent secondary Reply Keyboard and respects visibility",()=>{
@@ -12,7 +12,7 @@ describe("Telegram keyboard layouts",()=>{
    button_config:{mini_game_live:{label:"GAME PHỤ",enabled:true},app_tool:{label:"TOOL OFF",enabled:false}}}},"secondary");
   assert.ok(Array.isArray(kb.keyboard));assert.equal(kb.is_persistent,true);const buttons=kb.keyboard.flat();
   assert.ok(buttons.some(b=>b.text==="GAME PHỤ"));assert.ok(!buttons.some(b=>b.text==="TOOL OFF"));
-  assert.ok(buttons[0].web_app.url.includes("bot=secondary"));
+  assert.ok(buttons[0].web_app.url.includes("bot=secondary"));assert.equal(buttons[0].style,"primary");
  });
  test("preserves legacy overrides for older Mini App config",()=>{
   const kb=buildMainKeyboard({WEBAPP_URL:"https://mini.example.com"},{menu_config:[{module:"mini_game_live",label:"GAME MỚI"},{module:"app_tool",enabled:false}]});

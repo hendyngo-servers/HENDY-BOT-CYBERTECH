@@ -65,7 +65,7 @@ export function BotFleetMenuCard({showToast}){
      <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={item.enabled!==false} onChange={e=>updateButton(module,{enabled:e.target.checked})}/>Hiện</label>
     </div>;})}
    </div>
-   <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-[11px] text-slate-500 flex items-start gap-2"><Info className="w-4 h-4 shrink-0"/>Màu nút native do Telegram quyết định; style lưu làm metadata, màu giao diện Mini App được tùy chỉnh riêng.</p>
+   <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-[11px] text-slate-500 flex items-start gap-2"><Info className="w-4 h-4 shrink-0"/>Bot API 9.4+ hỗ trợ màu nút primary (xanh), success (lục), danger (đỏ) cho cả hai kiểu menu.</p>
     <button disabled={saving||!current?.configured} className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-50"><Save className="w-4 h-4"/>{saving?"Đang lưu…":"Lưu cấu hình bot"}</button>
    </div>
    {!current?.configured&&<p className="text-xs text-amber-300">Bot chưa có token trong Render Environment. Thêm token và webhook secret để kích hoạt.</p>}
