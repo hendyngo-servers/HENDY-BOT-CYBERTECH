@@ -124,7 +124,7 @@ async function handleTelegramUpdate(update, botKey = "primary") {
   const message = update.message || update.edited_message;
   const callback = update.callback_query;
   const settings = await getBotSettings(botKey);
-  const telegram = (method, payload) => telegram(method, payload, botKey);
+  const telegram = (method, payload) => sendTelegram(method, payload, botKey);
 
   if (callback) {
     await telegram("answerCallbackQuery", { callback_query_id: callback.id });

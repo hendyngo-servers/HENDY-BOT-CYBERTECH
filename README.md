@@ -34,7 +34,7 @@ Cloudflare R2
    └── hendy-bot-assets   (release files)
 ```
 
-**Runtime Render duy nhất:** `npm start` chạy `src/server.js`. Service dùng Telegram webhook, không chạy long polling đồng thời. Không cấu hình thêm một service polling riêng cho cùng Bot Token.
+**Runtime Render duy nhất:** `npm start` chạy `src/server.js`. Có thể đăng ký tối đa hai bot trên cùng runtime qua hai webhook riêng; không chạy long polling song song với webhook cho cùng Bot Token. Hai bot dùng chung D1 nhưng có token, webhook secret, danh sách Admin và menu riêng.
 
 ## 2. Thành phần đã có trong repository
 
@@ -128,7 +128,11 @@ Build command đã cài cả devDependencies vì Vite là công cụ build, kể
 
 | Biến | Giá trị |
 |---|---|
-| `BOT_TOKEN` | Bot Token mới lấy từ BotFather |
+| `BOT_TOKEN` | Bot Token chính lấy từ BotFather |
+| `BOT_SECOND_TOKEN` | (Tuỳ chọn) Token bot Telegram thứ hai |
+| `BOT_SECOND_USERNAME` | Username bot thứ hai, không có ký tự @ |
+| `BOT_SECOND_ADMIN_ID` / `ADMIN_TELEGRAM_IDS_SECONDARY` | Admin riêng bot thứ hai; bỏ trống thì dùng danh sách Admin chính |
+| `TELEGRAM_SECOND_WEBHOOK_SECRET` | Webhook secret riêng của bot thứ hai |
 | `BOT_USERNAME` | Username bot Telegram thật, không có ký tự `@`; dùng để tạo link giới thiệu |
 | `WEBHOOK_SECRET` | Secret Telegram độc lập, chỉ lưu ở Render; không đồng bộ lên Worker/GitHub |
 | `ADMIN_TELEGRAM_IDS` | Telegram numeric ID quản trị, nhiều ID phân cách bằng dấu phẩy |
@@ -256,3 +260,13 @@ Không dùng D1/R2 production cho kiểm thử phá huỷ. Nên tạo database/b
 - [ ] Backup thủ công thành công và các CSV/manifest xuất hiện trong R2.
 - [ ] Đã kiểm thử bảo trì, phân quyền, thanh toán và quy trình xử lý giao dịch trên staging.
 
+
+
+## 10. Hai bot, loại menu và tự động tạo feature
+
+- Cấu hình `BOT_SECOND_TOKEN`, `BOT_SECOND_USERNAME`, `BOT_SECOND_ADMIN_ID` (hoặc `ADMIN_TELEGRAM_IDS_SECONDARY`) và `TELEGRAM_SECOND_WEBHOOK_SECRET` trong Render Environment. Không commit giá trị thật.
+- Bot chính dùng `/api/telegram/webhook`; bot phụ dùng `/api/telegram/webhook/secondary`. Mỗi bot có webhook secret riêng và được đăng ký tự động khi `SET_WEBHOOK_ON_START=true`.
+- Hai bot chia sẻ dữ liệu thành viên, số dư và đơn hàng trên D1; menu và cấu hình menu riêng trong `telegram_bot_configs`. Mỗi dashboard được xác thực bằng initData của bot đã mở nó.
+- Admin → Quản lý hai Telegram Bot cho phép chọn Reply Keyboard/Inline Keyboard, lời giới thiệu, số cột, persistent/resize, nhãn, mô tả, style metadata và trạng thái bật/tắt.
+- Reply Keyboard nằm cố định dưới ô nhập; Inline Keyboard hiển thị dưới tin nhắn. Telegram kiểm soát màu giao diện native; style primary/success/danger không thể ép màu nút trong client Telegram.
+- Tạo scaffold: `npm run scaffold:feature -- --name order-history --category api --description "Lịch sử đơn hàng"`. Workflow **Scaffold feature branch** cũng có thể tạo PR; file mặc định disabled, không tự nạp runtime và không ghi đè file đã có.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { telegramFetch, getRealtimeUrl } from "./services/api.js";
+import { telegramFetch, getRealtimeUrl, getTelegramBotKey } from "./services/api.js";
 import {
   ShoppingBag,
   Wallet,
@@ -45,6 +45,7 @@ import { TelegramWebhookManager } from "./components/TelegramWebhookManager.jsx"
 import { D1StatsAndConsole } from "./components/D1StatsAndConsole.jsx";
 import { BotSettingsCard } from "./components/BotSettingsCard.jsx";
 import { MenuAppearanceCard } from "./components/MenuAppearanceCard.jsx";
+import { BotFleetMenuCard } from "./components/BotFleetMenuCard.jsx";
 import { RuntimeConfigManager } from "./components/RuntimeConfigManager.jsx";
 
 // Safe numeric and currency formatting helpers
@@ -311,7 +312,7 @@ export default function App() {
 
       socket.onopen = () => {
         attempts = 0;
-        socket.send(JSON.stringify({ type: "auth", initData }));
+        socket.send(JSON.stringify({ type: "auth", initData, botKey: getTelegramBotKey() }));
         pingTimer = window.setInterval(() => {
           if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "ping" }));
         }, 25000);
@@ -1676,6 +1677,7 @@ export default function App() {
               onSaveSettings={handleSaveBotSettings}
               showToast={showToast}
             />
+            <BotFleetMenuCard showToast={showToast} />
             <MenuAppearanceCard
               settings={botSettings}
               onSaveSettings={handleSaveBotSettings}
