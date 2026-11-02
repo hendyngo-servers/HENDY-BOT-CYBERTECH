@@ -48,6 +48,11 @@ jobs:
       - name: Run PHP tests
         run: php tests/run.php
 
+      - name: Validate inline dashboard JavaScript
+        run: |
+          php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\\n;\\n", $matches[1]));'
+          node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-dashboard.js";')"
+
       - name: Run PostgreSQL migration and smoke tests
         run: |
           php bin/migrate.php
