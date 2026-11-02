@@ -660,7 +660,7 @@
         let message; try { message = JSON.parse(event.data); } catch { return; }
         if (message.type === 'realtime.ready') { setRealtimeStatus('WebSocket · đang kết nối',true); return; }
         if (message.type === 'auth.failed') { setRealtimeStatus('Xác thực realtime thất bại',false); return; }
-        if (message.type && message.type.startsWith('admin.')) {
+        if (message.type && (message.type.startsWith('admin.') || message.type.startsWith('bot.') || message.type.startsWith('module.'))) {
           setRealtimeStatus('WebSocket · vừa cập nhật',true);
           if (state.page === 'admin') renderPage();
         }
