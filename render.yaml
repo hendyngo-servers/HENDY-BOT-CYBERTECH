@@ -75,6 +75,8 @@ services:
         value: "false"
       - key: ADMIN_ID
         sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
       - key: WEBSOCKET_BIND
         value: 0.0.0.0
       - key: WEBSOCKET_PORT
