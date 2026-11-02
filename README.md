@@ -58,7 +58,7 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 
 Backend chạy PHP: nhận webhook Telegram, gửi Telegram Bot API, xác thực WebApp, API, xử lý giao dịch, quản trị, database, migration và bảo mật HTTP.
 
-JavaScript trong apps/admin-dashboard/index.html chỉ chạy trong trình duyệt để dựng giao diện, gọi API và thao tác form. Không cần và không nên thay JavaScript phía trình duyệt bằng PHP; PHP phục vụ HTML và xử lý dữ liệu trên máy chủ. Dashboard kiểm tra trạng thái bot qua /api/admin/runtime theo chu kỳ 5 giây, không còn yêu cầu WebSocket của backend Node cũ.
+JavaScript trong apps/admin-dashboard/index.html chỉ chạy trong trình duyệt để dựng giao diện, gọi API và thao tác form. Không cần và không nên thay JavaScript phía trình duyệt bằng PHP; PHP phục vụ HTML và xử lý dữ liệu trên máy chủ. Mini App dùng một bộ token CSS tập trung cho màu nút, hiệu ứng ripple, trạng thái loading/success và icon động; các emoji được gắn class tự động bằng text node để không thay đổi dữ liệu đầu vào. Tôn trọng cài đặt giảm chuyển động của thiết bị.
 
 ## Cấu hình môi trường
 
@@ -157,7 +157,7 @@ Nếu dùng chính PostgreSQL hiện tại, giữ đúng connection string đang
 
 ## GitHub Actions / kiểm tra
 
-CI chạy PHP 8.3, kiểm tra cú pháp tất cả file PHP, kiểm tra chữ ký Telegram, và xác nhận .env.example chỉ khai báo hai tên bot token.
+CI chạy PHP 8.3, kiểm tra cú pháp tất cả file PHP, kiểm tra cú pháp JavaScript inline của Mini App, kiểm tra chữ ký Telegram, và xác nhận .env.example chỉ khai báo hai tên bot token. Docker cài `unzip` trước Composer để cài các gói dist trong image.
 
 Scaffold feature bằng lệnh: php scripts/scaffold-feature.php --name order-history --category api --description "Lịch sử đơn hàng". Hoặc vào GitHub → Actions → Scaffold PHP feature. Feature được tạo ở trạng thái disabled; phải review phân quyền, migration, API và test trước khi tích hợp.
 

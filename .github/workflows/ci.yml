@@ -2,7 +2,7 @@ name: PHP CI
 
 on:
   push:
-    branches: [main, php-backend-migration, feature/realtime-modular-platform-review]
+    branches: [main, php-backend-migration, feature/realtime-modular-platform-review, feature/button-theme-animated-icons]
   pull_request:
     branches: [main]
 
@@ -52,6 +52,16 @@ jobs:
         run: |
           php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\\n;\\n", $matches[1]));'
           node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-dashboard.js";')"
+
+      - name: Verify Mini App button theme and Docker Composer tools
+        run: |
+          grep -q -- '--btn-primary-start' apps/admin-dashboard/styles/buttons.css
+          grep -q -- '.ripple' apps/admin-dashboard/styles/buttons.css
+          grep -q -- '@keyframes icon-spin' apps/admin-dashboard/styles/buttons.css
+          grep -q -- 'button.is-loading' apps/admin-dashboard/styles/buttons.css
+          grep -q -- 'button.is-success' apps/admin-dashboard/styles/buttons.css
+          grep -q -- 'installVisualEffects();' apps/admin-dashboard/index.html
+          grep -q -- 'unzip' Dockerfile
 
       - name: Run PostgreSQL migration and smoke tests
         run: |
