@@ -15,6 +15,7 @@ require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/BotService.php';
 require dirname(__DIR__) . '/app/Realtime.php';
+require dirname(__DIR__) . '/app/ModuleRegistry.php';
 require dirname(__DIR__) . '/app/ApiController.php';
 
 Env::load(dirname(__DIR__) . '/.env');
@@ -195,6 +196,16 @@ try {
         }
         (new BotService($botKey))->handle($update);
         respond(['ok' => true]);
+    }
+
+    if ($method === 'POST' && $path === '/api/admin/modules/upload') {
+        $headers = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
+        if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            foreach ($headers as $name => $value) if (strcasecmp((string) $name, 'Authorization') === 0) $_SERVER['HTTP_AUTHORIZATION'] = (string) $value;
+        }
+        $controller = new ApiController($_GET, [], $headers);
+        $result = $controller->uploadModule($_FILES['file'] ?? [], (string) ($_POST['module'] ?? ''));
+        respond($result['body'] ?? [], (int) ($result['status'] ?? 200));
     }
 
     if (str_starts_with($path, '/api/')) {
