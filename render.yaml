@@ -1,5 +1,6 @@
 # Render Blueprint — PHP 8.3 + Apache + PostgreSQL.
 # PHP chạy qua Docker vì Render không cung cấp native PHP runtime.
+# Web services và PostgreSQL phải cùng region để dùng internal DATABASE_URL.
 services:
   - type: web
     name: hendy-bot-tele
@@ -9,6 +10,7 @@ services:
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    preDeployCommand: php bin/migrate.php
     disk:
       name: hendy-module-storage
       mountPath: /var/www/app/storage
