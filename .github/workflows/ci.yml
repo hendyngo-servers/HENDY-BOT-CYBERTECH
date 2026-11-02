@@ -2,7 +2,7 @@ name: PHP CI
 
 on:
   push:
-    branches: [main, php-backend-migration, feature/realtime-modular-platform-review]
+    branches: [main, php-backend-migration, feature/realtime-modular-platform-review, feature/button-theme-animated-icons]
   pull_request:
     branches: [main]
 
