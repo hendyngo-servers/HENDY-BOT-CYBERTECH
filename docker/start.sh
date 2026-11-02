@@ -6,9 +6,12 @@ mkdir -p storage/modules
 chown -R www-data:www-data storage
 chmod 750 storage storage/modules
 
-# Migration is a Render pre-deploy task, not a per-instance startup task.
-# A database DNS/configuration issue must not crash-loop every web container.
+# Database schema is applied in Render preDeployCommand, not at every startup.
 php bin/validate-config.php
-php bin/register-webhooks.php
+
+# Telegram API/network failures must not take down the HTTP dashboard.
+if ! php bin/register-webhooks.php; then
+    echo "CẢNH BÁO: Không thể đăng ký webhook lúc khởi động; Apache vẫn sẽ được chạy." >&2
+fi
 
 exec apache2-foreground
