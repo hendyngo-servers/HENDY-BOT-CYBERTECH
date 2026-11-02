@@ -18,13 +18,13 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
-      - key: BOT_TOKEN
+      - key: BOTCHINH_TOKEN
         sync: false
       - key: ADMIN_ID
         sync: false
-      - key: BOT_SECOND_TOKEN
+      - key: BOTPHU_TOKEN
         sync: false
-      - key: BOT_SECOND_ADMIN_ID
+      - key: BOTPHU_ADMIN_ID
         sync: false
       - key: BOT_SECOND_USERNAME
         sync: false

@@ -6,7 +6,7 @@ Monorepo Node.js triển khai trên **Render + Managed PostgreSQL**. Ứng dụn
 
 ## Chức năng
 
-- **Hai Telegram Bot trong một mã nguồn:** bot chính dùng `BOT_TOKEN`; bot thứ hai bật khi cấu hình `BOT_SECOND_TOKEN`. Mỗi bot có Admin ID, webhook, trạng thái và cấu hình menu độc lập.
+- **Hai Telegram Bot trong một mã nguồn:** bot chính dùng `BOTCHINH_TOKEN`, bot phụ dùng `BOTPHU_TOKEN`. Để tương thích, backend cũng nhận `BOT1_TOKEN`/`BOT2_TOKEN` và tên cũ `BOT_TOKEN`/`BOT_SECOND_TOKEN`. Bot phụ có thể dùng `BOTPHU_ADMIN_ID`; nếu bỏ trống sẽ dùng chung `ADMIN_ID`.
 - **Hai loại menu Telegram:** Reply Keyboard dạng lưới cố định phía dưới khung nhập; Inline Keyboard nằm bên dưới tin nhắn. Cho phép chọn số cột, nội dung giới thiệu, nhãn/mô tả nút, persistent/resize và semantic style.
 - **Dashboard tiếng Việt:** quản lý sản phẩm, đơn hàng, thành viên, số dư, giftcode, hỗ trợ, thiết lập VietQR/liên kết cộng đồng và menu theo từng bot.
 - **Realtime WebSocket:** trạng thái bot, snapshot cấu hình và thông báo thay đổi menu.
@@ -62,8 +62,8 @@ Blueprint ở `render.yaml` định nghĩa:
 1. Đưa nhánh `main` của repository này lên GitHub và kết nối GitHub với Render.
 2. Mở [Render Blueprint](https://dashboard.render.com/blueprint/new?repo=https://github.com/hendyngo-servers/Hendy-Bot-Tele).
 3. Kiểm tra tên Web Service và database, vùng Singapore, cùng chi phí/plan hiển thị trước khi chọn **Apply**.
-4. Nhập `BOT_TOKEN` và `ADMIN_ID`. Blueprint sinh `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SECOND_WEBHOOK_SECRET`, `BANK_WEBHOOK_SECRET` và `LEGACY_SESSION_SECRET`.
-5. Để chạy bot thứ hai, nhập `BOT_SECOND_TOKEN` và `BOT_SECOND_ADMIN_ID` (nếu cùng Admin có thể dùng cùng ID). Nếu Render không cho để trống các biến bot thứ hai, chỉ bật chúng sau khi service đầu tiên đã chạy bằng cách thêm ở Environment.
+4. Nhập `BOTCHINH_TOKEN` và `ADMIN_ID`. Blueprint sinh `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SECOND_WEBHOOK_SECRET`, `BANK_WEBHOOK_SECRET` và `LEGACY_SESSION_SECRET`.
+5. Để chạy bot phụ, nhập `BOTPHU_TOKEN` và có thể thêm `BOTPHU_ADMIN_ID` (nếu cùng Admin thì để trống). Nếu Render không cho để trống các biến bot thứ hai, chỉ bật chúng sau khi service đầu tiên đã chạy bằng cách thêm ở Environment.
 6. Đợi deploy hoàn tất, sau đó kiểm tra `https://<ten-service>.onrender.com/healthz` và `/api/health`.
 
 Render cấp `RENDER_EXTERNAL_URL` cho Web Service. Khi biến này có mặt, ứng dụng tự đăng ký webhook:
@@ -77,13 +77,13 @@ Không đưa token Telegram, mật khẩu PostgreSQL hoặc webhook secret vào 
 
 | Biến | Bắt buộc | Mục đích |
 |---|---:|---|
-| `BOT_TOKEN` | Có | Token bot chính |
+| `BOTCHINH_TOKEN` | Có | Token BOT CHÍNH; bí danh `BOT1_TOKEN` hoặc `BOT_TOKEN` |
 | `ADMIN_ID` | Có | Telegram user ID của Admin chính |
 | `DATABASE_URL` | Tự nối | Render PostgreSQL connection string |
 | `DATABASE_SSL` | Có trên Render | `false` cho kết nối nội bộ cùng vùng |
 | `TELEGRAM_WEBHOOK_SECRET` | Tự sinh | Bảo vệ webhook bot chính |
-| `BOT_SECOND_TOKEN` | Không | Bật bot thứ hai |
-| `BOT_SECOND_ADMIN_ID` | Không | Admin ID riêng cho bot thứ hai |
+| `BOTPHU_TOKEN` | Không | Bật BOT PHỤ; bí danh `BOT2_TOKEN` hoặc `BOT_SECOND_TOKEN` |
+| `BOTPHU_ADMIN_ID` | Không | Admin riêng cho BOT PHỤ; mặc định dùng `ADMIN_ID` |
 | `TELEGRAM_SECOND_WEBHOOK_SECRET` | Khi bật bot 2 | Secret webhook bot thứ hai |
 | `BANK_WEBHOOK_SECRET` | Khi dùng nạp tự động | Xác thực webhook ngân hàng |
 | `LEGACY_ACCOUNT_URL` | Không | URL hệ thống tài khoản cũ |

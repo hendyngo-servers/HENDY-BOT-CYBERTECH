@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { getBotToken, getAdminId } = require('./botConfig');
 
 function safeCompare(left,right) {
   const a=Buffer.from(String(left||''),'utf8');
@@ -27,10 +28,10 @@ function validateTelegramInitData(initData,botToken) {
   return user;
 }
 function tokenForBot(botKey) {
-  return botKey==='secondary'?(process.env.BOT_SECOND_TOKEN||''):(process.env.BOT_TOKEN||'');
+  return getBotToken(botKey);
 }
 function adminForBot(botKey) {
-  return botKey==='secondary'?String(process.env.BOT_SECOND_ADMIN_ID||process.env.ADMIN_ID||''):String(process.env.ADMIN_ID||'');
+  return getAdminId(botKey);
 }
 function authenticateTelegram(req,res,next) {
   try {
