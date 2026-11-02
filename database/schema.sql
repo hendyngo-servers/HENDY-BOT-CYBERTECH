@@ -219,3 +219,41 @@ VALUES
     ('primary', 'reply_keyboard', 'Chào mừng bạn đến với HENDY BOT. Chọn dịch vụ ở bàn phím phía dưới để bắt đầu.', 2, TRUE, TRUE),
     ('secondary', 'inline_keyboard', 'Chào mừng bạn đến với HENDY BOT. Chọn một chức năng để tiếp tục.', 2, TRUE, TRUE)
 ON CONFLICT (bot_key) DO NOTHING;
+
+
+-- Durable event stream and one-time WebSocket authentication tickets.
+CREATE TABLE IF NOT EXISTS realtime_events (
+    id BIGSERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    audience TEXT NOT NULL DEFAULT 'admin' CHECK (audience IN ('admin','users','all')),
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_realtime_events_created ON realtime_events(created_at);
+CREATE TABLE IF NOT EXISTS realtime_tickets (
+    ticket_hash CHAR(64) PRIMARY KEY,
+    admin_user_id TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_realtime_tickets_expiry ON realtime_tickets(expires_at);
+CREATE TABLE IF NOT EXISTS module_artifacts (
+    id BIGSERIAL PRIMARY KEY,
+    module_key TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    stored_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    uploaded_by TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending_review' CHECK (status IN ('pending_review','approved','rejected','released')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_module_artifacts_status ON module_artifacts(status, created_at DESC);
+CREATE TABLE IF NOT EXISTS store_integrations (
+    provider TEXT PRIMARY KEY CHECK (provider IN ('app_store_connect','google_play','microsoft_store')),
+    config_public JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secret_refs JSONB NOT NULL DEFAULT '{}'::jsonb,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
