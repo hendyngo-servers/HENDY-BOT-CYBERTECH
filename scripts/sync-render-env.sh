@@ -81,8 +81,16 @@ GENERATED_SECRETS=()
 generate_secret TELEGRAM_WEBHOOK_SECRET
 if [[ -n "${BOT2_TOKEN:-}" ]]; then
   generate_secret TELEGRAM_SECOND_WEBHOOK_SECRET
+  if [[ "${TELEGRAM_SECOND_WEBHOOK_SECRET:-}" == "${TELEGRAM_WEBHOOK_SECRET:-}" ]]; then
+    TELEGRAM_SECOND_WEBHOOK_SECRET="$(openssl rand -hex 32)"
+    export TELEGRAM_SECOND_WEBHOOK_SECRET
+    echo "::add-mask::$TELEGRAM_SECOND_WEBHOOK_SECRET"
+    GENERATED_SECRETS+=("TELEGRAM_SECOND_WEBHOOK_SECRET")
+    echo "TELEGRAM_SECOND_WEBHOOK_SECRET trùng secret bot chính; đã tạo khóa riêng mới."
+  fi
 fi
-generate_secret BANK_WEBHOOK_SECRET
+# BANK_WEBHOOK_SECRET is deliberately NOT generated or synchronized until a
+# provider-specific signed callback adapter and sandbox tests exist.
 generate_secret LEGACY_SESSION_SECRET
 
 # DATABASE_URL do Render PostgreSQL/Blueprint quản lý; chuỗi này chỉ để
