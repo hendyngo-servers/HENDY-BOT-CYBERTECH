@@ -804,6 +804,19 @@ final class BotService
         ]);
     }
 
+    private function notifyUserOnBot(string $botKey, string $userId, string $message): void
+    {
+        $token = TelegramAuth::token($botKey);
+        if ($token === '') {
+            return;
+        }
+        try {
+            (new TelegramApi($token))->sendMessage($userId, $message);
+        } catch (Throwable $error) {
+            error_log('Không gửi được thông báo user qua bot ' . $botKey . ': ' . $error->getMessage());
+        }
+    }
+
     private function notifyAdmins(string $message, array $replyMarkup = []): void
     {
         foreach (TelegramAuth::adminIds() as $adminId) {
@@ -890,14 +903,14 @@ final class BotService
         $result = PaymentService::approve($paymentId, $adminId);
         $this->telegram->sendMessage($chatId, '✅ Đã duyệt yêu cầu <code>' . self::escape($paymentId) . '</code>. Cộng ' .
             self::money($result['amountVnd']) . '. Số dư mới: <b>' . self::money($result['newBalance']) . '</b>.');
-        try {
-            $this->telegram->sendMessage((string) $result['telegramId'], '🎉 <b>NẠP TIỀN ĐÃ ĐƯỢC ADMIN DUYỆT</b>' . "\n" .
-                'Mã: <code>' . self::escape($paymentId) . '</code>' . "\n" .
-                'Số tiền: <b>+' . self::money($result['amountVnd']) . '</b>' . "\n" .
-                'Số dư mới: <b>' . self::money($result['newBalance']) . '</b>');
-        } catch (Throwable $error) {
-            error_log('Không gửi được thông báo duyệt nạp: ' . $error->getMessage());
-        }
+        $this->notifyUserOnBot(
+            (string) ($result['botKey'] ?? $this->botKey),
+            (string) $result['telegramId'],
+            '🎉 <b>NẠP TIỀN ĐÃ ĐƯỢC ADMIN DUYỆT</b>' . "\n" .
+            'Mã: <code>' . self::escape($paymentId) . '</code>' . "\n" .
+            'Số tiền: <b>+' . self::money($result['amountVnd']) . '</b>' . "\n" .
+            'Số dư mới: <b>' . self::money($result['newBalance']) . '</b>'
+        );
     }
 
     private function rejectPaymentRequest(string $chatId, string $adminId, string $paymentId): void
@@ -907,11 +920,11 @@ final class BotService
         }
         $result = PaymentService::reject($paymentId, $adminId, 'Admin từ chối sau khi đối soát.');
         $this->telegram->sendMessage($chatId, '❌ Đã từ chối yêu cầu <code>' . self::escape($paymentId) . '</code>. Ví không thay đổi.');
-        try {
-            $this->telegram->sendMessage((string) $result['telegramId'], '❌ Yêu cầu nạp <code>' . self::escape($paymentId) . '</code> chưa được duyệt. Vui lòng kiểm tra nội dung chuyển khoản hoặc liên hệ CSKH.');
-        } catch (Throwable $error) {
-            error_log('Không gửi được thông báo từ chối nạp: ' . $error->getMessage());
-        }
+        $this->notifyUserOnBot(
+            (string) ($result['botKey'] ?? $this->botKey),
+            (string) $result['telegramId'],
+            '❌ Yêu cầu nạp <code>' . self::escape($paymentId) . '</code> chưa được duyệt. Vui lòng kiểm tra nội dung chuyển khoản hoặc liên hệ CSKH.'
+        );
     }
 
     private function showAdminVideoJobs(string $chatId, string $userId): void
