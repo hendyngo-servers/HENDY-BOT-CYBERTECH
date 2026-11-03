@@ -185,7 +185,7 @@ Nếu dùng chính PostgreSQL hiện tại, giữ đúng database đang có dữ
 
 ## Website chính thức và tích hợp URL
 
-Thiết lập `website_url` tại **Quản trị → Cấu hình**. Giá trị mặc định từ banner tham chiếu là `https://lethituanem.com`; URL phải dùng HTTPS. Liên kết này được gửi trong lời chào Telegram của BOT1/BOT2 và hiển thị tại trang chủ Mini App. Có thể cập nhật URL mà không cần sửa source hoặc environment. Việc lưu URL không triển khai source website độc lập; website phải được host riêng và trỏ DNS/TLS đúng.
+Website chính thức HENDY dùng `https://hendy-bot-tele.onrender.com`. Trang thành viên được tích hợp trực tiếp tại `/` và `/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php`; không cần triển khai Mini App riêng. Đăng nhập từ Telegram dùng link một lần, hết hạn sau 5 phút, sau đó server cấp cookie `HttpOnly` và chuyển đến Trung tâm khách hàng. Tham số `token=` trống không được dùng làm thông tin xác thực.
 
 ## Chuyển dữ liệu MySQL cũ
 
@@ -261,6 +261,14 @@ Endpoint có sẵn (đều yêu cầu Telegram Mini App `initData` hợp lệ v�
 - `GET /api/services/system/capabilities`
 
 Để bổ sung service, tạo class PHP trong `app/WebServices/`, implement `WebServiceContract`, validate input/quyền, viết test, đăng ký key trong allow-list `WebServiceKernel::SERVICES`, sau đó chạy CI và deploy. Web Service không phụ thuộc vòng đời polling/webhook bot nên có thể phục vụ API hoặc tiện ích web khác nhưng vẫn dùng chung PostgreSQL và quyền truy cập tập trung.
+## Trung tâm khách hàng HENDY
+
+- Mở trực tiếp tại `/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot=primary&view=customer` hoặc `?bot=secondary&view=customer`.
+- Hai bot tạo link đăng nhập website bằng `/start web_login` hoặc nút **MỞ WEBSITE · TRUNG TÂM KHÁCH HÀNG** trong menu khách hàng. Ticket ngẫu nhiên chỉ dùng một lần, hết hạn sau 5 phút và được đổi lấy cookie `HttpOnly; Secure; SameSite=Lax`.
+- Website đọc hồ sơ, ba loại ví, VIP, điểm cũ, thống kê đơn, danh sách tài khoản đã liên kết, yêu cầu nạp, lịch sử giao dịch và đơn hàng từ PostgreSQL qua API đã xác thực.
+- Các khu vực hỗ trợ gồm Dính lạm dụng (60%), Ticket CSKH và Voucher 72H. Voucher chỉ tạo yêu cầu; tiền không được cộng cho tới khi Admin đối soát và duyệt.
+- Replay Live là mục tùy chọn. Chỉ mở liên kết khi Admin cấu hình `replay_live_url` bằng URL HTTPS của nguồn replay thực tế; khi chưa có nguồn thì giao diện báo rõ chưa được kết nối.
+
 ## API mới
 
 - `GET /api/wallet/payment-requests`, `POST /api/wallet/payment-requests`: xem/tạo yêu cầu nạp dùng chung với Telegram.
