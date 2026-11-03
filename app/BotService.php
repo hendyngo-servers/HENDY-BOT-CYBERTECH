@@ -255,6 +255,13 @@ final class BotService
         $user = $this->getUser($userId, $name, $username);
         $config = $this->menuConfig();
         $items = $this->menuItems($config, $userId);
+        $websiteUrl = (string) ($this->settings(['website_url'])['website_url'] ?? '');
+        if ($websiteUrl !== '') {
+            $parts = parse_url($websiteUrl);
+            if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
+                $websiteUrl = '';
+            }
+        }
         $descriptions = array_map(
             static fn (array $item): string => '• ' . $item['label'] . ' — ' . $item['description'],
             $items
@@ -269,6 +276,7 @@ final class BotService
             '👑 Cấp thành viên: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
             '━━━━━━━━━━━━━━━━━━━━',
             self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT.')),
+            ...($websiteUrl !== '' ? ['🌐 Website chính thức: <a href="' . self::escape($websiteUrl) . '">Mở trang web</a>'] : []),
             '',
             '<b>HƯỚNG DẪN CHỨC NĂNG</b>',
             ...array_map(self::escape(...), $descriptions),
