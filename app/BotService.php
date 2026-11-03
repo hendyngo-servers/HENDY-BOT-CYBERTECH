@@ -935,12 +935,13 @@ final class BotService
                 [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']],
                 [['text' => '🎟️ YÊU CẦU VOUCHER 72H', 'callback_data' => 'member:voucher72']],
                 [['text' => '🎧 TICKET HỖ TRỢ CSKH', 'callback_data' => 'member:support']],
+                [['text' => '🌐 MỞ WEBSITE · TRUNG TÂM KHÁCH HÀNG', 'url' => $this->createWebsiteLoginUrl($userId)]],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
     }
 
-    private function sendLegacyLoginLink(string $chatId, string $userId): void
+    private function createWebsiteLoginUrl(string $userId): string
     {
         $baseUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         if (!self::isHttpsUrl($baseUrl)) {
@@ -955,17 +956,23 @@ final class BotService
             "INSERT INTO legacy_login_tickets (token_hash, user_id, bot_key, expires_at) VALUES (?, ?, ?, NOW() + INTERVAL '5 minutes')",
             [hash('sha256', $ticket), $userId, $this->botKey]
         );
-        $url = $baseUrl . '/legacy-login?ticket=' . rawurlencode($ticket);
+        return $baseUrl . '/legacy-login?ticket=' . rawurlencode($ticket);
+    }
+
+    private function sendLegacyLoginLink(string $chatId, string $userId): void
+    {
+        $url = $this->createWebsiteLoginUrl($userId);
         $this->telegram->sendMessage($chatId, implode("\n", [
-            '🔑 <b>LINK ĐĂNG NHẬP TRUYỀN THỐNG</b>',
+            '🔑 <b>ĐĂNG NHẬP WEBSITE HENDY</b>',
             'Link chỉ sử dụng được <b>một lần</b> và hết hạn sau <b>5 phút</b>.',
-            'Không chuyển tiếp link này cho người khác.',
+            'Sau khi xác minh, website sẽ mở thẳng Trung tâm khách hàng của bạn.',
+            'Không chuyển tiếp liên kết này cho người khác.',
             '',
-            '<a href="' . self::escape($url) . '">👉 BẤM ĐỂ ĐĂNG NHẬP</a>',
+            '<a href="' . self::escape($url) . '">👉 MỞ TRUNG TÂM KHÁCH HÀNG</a>',
         ]), [
             'reply_markup' => $this->inlineMenu([
-                [['text' => '🔐 MỞ TRANG ĐĂNG NHẬP', 'url' => $url]],
-                [['text' => '↩️ QUẢN LÝ TÀI KHOẢN', 'callback_data' => 'member:customer']],
+                [['text' => '👤 MỞ TRUNG TÂM KHÁCH HÀNG HENDY', 'url' => $url]],
+                [['text' => '↩️ QUAY LẠI', 'callback_data' => 'member:customer']],
             ]),
             'disable_web_page_preview' => true,
         ]);
