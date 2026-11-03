@@ -56,6 +56,7 @@ jobs:
       DB_STARTUP_WAIT_SECONDS: ${{ vars.DB_STARTUP_WAIT_SECONDS || '120' }}
       RUN_MIGRATIONS_ON_START: ${{ vars.RUN_MIGRATIONS_ON_START || 'true' }}
       WEBHOOK_AUTO_REGISTER: ${{ vars.WEBHOOK_AUTO_REGISTER || 'true' }}
+      BANK_WEBHOOK_ENABLED: ${{ vars.BANK_WEBHOOK_ENABLED || 'false' }}
       VIETQR_BANK_ID: ${{ vars.VIETQR_BANK_ID }}
       GROUP_URL: ${{ vars.GROUP_URL }}
       CHANNEL_URL: ${{ vars.CHANNEL_URL }}
