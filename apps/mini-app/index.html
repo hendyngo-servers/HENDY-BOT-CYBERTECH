@@ -169,7 +169,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     {key:'tools',icon:'🧰',motion:'motion-tool',title:'THUÊ TOOL',desc:'Kho công cụ và thời hạn sử dụng',section:'tools'},
     {key:'codes',icon:'🎁',motion:'motion-gift',title:'MUA CODE',desc:'Mã dịch vụ và đơn hàng',section:'codes'},
     {key:'wallet',icon:'💳',motion:'motion-wallet',title:'NẠP TIỀN',desc:'Tạo yêu cầu QR VietQR',section:'wallet',wide:true},
-    {key:'otp',icon:'📲',motion:'motion-rocket',title:'OTP & PROXY',desc:'Dịch vụ OTP và Proxy',section:'otp'},
+    {key:'otp',icon:'📲',motion:'motion-rocket',title:'OTP & PROXY',desc:'Thuê OTP SMS, Proxy xoay và Proxy tĩnh',section:'otp-center'},
     {key:'viptools',icon:'💎',motion:'motion-gem',title:'KHO VIP',desc:'Ưu đãi và sản phẩm VIP',section:'vip'},
     {key:'customer',icon:'👤',motion:'motion-chat',title:'TRUNG TÂM KHÁCH HÀNG',desc:'Thông tin, ví và tài khoản',section:'customer',wide:true},
     {key:'history',icon:'📜',motion:'motion-code',title:'LỊCH SỬ',desc:'Giao dịch và đơn hàng',section:'history'},
@@ -311,8 +311,18 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   }
   async function loadVip(){
     state.section='vip';const data=await api('/api/vip');
+    const currentLevel=Number(data.currentLevel||0);
     pageFrame('👑 TRUNG TÂM VIP','Cấp bậc · Điểm danh',`
-      <div class="panel"><h3>HẠNG THÀNH VIÊN</h3><div class="row-card"><span class="muted small">Cấp VIP</span><b>${data.vipLevel||0}</b></div><div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(data.totalDeposited)}</b></div><div class="row-card"><span class="muted small">Điểm thành viên</span><b>${Number(data.points||0).toLocaleString('vi-VN')}</b></div><button class="btn primary" data-action="vip-checkin">🎁 ĐIỂM DANH HÔM NAY</button></div>
+      <div class="panel"><h3>HẠNG THÀNH VIÊN</h3>
+        <div class="row-card"><span class="muted small">Cấp VIP</span><span class="status">${currentLevel>0?'VIP '+currentLevel:'MEMBER'}</span></div>
+        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(data.totalDeposited)}</b></div>
+        <div class="row-card"><span class="muted small">Điểm thành viên</span><b>${Number(data.pointOld||0).toLocaleString('vi-VN')}</b></div>
+        <div class="row-card"><span class="muted small">Chuỗi điểm danh</span><b>${Number(data.streak||0)} ngày</b></div>
+        <div class="row-card"><span class="muted small">Hôm nay</span><span class="status">${data.checkedInToday?'Đã điểm danh':'Chưa điểm danh'}</span></div>
+        ${data.nextThreshold===null?'<div class="notice success">Bạn đang ở cấp VIP cao nhất.</div>':'<div class="notice">Cần nạp thêm <b>'+money(data.amountToNext)+'</b> để đạt VIP '+(currentLevel+1)+'.</div>'}
+        <button class="btn primary" data-action="vip-checkin" ${data.checkedInToday?'disabled':''}>🎁 ĐIỂM DANH HÔM NAY · +${Number(data.checkinPoints||0)} ĐIỂM</button>
+      </div>
+      <div class="panel"><h3>🎖️ CÁC MỐC VIP</h3>${(data.levels||[]).map(level=>`<div class="row-card"><b>${escapeHtml(level.name)}</b><span class="muted small">Tổng nạp từ ${money(level.threshold)}</span></div>`).join('')}</div>
       <div class="panel"><h3>GÓI VIP ĐANG MỞ</h3>${(data.products||[]).map(p=>`<div class="row-card"><div><b>${escapeHtml(p.name)}</b><small class="muted small" style="display:block">${escapeHtml(p.description||'')}</small></div><b>${money(p.price)}</b></div>`).join('')||'<p class="muted small">Chưa có gói VIP.</p>'}</div>`);
   }
   async function loadCommunity(){
@@ -342,6 +352,18 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       if(section==='wallet'){await loadWallet();return;}
       if(section==='customer'){await loadCustomer();return;}
       if(section==='minigame'){await loadAccounts();return;}
+      if(section==='otp-center'){
+        state.section='otp-center';setNav('services');
+        pageFrame('📲 OTP & PROXY CENTER','Ví NYC · dịch vụ số',`
+          <div class="wallets"><div class="wallet"><small>🪙 VÍ NYC</small><b>${money(state.boot.user.nycWallet)}</b></div><div class="wallet"><small>💰 VÍ CHÍNH</small><b>${money(state.boot.user.balance)}</b></div><div class="wallet"><small>👑 VIP</small><b>${Number(state.boot.user.vipLevel||0)}</b></div></div>
+          <section class="tiles">
+            <button class="tile" data-open="otp"><div class="tile-icon">📲</div><h3>THUÊ OTP SMS</h3><p>Chọn dịch vụ và xem giá.</p></button>
+            <button class="tile" data-open="proxy"><div class="tile-icon">🌐</div><h3>PROXY CENTER</h3><p>Proxy xoay, tĩnh và kho đã thuê.</p></button>
+            <button class="tile tile-wide" data-open="history"><div class="tile-icon">📜</div><h3>LỊCH SỬ GIAO DỊCH</h3><p>Tra cứu đơn hàng OTP, Proxy và biến động ví.</p></button>
+          </section>
+          <div class="panel"><h3>🪙 NẠP VÍ NYC</h3><p class="muted small">Chuyển nội bộ từ Ví Chính sang Ví NYC bằng menu OTP & Proxy trong cuộc trò chuyện Telegram. Việc chuyển ví được ghi vào sổ cái PostgreSQL.</p><button class="btn" data-action="open-bot">MỞ BOT ĐỂ CHUYỂN VÍ NYC</button></div>`);
+        return;
+      }
       if(section==='history'){await loadHistory();return;}
       if(section==='ref'){await loadReferrals();return;}
       if(section==='vip'){await loadVip();return;}
