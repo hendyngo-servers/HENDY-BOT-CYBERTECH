@@ -171,7 +171,7 @@ final class ApiController
         if ($path === '/api/linked-accounts' && $method === 'POST') {
             $brand = strtoupper($this->text($this->body['brand'] ?? '', 16));
             $username = $this->text($this->body['username'] ?? '', 64);
-            if (!in_array($brand, ['RR88', 'MM88', 'GG88', 'AD88', 'QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'], true)) {
+            if (!in_array($brand, ['QQ88', 'HI88', '78WIN', 'RR88', 'MM88', 'GG88', 'ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB', 'AD88', 'SC88', 'C168', 'CM88', 'F8BET'], true)) {
                 throw new HttpException(400, 'Thương hiệu không nằm trong danh sách hỗ trợ.');
             }
             if (mb_strlen($username) < 3 || preg_match('/[\x00-\x1F]/', $username)) {
@@ -936,10 +936,11 @@ final class ApiController
             }
             Database::transaction(function () use ($values): void {
                 foreach ($values as $key => $value) {
+                    $isPublic = !in_array($key, ['VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'], true);
                     Database::run(
-                        'INSERT INTO app_settings (key, value, is_public, updated_at) VALUES (?, ?, TRUE, NOW()) ' .
-                        'ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, is_public = TRUE, updated_at = NOW()',
-                        [$key, $value]
+                        'INSERT INTO app_settings (key, value, is_public, updated_at) VALUES (?, ?, ?, NOW()) ' .
+                        'ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, is_public = EXCLUDED.is_public, updated_at = NOW()',
+                        [$key, $value, $isPublic]
                     );
                 }
             });
