@@ -9,6 +9,7 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 - Hai Telegram bot độc lập trong một ứng dụng PHP, cùng dùng một PostgreSQL database.
 - Reply Keyboard dạng lưới cố định phía dưới khung nhập và Inline Keyboard nằm dưới tin nhắn; từng bot có thể chọn loại menu, số cột, phần giới thiệu, tên/mô tả nút, màu semantic, resize và persistent.
 - Dashboard tiếng Việt: tổng quan, sản phẩm, đơn hàng, thành viên, điều chỉnh số dư, ticket CSKH, giftcode, thiết lập VietQR/liên kết cộng đồng và cấu hình menu của hai bot.
+- Màn hình chào mừng Telegram/Mini App đồng bộ thương hiệu LETHITUANEM TEAM: lời chào theo giờ Việt Nam, ID Telegram, tổng nạp, ví chính, ví NYC, trạng thái thành viên, website, nhóm cộng đồng và bot liên hệ; số dư lấy trực tiếp từ PostgreSQL, không dùng số liệu mẫu.
 - Telegram Mini App authentication bằng chữ ký initData và HMAC SHA-256; không tin Telegram ID do client tự nhập.
 - Sản phẩm/dịch vụ: Mini Game Live, thuê tool, code, OTP, proxy, VIP.
 - Hồ sơ Trung tâm khách hàng: ví chính (balance), ví NYC, ví Voucher, tổng nạp, điểm thành viên; thống kê đơn pending/processing/completed/cancelled/refunded, lịch sử giao dịch, ticket CSKH và yêu cầu voucher 72 giờ. Dữ liệu gắn với Telegram initData đã xác thực, không có Telegram ID mẫu.
