@@ -273,4 +273,21 @@ $practiceResult = MatchmakingService::confirm((int) $practiceMatch['id'], $match
 $practiceAfterA = MatchmakingService::ensureStats($matchUserA);
 $assert($practiceResult['ratingDeltaOne'] === 0 && (int) $practiceAfterA['rating'] === (int) $practiceBeforeA['rating'], 'practice match does not change Elo');
 
+
+$queueUserA = '95' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
+$queueUserB = '94' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
+$queueUserC = '93' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
+foreach ([$queueUserA, $queueUserB, $queueUserC] as $id) {
+    Database::run('INSERT INTO users (user_id, name) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING', [$id, 'Queue test']);
+}
+$queueWaiting = MatchmakingService::join($queueUserA, 'quick');
+$assert($queueWaiting['status'] === 'waiting', 'first Telegram player enters quick queue');
+$queueMatched = MatchmakingService::join($queueUserB, 'quick');
+$assert($queueMatched['status'] === 'matched' && ($queueMatched['match']['status'] ?? '') === 'matched', 'second Telegram player is paired');
+$practiceWaiting = MatchmakingService::join($queueUserC, 'practice');
+$assert($practiceWaiting['status'] === 'waiting', 'practice player enters separate queue');
+MatchmakingService::leaveQueue($queueUserC);
+$queueState = Database::value("SELECT status FROM matchmaking_queue WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", [$queueUserC]);
+$assert($queueState === 'cancelled', 'Telegram member can leave waiting queue');
+
 echo "Đã chạy {$checks} PostgreSQL smoke checks.\n";
