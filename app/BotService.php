@@ -685,7 +685,23 @@ final class BotService
             'SELECT id, brand, username, created_at FROM linked_accounts WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
             [$userId]
         );
-        $lines = ['🚀 <b>MINIGAME LIVE</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        $counts = Database::all(
+            'SELECT brand, COUNT(*) AS account_count FROM linked_accounts WHERE user_id = ? GROUP BY brand ORDER BY brand',
+            [$userId]
+        );
+        $countByBrand = array_fill_keys(self::BRANDS, 0);
+        foreach ($counts as $count) {
+            $brand = (string) $count['brand'];
+            if (array_key_exists($brand, $countByBrand)) {
+                $countByBrand[$brand] = (int) $count['account_count'];
+            }
+        }
+        $lines = ['🚀 <b>MINIGAME LIVE</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>THỐNG KÊ KHO TÀI KHOẢN</b>'];
+        foreach (self::BRANDS as $brand) {
+            $lines[] = '• Kho ' . self::escape($brand) . ': <b>' . $countByBrand[$brand] . '</b>';
+        }
+        $lines[] = '━━━━━━━━━━━━━━━━━━━━';
+        $lines[] = '<b>TÀI KHOẢN ĐÃ LIÊN KẾT</b>';
         foreach ($accounts as $account) {
             $lines[] = '• <b>' . self::escape($account['brand']) . '</b> — <code>' . self::escape($account['username']) . '</code>';
         }
@@ -715,7 +731,7 @@ final class BotService
         $products = Database::all(
             "SELECT id, name, price, description, stock, duration_days FROM products " .
             "WHERE category IN ($placeholders) AND is_active = TRUE AND (stock IS NULL OR stock > 0) " .
-            'ORDER BY created_at DESC LIMIT 30',
+            'ORDER BY created_at DESC LIMIT 15',
             $categories
         );
 
@@ -732,7 +748,7 @@ final class BotService
             $lines[] = '  Kho: <b>' . self::escape($stock) . '</b>' .
                 ((int) ($product['duration_days'] ?? 0) > 0 ? ' · Thời hạn: ' . (int) $product['duration_days'] . ' ngày' : '');
             if (trim((string) $product['description']) !== '') {
-                $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 180));
+                $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 140));
             }
         }
 
