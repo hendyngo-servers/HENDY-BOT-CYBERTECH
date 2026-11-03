@@ -106,6 +106,61 @@ final class ApiController
             return self::response(['user' => $this->userRow(), 'isAdmin' => $this->isAdmin()]);
         }
 
+        if ($method === 'GET' && $path === '/api/customer-center') {
+            $profile = $this->userRow();
+            $stats = Database::one(
+                "SELECT COUNT(*) AS total_orders,
+                        COUNT(*) FILTER (WHERE status = 'processing') AS processing_orders,
+                        COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
+                        COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_orders,
+                        COUNT(*) FILTER (
+                            WHERE status = 'refunded'
+                               OR EXISTS (
+                                   SELECT 1 FROM transactions tx
+                                   WHERE tx.user_id = orders.user_id
+                                     AND tx.reference_code = orders.order_code
+                                     AND tx.type = 'ORDER_REFUND'
+                               )
+                        ) AS refunded_orders
+                 FROM orders WHERE user_id = ?",
+                [$userId]
+            ) ?? [];
+            $ticketCounts = Database::one(
+                "SELECT COUNT(*) AS total,
+                        COUNT(*) FILTER (WHERE ticket_type = 'dinh_lam') AS abuse,
+                        COUNT(*) FILTER (WHERE ticket_type = 'support') AS support
+                 FROM support_tickets WHERE user_id = ?",
+                [$userId]
+            ) ?? [];
+            return self::response([
+                'user' => $profile,
+                'statistics' => [
+                    'totalOrders' => (int) ($stats['total_orders'] ?? 0),
+                    'processingOrders' => (int) ($stats['processing_orders'] ?? 0),
+                    'completedOrders' => (int) ($stats['completed_orders'] ?? 0),
+                    'cancelledOrders' => (int) ($stats['cancelled_orders'] ?? 0),
+                    'refundedOrders' => (int) ($stats['refunded_orders'] ?? 0),
+                ],
+                'tickets' => [
+                    'total' => (int) ($ticketCounts['total'] ?? 0),
+                    'dinhLam' => (int) ($ticketCounts['abuse'] ?? 0),
+                    'support' => (int) ($ticketCounts['support'] ?? 0),
+                ],
+                'recentOrders' => Database::all(
+                    'SELECT id, order_code, product_name, amount, status, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 5',
+                    [$userId]
+                ),
+                'recentTransactions' => Database::all(
+                    'SELECT id, amount, type, reference_code, status, wallet_type, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+                    [$userId]
+                ),
+                'walletHistory' => Database::all(
+                    'SELECT id, amount, transaction_type, wallet_type, description, reference_code, created_at FROM wallet_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+                    [$userId]
+                ),
+            ]);
+        }
+
         if ($path === '/api/linked-accounts' && $method === 'GET') {
             return self::response(['accounts' => Database::all(
                 'SELECT id, brand, username, created_at FROM linked_accounts WHERE user_id = ? ORDER BY created_at DESC',
@@ -327,21 +382,46 @@ final class ApiController
 
         if ($path === '/api/support/tickets' && $method === 'GET') {
             return self::response(['tickets' => Database::all(
-                'SELECT id, subject, message, status, priority, admin_reply, created_at, updated_at FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+                'SELECT id, ticket_type, subject, message, status, priority, admin_reply, created_at, updated_at FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
                 [$userId]
             )]);
         }
         if ($path === '/api/support/tickets' && $method === 'POST') {
+            $ticketType = $this->text($this->body['ticketType'] ?? 'support', 24);
+            if (!in_array($ticketType, ['dinh_lam', 'support'], true)) {
+                throw new HttpException(400, 'Loại yêu cầu hỗ trợ không hợp lệ.');
+            }
             $subject = $this->text($this->body['subject'] ?? '', 120);
             $message = $this->text($this->body['message'] ?? '', 3000);
             if (mb_strlen($subject) < 3 || mb_strlen($message) < 5) {
                 throw new HttpException(400, 'Vui lòng nhập tiêu đề và nội dung yêu cầu.');
             }
             $ticket = Database::one(
-                'INSERT INTO support_tickets (user_id, subject, message) VALUES (?, ?, ?) RETURNING id, subject, message, status, created_at',
-                [$userId, $subject, $message]
+                'INSERT INTO support_tickets (user_id, ticket_type, subject, message) VALUES (?, ?, ?, ?) RETURNING id, ticket_type, subject, message, status, created_at',
+                [$userId, $ticketType, $subject, $message]
             );
             return self::response(['ticket' => $ticket, 'message' => 'Đã gửi yêu cầu hỗ trợ.'], 201);
+        }
+
+        if ($path === '/api/vouchers' && $method === 'GET') {
+            return self::response([
+                'eligibleOrders' => VoucherService::eligibleOrders($userId),
+                'requests' => VoucherService::forUser($userId),
+            ]);
+        }
+        if ($path === '/api/vouchers' && $method === 'POST') {
+            $orderId = filter_var($this->body['orderId'] ?? null, FILTER_VALIDATE_INT);
+            $reason = $this->text($this->body['reason'] ?? '', 1000);
+            if ($orderId === false || $orderId < 1 || mb_strlen($reason) < 5) {
+                throw new HttpException(400, 'Chọn đơn hàng và mô tả lý do yêu cầu voucher (ít nhất 5 ký tự).');
+            }
+            try {
+                $request = VoucherService::create($userId, (int) $orderId, $reason);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            $this->notifyAdmins('🎟️ YÊU CẦU VOUCHER 72H #' . $request['id'] . ' · Đơn ' . $request['order_code'] . ' · User ' . $userId . '. Vui lòng kiểm tra lịch sử đơn trước khi duyệt.');
+            return self::response(['request' => $request, 'message' => 'Đã gửi yêu cầu voucher để Admin kiểm tra.'], 201);
         }
 
         if ($path === '/api/matchmaking/leaderboard' && $method === 'GET') {
@@ -760,6 +840,26 @@ final class ApiController
             return self::response(['success' => true, 'balance' => $balance]);
         }
 
+        if ($method === 'GET' && $path === '/api/admin/vouchers') {
+            return self::response(['requests' => VoucherService::pending(200)]);
+        }
+        if (preg_match('#^/api/admin/vouchers/(\\d+)/(approve|reject)$#', $path, $match) && $method === 'POST') {
+            $action = $match[2];
+            $reward = $action === 'approve' ? $this->parseMoney($this->body['rewardAmount'] ?? null, false) : 0;
+            $note = $this->text($this->body['adminNote'] ?? '', 1000);
+            try {
+                $result = VoucherService::review((int) $match[1], $action, (string) $this->user['id'], $reward, $note);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            $this->audit('voucher.' . $action, (string) $match[1], ['rewardAmount' => $reward]);
+            $message = $action === 'approve'
+                ? '✅ Yêu cầu voucher cho đơn ' . $result['request']['order_code'] . ' đã được duyệt. Ví Voucher được cộng ' . self::moneyFormat($reward) . '.'
+                : 'Yêu cầu voucher cho đơn ' . $result['request']['order_code'] . ' đã bị từ chối. Ghi chú: ' . ($note !== '' ? $note : 'Không có.');
+            $this->notify($result['userId'], $message);
+            return self::response(['request' => $result['request'], 'message' => $action === 'approve' ? 'Đã duyệt và cộng ví Voucher.' : 'Đã từ chối yêu cầu.']);
+        }
+
         if ($method === 'GET' && $path === '/api/admin/tickets') {
             return self::response(['tickets' => Database::all(
                 "SELECT * FROM support_tickets ORDER BY CASE WHEN status = 'open' THEN 0 ELSE 1 END, created_at DESC LIMIT 200"
@@ -1033,7 +1133,7 @@ final class ApiController
             "INSERT INTO users (user_id, name, username) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET " .
             "name = CASE WHEN EXCLUDED.name <> '' THEN EXCLUDED.name ELSE users.name END, " .
             "username = CASE WHEN EXCLUDED.username <> '' THEN EXCLUDED.username ELSE users.username END " .
-            'RETURNING user_id, name, username, balance, vip_level, total_deposited',
+            'RETURNING user_id, name, username, balance, vip_level, total_deposited, nyc_wallet, voucher_wallet, point_old, created_at',
             [$userId, $name, $username]
         ) ?? [];
         return [
@@ -1041,8 +1141,13 @@ final class ApiController
             'name' => $row['name'] ?: ($username ?: 'Thành viên'),
             'username' => $row['username'],
             'balance' => (int) $row['balance'],
+            'mainWallet' => (int) $row['balance'],
+            'nycWallet' => (int) $row['nyc_wallet'],
+            'voucherWallet' => (int) $row['voucher_wallet'],
             'vipLevel' => (int) $row['vip_level'],
             'totalDeposited' => (int) $row['total_deposited'],
+            'pointOld' => (int) $row['point_old'],
+            'createdAt' => $row['created_at'],
         ];
     }
 
