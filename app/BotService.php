@@ -15,7 +15,9 @@ final class BotService
         ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Liên kết và quản lý tài khoản trò chơi.', 'style' => 'primary'],
         ['action' => 'tools', 'label' => '🧰 THUÊ TOOL', 'description' => 'Xem công cụ và thời hạn thuê.', 'style' => 'primary'],
         ['action' => 'codes', 'label' => '🎁 MUA CODE', 'description' => 'Mua code và theo dõi đơn hàng.', 'style' => 'success'],
-        ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo thông tin VietQR và xem lịch sử nạp.', 'style' => 'success'],
+        ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo yêu cầu chuyển khoản và theo dõi trạng thái duyệt.', 'style' => 'success'],
+        ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi link video hợp lệ để tạo công việc phụ đề.', 'style' => 'primary'],
+        ['action' => 'history', 'label' => '📜 LỊCH SỬ HOẠT ĐỘNG', 'description' => 'Xem giao dịch ví, yêu cầu nạp và video jobs.', 'style' => 'primary'],
         ['action' => 'otp', 'label' => '⚙️ OTP & PROXY', 'description' => 'Xem các gói OTP và Proxy đang mở bán.', 'style' => 'primary'],
         ['action' => 'viptools', 'label' => '🏆 KHO VIP', 'description' => 'Khám phá kho công cụ dành cho thành viên VIP.', 'style' => 'primary'],
         ['action' => 'customer', 'label' => '💎 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Xem hồ sơ, số dư, đơn hàng và liên kết.', 'style' => 'primary'],
@@ -120,12 +122,58 @@ final class BotService
                 '🤖 <b>HENDY BOT</b>',
                 '/start — Mở menu chính',
                 '/menu — Hiển thị lại menu',
+                '/balance — Kiểm tra số dư ví',
+                '/deposit [số tiền] — Tạo yêu cầu nạp và mã VietQR',
+                '/history — Xem lịch sử ví và video jobs',
+                '/vietsub — Gửi link video để tạo job phụ đề',
+                '/jobs — Xem trạng thái video jobs',
                 '/orders — Xem đơn hàng',
                 '/admin — Mở bảng quản trị (chỉ Admin)',
+                '/admin_payments — Duyệt yêu cầu nạp (Admin)',
+                '/admin_jobs — Xem video jobs (Admin)',
                 '/help — Hướng dẫn sử dụng',
                 '',
                 'Bấm nút ở bàn phím phía dưới để mở chức năng.',
             ]));
+            return;
+        }
+
+        if (preg_match('/^\/balance(?:@\w+)?$/u', $text)) {
+            $this->showBalance($chatId, $userId);
+            return;
+        }
+
+        if (preg_match('/^\/deposit(?:@\w+)?(?:\s+(\d+))?$/u', $text, $matches)) {
+            $amount = isset($matches[1]) && $matches[1] !== '' ? (int) $matches[1] : 0;
+            if ($amount > 0) {
+                $this->showDeposit($chatId, $userId, $amount);
+            } else {
+                $this->showWalletMenu($chatId, $userId);
+            }
+            return;
+        }
+
+        if (preg_match('/^\/vietsub(?:@\w+)?$/u', $text)) {
+            $this->startVideoRequest($chatId, $userId);
+            return;
+        }
+
+        if (preg_match('/^\/(?:history|jobs)(?:@\w+)?$/u', $text, $matches)) {
+            if (str_starts_with($text, '/jobs')) {
+                $this->showVideoJobs($chatId, $userId);
+            } else {
+                $this->showUserHistory($chatId, $userId);
+            }
+            return;
+        }
+
+        if (preg_match('/^\/admin_payments(?:@\w+)?$/u', $text)) {
+            $this->showAdminPayments($chatId, $userId);
+            return;
+        }
+
+        if (preg_match('/^\/admin_jobs(?:@\w+)?$/u', $text)) {
+            $this->showAdminVideoJobs($chatId, $userId);
             return;
         }
 
@@ -248,7 +296,7 @@ final class BotService
             ];
         }
 
-        if ($this->adminId !== '' && $userId === $this->adminId) {
+        if (TelegramAuth::isAdmin($userId)) {
             $items[] = [
                 'action' => 'admin',
                 'label' => self::truncate((string) ($labels['admin'] ?? '🛡️ BẢNG ĐIỀU KHIỂN ADMIN'), 60),
@@ -267,12 +315,8 @@ final class BotService
             foreach (array_chunk($items, $columns) as $chunk) {
                 $row = [];
                 foreach ($chunk as $item) {
-                    $button = [
-                        'text' => $item['label'],
-                        'style' => in_array($item['style'] ?? '', ['primary', 'success', 'danger'], true)
-                            ? $item['style']
-                            : 'primary',
-                    ];
+                    // Telegram Bot API buttons do not support arbitrary color/style fields.
+                    $button = ['text' => $item['label']];
                     if ($item['action'] === 'admin') {
                         $url = $this->webAppUrl('admin');
                         if ($url !== '') {
@@ -299,12 +343,8 @@ final class BotService
         foreach (array_chunk($items, $columns) as $chunk) {
             $row = [];
             foreach ($chunk as $item) {
-                $button = [
-                    'text' => $item['label'],
-                    'style' => in_array($item['style'] ?? '', ['primary', 'success', 'danger'], true)
-                        ? $item['style']
-                        : 'primary',
-                ];
+                // ReplyKeyboardButton has no color property in the Telegram Bot API.
+                $button = ['text' => $item['label']];
                 if ($item['action'] === 'admin') {
                     $url = $this->webAppUrl('admin');
                     if ($url !== '') {
@@ -341,6 +381,23 @@ final class BotService
 
     private function dispatchAction(string $chatId, string $userId, string $action): void
     {
+        if (preg_match('/^deposit:(\d{4,12})$/', $action, $matches)) {
+            $this->showDeposit($chatId, $userId, (int) $matches[1]);
+            return;
+        }
+        if (preg_match('/^payment-approve:([A-Z0-9]{6,24})$/', $action, $matches)) {
+            $this->approvePaymentRequest($chatId, $userId, $matches[1]);
+            return;
+        }
+        if (preg_match('/^payment-reject:([A-Z0-9]{6,24})$/', $action, $matches)) {
+            $this->rejectPaymentRequest($chatId, $userId, $matches[1]);
+            return;
+        }
+        if (preg_match('/^video-retry:([0-9a-f-]{36})$/i', $action, $matches)) {
+            $this->retryVideoJob($chatId, $userId, $matches[1]);
+            return;
+        }
+
         if (preg_match('/^order:(\d{1,18})$/', $action, $matches)) {
             $this->createOrder($chatId, $userId, $matches[1]);
             return;
@@ -400,8 +457,16 @@ final class BotService
                 $this->showProducts($chatId, ['vip'], '🏆 KHO VIP');
                 return;
             case 'wallet':
-                $this->setPending($userId, 'wallet');
-                $this->telegram->sendMessage($chatId, '💳 Nhập số tiền cần nạp (từ 10.000 đến 500.000.000 VNĐ). Ví dụ: <code>50000</code>.');
+                $this->showWalletMenu($chatId, $userId);
+                return;
+            case 'vietsub':
+                $this->startVideoRequest($chatId, $userId);
+                return;
+            case 'history':
+                $this->showUserHistory($chatId, $userId);
+                return;
+            case 'jobs':
+                $this->showVideoJobs($chatId, $userId);
                 return;
             case 'deposit-history':
                 $this->showDepositHistory($chatId, $userId);
@@ -435,6 +500,15 @@ final class BotService
                 return;
             case 'admin':
                 $this->openAdmin($chatId, $userId);
+                return;
+            case 'admin-payments':
+                $this->showAdminPayments($chatId, $userId);
+                return;
+            case 'admin-jobs':
+                $this->showAdminVideoJobs($chatId, $userId);
+                return;
+            case 'admin-stats':
+                $this->showAdminStats($chatId, $userId);
                 return;
             default:
                 $this->telegram->sendMessage($chatId, 'Chức năng chưa được cấu hình. Hãy chọn lại menu chính bằng /menu.');
