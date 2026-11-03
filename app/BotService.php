@@ -340,8 +340,8 @@ final class BotService
             foreach (array_chunk($items, $columns) as $chunk) {
                 $row = [];
                 foreach ($chunk as $item) {
-                    // Telegram Bot API buttons do not support arbitrary color/style fields.
-                    $button = ['text' => $item['label']];
+                    // Bot API 9.4 supports the predefined primary/success/danger styles.
+                    $button = ['text' => $item['label'], 'style' => $item['style']];
                     if ($item['action'] === 'admin') {
                         $url = $this->webAppUrl('admin');
                         if ($url !== '') {
@@ -368,8 +368,8 @@ final class BotService
         foreach (array_chunk($items, $columns) as $chunk) {
             $row = [];
             foreach ($chunk as $item) {
-                // ReplyKeyboardButton has no color property in the Telegram Bot API.
-                $button = ['text' => $item['label']];
+                // Preserve each configured color in Reply Keyboard as well.
+                $button = ['text' => $item['label'], 'style' => $item['style']];
                 if ($item['action'] === 'admin') {
                     $url = $this->webAppUrl('admin');
                     if ($url !== '') {
@@ -1133,8 +1133,8 @@ final class BotService
             '🔥 Chuỗi điểm danh: <b>' . $status['streak'] . ' ngày</b>',
         ]), [
             'reply_markup' => $this->inlineMenu([
-                [['text' => $status['checkedInToday'] ? '✅ ĐÃ ĐIỂM DANH HÔM NAY' : '🎁 ĐIỂM DANH VIP', 'callback_data' => 'member:vip-checkin']],
-                [['text' => 'ℹ️ THÔNG TIN TẤT CẢ VIP', 'callback_data' => 'member:vip-info']],
+                [['text' => $status['checkedInToday'] ? '✅ ĐÃ ĐIỂM DANH HÔM NAY' : '🎁 ĐIỂM DANH VIP', 'callback_data' => 'member:vip-checkin', 'style' => 'success']],
+                [['text' => 'ℹ️ THÔNG TIN TẤT CẢ VIP', 'callback_data' => 'member:vip-info', 'style' => 'primary']],
                 [['text' => '🔙 TRỞ VỀ', 'callback_data' => 'member:home']],
             ]),
         ]);
