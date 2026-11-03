@@ -93,7 +93,7 @@ services:
       - key: ADMIN_IDS
         sync: false
       - key: WEBSOCKET_ALLOWED_ORIGINS
-        value: https://hendy-bot-tele.onrender.com
+        value: https://hendy-bot-tele.onrender.com,https://hendy-web-admin.pages.dev,https://hendy-mini-app.pages.dev
       - key: WEBSOCKET_MAX_CONNECTIONS
         value: "250"
       - key: WEBSOCKET_BIND
