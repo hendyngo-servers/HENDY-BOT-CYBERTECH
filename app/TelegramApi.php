@@ -100,7 +100,7 @@ final class TelegramApi
         $this->call('sendChatAction', [
             'chat_id' => $chatId,
             'action' => $action,
-        ], 4, 2);
+        ], 2, 1);
     }
 
     public function setWebhook(string $url, string $secret): void
