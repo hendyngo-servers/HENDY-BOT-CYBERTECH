@@ -21,8 +21,7 @@ final class BotService
         ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ và kết quả yêu cầu Vietsub.', 'style' => 'primary'],
         ['action' => 'otp', 'label' => '⚙️ OTP & PROXY', 'description' => 'Xem các gói OTP và Proxy đang mở bán.', 'style' => 'primary'],
         ['action' => 'viptools', 'label' => '🏆 KHO VIP', 'description' => 'Khám phá kho công cụ dành cho thành viên VIP.', 'style' => 'primary'],
-        ['action' => 'customer', 'label' => '🔐 QUẢN LÝ TÀI KHOẢN', 'description' => 'Chọn Mini App hoặc đăng nhập truyền thống có thời hạn 5 phút.', 'style' => 'primary'],
-        ['action' => 'abcvip', 'label' => '🏦 KHO TÀI KHOẢN ABCVIP', 'description' => 'Đăng nhập qua cổng liên kết chính thức để kết nối tài khoản ABCVIP.', 'style' => 'success'],
+        ['action' => 'customer', 'label' => '🔐 QUẢN LÝ TÀI KHOẢN', 'description' => 'Hồ sơ, số dư, tài khoản liên kết và lịch sử giao dịch ngay trong Telegram.', 'style' => 'primary'],
         ['action' => 'duel', 'label' => '⚔️ GHÉP ĐÔI', 'description' => 'Vào hàng chờ và ghép với thành viên khác.', 'style' => 'primary'],
         ['action' => 'ref', 'label' => '🎊 GIỚI THIỆU REF', 'description' => 'Chia sẻ link và theo dõi hoa hồng giới thiệu.', 'style' => 'success'],
         ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Xem cấp VIP và gói nâng cấp.', 'style' => 'primary'],
@@ -2010,6 +2009,13 @@ final class BotService
                 $amount = (int) $text;
                 try {
                     $transfer = Database::transaction(function () use ($userId, $amount): array {
+                        $pending = Database::one(
+                            "DELETE FROM bot_pending_inputs WHERE user_id = ? AND bot_key = ? AND input_type = 'nyc_transfer' AND expires_at > NOW() RETURNING user_id",
+                            [$userId, $this->botKey]
+                        );
+                        if ($pending === null) {
+                            throw new RuntimeException('Yêu cầu chuyển ví đã hết hạn hoặc đã được xử lý. Hãy tạo yêu cầu mới.');
+                        }
                         $user = Database::one('SELECT balance, nyc_wallet FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
                         if ($user === null || (int) $user['balance'] < $amount) throw new RuntimeException('Ví Chính không đủ số dư để chuyển.');
                         Database::run('UPDATE users SET balance = balance - ?, nyc_wallet = nyc_wallet + ? WHERE user_id = ?', [$amount, $amount, $userId]);
