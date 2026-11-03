@@ -319,6 +319,17 @@
     const user = state.boot.user;
     const settings = state.boot.settings || {};
     const name = user.name || 'Thành viên';
+    const hour = Number(new Intl.DateTimeFormat('en-US', {
+      timeZone:'Asia/Ho_Chi_Minh', hour:'numeric', hourCycle:'h23'
+    }).format(new Date()));
+    const period = hour >= 5 && hour < 11 ? 'buổi sáng' :
+      hour >= 11 && hour < 13 ? 'buổi trưa' :
+      hour >= 13 && hour < 18 ? 'buổi chiều' :
+      hour >= 18 && hour < 22 ? 'buổi tối' : 'buổi đêm';
+    const memberStatus = Number(user.vipLevel || 0) > 0 ? 'VIP ' + Number(user.vipLevel) : 'Bình thường';
+    const website = settings.website_url || 'https://hendy-bot-tele.onrender.com';
+    const group = settings.GROUP_URL || 'https://t.me/lethituanem_nhomchat';
+    const botUsername = String(settings.bot_username || state.boot.botUsername || 'tuanem2027_bot').replace(/^@/,'');
     const services = [
       ['minigame','🎮','Mini Game Live','Chơi game · Nhận quà','g-violet'],
       ['tools','🗂️','App / Tool','Công cụ chuyên nghiệp','g-blue'],
@@ -331,11 +342,16 @@
       ['giftcode','🎁','Giftcode','Nhận quà tặng','g-violet'],
       ['referrals','👥','Giới thiệu REF','Chia sẻ nhận thưởng','g-blue']
     ];
-    return '<section class="hero"><div class="eyebrow">HENDY BOT TELEGRAM</div><h2>Xin chào, ' + escapeHtml(name) + ' 👋</h2>' +
-      '<p>' + escapeHtml(settings.announcement || 'Kết nối dịch vụ · Tiện ích · Hỗ trợ khách hàng') + '</p></section>' +
-      '<section class="balance-card"><div class="balance-row"><div><div class="balance-label">SỐ DƯ KHẢ DỤNG</div>' +
-      '<div class="balance-value">' + money(user.balance) + '</div></div><div style="text-align:right"><span class="vip-pill">👑 VIP ' + Number(user.vipLevel || 0) + '</span>' +
-      '<div style="margin-top:10px"><button class="primary" data-page="wallet">＋ Nạp tiền</button></div></div></div></section>' +
+    return '<section class="hero"><div class="eyebrow">LETHITUANEM TEAM · HENDY BOT</div><h2>Chúc ' + period + ' vui vẻ, ' + escapeHtml(name) + ' 👋</h2>' +
+      '<p>' + escapeHtml(settings.announcement || 'Tối ưu mọi nhu cầu · Đồng hành cùng bạn · Tool · Phần mềm · Dịch vụ công nghệ · Điểm thưởng game') + '</p></section>' +
+      '<section class="balance-card"><div class="balance-row"><div><div class="balance-label">🆔 TELEGRAM ID</div>' +
+      '<div class="small" style="font-weight:850;margin-top:5px">' + escapeHtml(user.id) + '</div></div><span class="vip-pill">👍 ' + escapeHtml(memberStatus) + '</span></div>' +
+      '<div class="section-head"><h3>Thông tin số dư</h3><span>Tài khoản của bạn</span></div>' +
+      '<div class="stat-grid"><div class="stat"><small>🔢 Tổng nạp</small><b>' + money(user.totalDeposited || 0) + '</b></div>' +
+      '<div class="stat"><small>😄 Ví Chính</small><b>' + money(user.mainWallet ?? user.balance) + '</b></div>' +
+      '<div class="stat"><small>😄 Ví NYC</small><b>' + money(user.nycWallet || 0) + '</b></div>' +
+      '<div class="stat"><small>🎟️ Ví Voucher</small><b>' + money(user.voucherWallet || 0) + '</b></div></div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="primary" data-page="wallet">＋ Nạp tiền</button></div></section>' +
       '<div class="section-head"><h3>Khám phá dịch vụ</h3><span>Chọn tính năng</span></div>' +
       '<section class="service-grid">' + services.map(item =>
         '<button class="service-tile ' + item[4] + '" data-page="' + item[0] + '"><span class="emoji">' + item[1] +
@@ -343,7 +359,9 @@
       ).join('') + '</section>' +
       '<div class="section-head"><h3>Trung tâm khách hàng</h3><span>' + Number(state.boot.referralCount || 0) + ' lượt giới thiệu</span></div>' +
       '<button class="card" data-page="customer" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid #e1e9fb"><b style="font-size:13px">💎 Quản lý tài khoản và hỗ trợ</b><span class="price">Mở trung tâm →</span></button>' +
-      (settings.website_url ? '<a class="card" href="' + escapeHtml(settings.website_url) + '" target="_blank" rel="noopener noreferrer" style="display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit"><b>🌐 WEBSITE CHÍNH THỨC</b><span class="price">Mở website ↗</span></a>' : '') +
+      '<div class="card"><div class="list-row"><b>🌟 Website chính thức</b><a class="price" href="' + escapeHtml(website) + '" target="_blank" rel="noopener noreferrer">Mở website ↗</a></div>' +
+      '<div class="list-row"><b>💥 Nhóm LETHITUANEM</b><a class="price" href="' + escapeHtml(group) + '" target="_blank" rel="noopener noreferrer">Tham gia nhóm ↗</a></div>' +
+      '<div class="list-row"><b>🤖 Bot Tuấn Em</b><a class="price" href="https://t.me/' + encodeURIComponent(botUsername) + '" target="_blank" rel="noopener noreferrer">@' + escapeHtml(botUsername) + '</a></div></div>' +
       (state.boot.isAdmin ? '<div class="notice good" style="margin-top:12px">Tài khoản quản trị đã được xác thực. Mục Quản trị chỉ hiển thị với Admin.</div>' : '');
   }
 
@@ -733,6 +751,7 @@
       field('homepage_title','Tên thương hiệu') +
       '<div class="field"><label>Thông báo trang chủ</label><textarea name="announcement">' + escapeHtml(s.announcement || '') + '</textarea></div>' +
       field('website_url','Website chính thức (HTTPS)','url') +
+      field('bot_username','Username bot Telegram (không cần @)') +
       field('VIETQR_BANK_ID','Mã ngân hàng VietQR') +
       field('VIETQR_ACCOUNT_NO','Số tài khoản nhận tiền') +
       field('VIETQR_ACCOUNT_NAME','Tên chủ tài khoản') +
