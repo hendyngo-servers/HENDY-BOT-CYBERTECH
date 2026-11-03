@@ -850,7 +850,7 @@ final class BotService
     private function showCustomer(string $chatId, string $userId): void
     {
         $user = $this->getUser($userId);
-        $miniAppUrl = $this->webAppUrl('customer-center');
+        $miniAppUrl = $this->webAppUrl('customer');
         if ($miniAppUrl === '') {
             $miniAppUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/') . '/';
         }
