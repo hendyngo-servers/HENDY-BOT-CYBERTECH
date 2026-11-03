@@ -158,6 +158,12 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   const savedBotKey = !params.has('bot') ? localStorage.getItem('hendy_bot_key') : '';
   const botKey = params.get('bot') === 'secondary' || (!params.has('bot') && savedBotKey === 'secondary') ? 'secondary' : 'primary';
   const state = { boot:null, center:null, section:'home', products:[], payment:null, accounts:[], referrals:null, vip:null, lastAction:null };
+  let realtimeSocket=null;
+  let realtimeRetry=null;
+  let realtimeHeartbeat=null;
+  let realtimeRetryCount=0;
+  let realtimeStopped=false;
+  let realtimeRefreshing=false;
   const $ = (selector, root=document) => root.querySelector(selector);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
@@ -184,6 +190,76 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     if (!response.ok) throw new Error(data.error || data.message || ('Yêu cầu lỗi HTTP ' + response.status));
     return data;
   }
+
+  async function refreshWebsiteData(){
+    if(realtimeRefreshing || !state.boot) return;
+    realtimeRefreshing=true;
+    try{
+      const data=await api('/api/bootstrap');
+      if(data.botKey!==botKey) return;
+      state.boot=data;
+      if(state.section==='home') renderHome();
+      else await openSection(state.section);
+      showToast('✨ Dữ liệu HENDY vừa được cập nhật.');
+    }catch(error){
+      console.warn('HENDY realtime refresh failed:',error.message);
+    }finally{
+      realtimeRefreshing=false;
+    }
+  }
+
+  async function connectWebsiteRealtime(){
+    if(!state.boot || realtimeStopped || realtimeSocket) return;
+    try{
+      const ticket=await api('/api/realtime-ticket',{method:'POST',body:{}});
+      const socket=new WebSocket(ticket.url);
+      realtimeSocket=socket;
+      socket.addEventListener('open',()=>{
+        socket.send(JSON.stringify({type:'auth',ticket:ticket.ticket}));
+      });
+      socket.addEventListener('message',event=>{
+        let message;
+        try{message=JSON.parse(event.data);}catch(_){return;}
+        if(message.type==='realtime.ready'){
+          realtimeRetryCount=0;
+          const badge=$('#bot-chip');
+          if(badge)badge.textContent='BOT '+(botKey==='secondary'?'02':'01')+' · HENDY LIVE';
+          window.clearInterval(realtimeHeartbeat);
+          realtimeHeartbeat=window.setInterval(()=>{
+            if(realtimeSocket===socket && socket.readyState===WebSocket.OPEN)
+              socket.send(JSON.stringify({type:'ping',timestamp:Date.now()}));
+          },25000);
+          return;
+        }
+        if(message.type==='pong') return;
+        if(message.type==='auth.failed' || message.type==='origin.rejected') {
+          const badge=$('#bot-chip');if(badge)badge.textContent='HENDY · ĐANG ĐỒNG BỘ LẠI';
+          return;
+        }
+        if(message.type==='user.data.changed' || message.type.startsWith('admin.'))
+          void refreshWebsiteData();
+      });
+      socket.addEventListener('close',()=>{
+        if(realtimeSocket===socket)realtimeSocket=null;
+        window.clearInterval(realtimeHeartbeat);realtimeHeartbeat=null;
+        if(!realtimeStopped){
+          realtimeRetryCount=Math.min(realtimeRetryCount+1,6);
+          const delay=Math.min(30000,1000*(2**realtimeRetryCount))+Math.floor(Math.random()*400);
+          window.clearTimeout(realtimeRetry);
+          realtimeRetry=window.setTimeout(connectWebsiteRealtime,delay);
+        }
+      });
+      socket.addEventListener('error',()=>{const badge=$('#bot-chip');if(badge)badge.textContent='HENDY · ĐANG KẾT NỐI';});
+    }catch(error){
+      if(!realtimeStopped){
+        realtimeRetryCount=Math.min(realtimeRetryCount+1,6);
+        const delay=Math.min(30000,1000*(2**realtimeRetryCount))+Math.floor(Math.random()*400);
+        window.clearTimeout(realtimeRetry);
+        realtimeRetry=window.setTimeout(connectWebsiteRealtime,delay);
+      }
+    }
+  }
+
   const tileData = [
     {key:'live',icon:'🚀',motion:'motion-rocket',title:'MINIGAME LIVE',desc:'Tài khoản, liên kết và hỗ trợ đơn',section:'minigame'},
     {key:'tools',icon:'🧰',motion:'motion-tool',title:'THUÊ TOOL',desc:'Kho công cụ và thời hạn sử dụng',section:'tools'},
@@ -494,11 +570,18 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       localStorage.setItem('hendy_bot_key', botKey);
       if(state.boot.botKey!==botKey)throw new Error('Phiên đăng nhập thuộc bot khác. Hãy mở đúng địa chỉ website BOT 1 hoặc BOT 2.');
       renderHome();
+      connectWebsiteRealtime();
     }catch(error){
       if(!tg || !tg.initData){renderWebsiteLogin();return;}
       $('#app').innerHTML='<div class="notice error">Không thể xác thực tài khoản Telegram: '+escapeHtml(error.message)+'<br>Hãy mở lại website từ đúng bot HENDY.</div>';
     }
   }
+  window.addEventListener('beforeunload',()=>{
+    realtimeStopped=true;
+    window.clearTimeout(realtimeRetry);
+    window.clearInterval(realtimeHeartbeat);
+    if(realtimeSocket)realtimeSocket.close();
+  });
   start();
 })();
 </script>
