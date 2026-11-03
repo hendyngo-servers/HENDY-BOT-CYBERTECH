@@ -1,6 +1,6 @@
 # Hendy Bot Tele — PHP Edition
 
-Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. Giao diện Mini App/Dashboard tiếng Việt được giữ lại bằng HTML/CSS/JavaScript thuần; backend, xác thực Telegram, Bot API, API nghiệp vụ, webhook và cơ sở dữ liệu đã chuyển sang PHP.
+Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. Giao diện thành viên được vận hành trực tiếp trong Telegram bằng Reply Keyboard/Inline Keyboard. Trang `/` chỉ là landing page dẫn vào bot; trang web `/admin` là khu vực quản trị riêng, không còn mở giao diện Mini App dành cho khách hàng.
 
 > **Chỉ dùng hai biến Telegram Bot Token:** **BOT1_TOKEN** và **BOT2_TOKEN**. BOT2_TOKEN có thể để trống để chỉ chạy một bot. ADMIN_ID là Telegram user ID dùng chung cho hai bot.
 
@@ -9,19 +9,19 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 - Hai Telegram bot độc lập trong một ứng dụng PHP, cùng dùng một PostgreSQL database.
 - Reply Keyboard dạng lưới cố định phía dưới khung nhập và Inline Keyboard nằm dưới tin nhắn; từng bot có thể chọn loại menu, số cột, phần giới thiệu, tên/mô tả nút, màu semantic, resize và persistent.
 - Dashboard tiếng Việt: tổng quan, sản phẩm, đơn hàng, thành viên, điều chỉnh số dư, ticket CSKH, giftcode, thiết lập VietQR/liên kết cộng đồng và cấu hình menu của hai bot.
-- Màn hình chào mừng Telegram/Mini App đồng bộ thương hiệu `⩤ BOT 💠 HENDY ⩥`, có slogan động, lời chào theo giờ Việt Nam và hồ sơ thành viên: lời chào theo giờ Việt Nam, ID Telegram, tổng nạp, ví chính, ví NYC, trạng thái thành viên, website, nhóm cộng đồng và bot liên hệ; số dư lấy trực tiếp từ PostgreSQL, không dùng số liệu mẫu.
-- Telegram Mini App authentication bằng chữ ký initData và HMAC SHA-256; không tin Telegram ID do client tự nhập.
+- Màn hình chào mừng Telegram đồng bộ thương hiệu `⩤ BOT 💠 HENDY ⩥`, có lời chào theo giờ Việt Nam, ID Telegram, tổng nạp, Ví Chính, Ví NYC, trạng thái thành viên, website, nhóm cộng đồng và bot liên hệ; số dư lấy trực tiếp từ PostgreSQL, không dùng ID mẫu.
+- Web `/admin` chỉ dành cho Admin và yêu cầu Telegram WebApp initData có chữ ký HMAC SHA-256 hợp lệ; người dùng thường không truy cập giao diện Mini App thành viên.
 - Sản phẩm/dịch vụ: Mini Game Live, thuê tool, code, OTP, proxy, VIP.
-- Hồ sơ Trung tâm khách hàng: ví chính (balance), ví NYC, ví Voucher, tổng nạp, điểm thành viên; thống kê đơn pending/processing/completed/cancelled/refunded, lịch sử giao dịch, ticket CSKH và yêu cầu voucher 72 giờ. Dữ liệu gắn với Telegram initData đã xác thực, không có Telegram ID mẫu.
+- Trung tâm khách hàng chạy trực tiếp trong Telegram: Ví Chính, Ví NYC, Ví Voucher, tổng nạp, VIP, thống kê đơn hàng, lịch sử giao dịch, tài khoản liên kết, ticket CSKH và yêu cầu Voucher 72 giờ; không mở Mini App thành viên.
 - Trung tâm VIP với thông tin các cấp, giao diện thẻ VIP PRO neon/gold, thanh tiến trình lên hạng, điểm danh mỗi ngày theo múi giờ Việt Nam, chống cộng điểm trùng và phần thưởng điểm nội bộ có thể cấu hình trong Admin; điểm không phải tiền.
-- Kho liên kết tài khoản Mini Game dùng `linked_accounts` (tương ứng `user_accounts` trong ví dụ cũ), hỗ trợ RR88/MM88/GG88/AD88 và các thương hiệu sẵn có; chỉ lưu username, không lưu PIN/mật khẩu/OTP. Quy trình nhập liệu Telegram dùng `bot_pending_inputs` có TTL theo từng BOT1/BOT2 (tương ứng `bot_sessions`), không cần tạo bảng session MySQL trùng lặp.
-- OTP và Proxy hiển thị sản phẩm/tồn kho thực từ `products`, đơn mua được theo dõi bằng `orders`; không hiển thị số lượng kho mẫu cố định. Ticket dính lạm dụng yêu cầu mã đơn thuộc chính người dùng và đơn phải ở trạng thái hoàn tất trước khi tạo ticket loại `dinh_lam`.
+- Kho liên kết tài khoản Mini Game dùng `linked_accounts`, hỗ trợ QQ88, HI88, 78WIN, RR88, MM88, GG88, ABCVIP và các thương hiệu được cấu hình; chỉ lưu username gắn với Telegram ID, tuyệt đối không lưu PIN/mật khẩu/OTP. Quy trình nhập liệu Telegram dùng `bot_pending_inputs` có TTL theo từng BOT1/BOT2; không tạo bảng session MySQL trùng lặp.
+- OTP và Proxy hiển thị kho sản phẩm/tồn kho từ `products`; đơn mua lưu ở `orders`. OTP/Proxy trừ Ví NYC; Tool/Code và dịch vụ khác trừ Ví Chính. Có chuyển nội bộ Ví Chính sang Ví NYC, ghi kép `wallet_ledger`/`transactions`. Proxy Free yêu cầu VIP 1+ và phải có sản phẩm miễn phí do Admin tạo. Ticket Auto đặt lại/Trúng không phát chỉ ghi nhận yêu cầu CSKH, không tự sinh giao dịch hoặc tự đặt lại đơn.
 - Ví, lịch sử giao dịch, VietQR, nhận callback ngân hàng qua secret riêng và idempotency theo mã giao dịch.
 - Đơn hàng, trừ ví trong transaction, hoàn tiền khi Admin từ chối/hủy, bàn giao khi hoàn tất.
 - Giftcode có số lượt, hạn dùng, khóa/mở và giới hạn mỗi thành viên một lần.
 - Referral, phần trăm hoa hồng, ghi nhận thưởng khi nạp tiền.
 - Ticket hỗ trợ, phản hồi từ Admin qua Telegram.
-- Ghép đôi theo hàng chờ nhanh/luyện tập.
+- Ghép đôi chạy trực tiếp trong Telegram: hàng chờ nhanh/luyện tập, Elo, báo tỷ số, xác nhận hai phía, tranh chấp và bảng xếp hạng. Điểm là điểm nội bộ, không quy đổi tiền.
 - Cấu hình menu theo từng bot và nhật ký thao tác quản trị.
 - Tạo feature scaffold bằng PHP CLI và GitHub Actions.
 - Health checks, CI PHP lint và unit test xác thực Telegram.
@@ -181,15 +181,13 @@ Thiết lập `website_url` tại **Quản trị → Cấu hình**. Giá trị m
 
 ## Chuyển dữ liệu MySQL cũ
 
-Ứng dụng hiện dùng PostgreSQL; không chạy `CREATE DATABASE ... CHARACTER SET utf8mb4` trên PostgreSQL. Chưa nhập dữ liệu MySQL cho đến khi có file export `telegram_bot_db.sql(.gz)` và full PostgreSQL backup trước migration. Xem [runbook nhập MySQL sang PostgreSQL](docs/IMPORT-MYSQL-TO-POSTGRES.md) để export, backup, staging, dry-run và đối soát. Không tự cộng transactions vào số dư đã chuyển từ `main_wallet`.
+Ứng dụng runtime hiện dùng PostgreSQL trên Render làm nguồn dữ liệu chính; không tạo MySQL `telegram_bot_db` thay thế. SQL `CREATE DATABASE ... CHARACTER SET utf8mb4` trong ví dụ cũ chỉ dành cho MySQL, không chạy trên PostgreSQL. Chỉ nhập dữ liệu MySQL legacy khi có file export `telegram_bot_db.sql(.gz)` và bản sao lưu PostgreSQL đầy đủ trước migration. Xem [runbook nhập MySQL sang PostgreSQL](docs/IMPORT-MYSQL-TO-POSTGRES.md) để export, backup, staging, dry-run và đối soát. Không tự cộng transactions vào số dư đã chuyển từ `main_wallet`.
 
-## Trung tâm quản lý tài khoản ngay trong menu Telegram
+## Trung tâm quản lý tài khoản ngay trong Telegram
 
-Nút **🔐 QUẢN LÝ TÀI KHOẢN** trên Reply Keyboard/Inline Keyboard Telegram chỉ hiển thị hai cách truy cập:
-1. **Mini App (khuyến nghị):** mở Mini App bằng Telegram Web App URL.
-2. **Đăng nhập truyền thống:** bot tạo ticket ngẫu nhiên 256-bit, chỉ lưu SHA-256 trong PostgreSQL, hết hạn sau 5 phút và chỉ exchange được một lần. Ticket được đổi qua `POST /api/legacy/session/exchange` thành JWT HS256 có audience `hendy-legacy-account`, thời hạn 5 phút. Secret ký JWT phải cấu hình `LEGACY_SESSION_SECRET` (tối thiểu 32 ký tự). Trang `/legacy-login` không lưu ticket/token vào URL dài hạn hoặc localStorage; token chỉ nằm trong sessionStorage của tab hiện tại.
+Nút **🔐 QUẢN LÝ TÀI KHOẢN** hiện phục vụ thao tác thành viên trực tiếp bằng Telegram. Trang `/` không còn render Mini App khách hàng; trang `/admin` chỉ dành cho Admin.
 
-Bảng `legacy_login_tickets` đã có trong schema PostgreSQL. Link đăng nhập yêu cầu `APP_URL` HTTPS hoặc `RENDER_EXTERNAL_URL` HTTPS. Không dùng Telegram ID mẫu và không gửi mật khẩu/OTP qua bot.
+Đăng nhập truyền thống qua ticket vẫn là luồng tương thích tùy chọn: bot sinh ticket ngẫu nhiên 256-bit, chỉ lưu SHA-256 trong PostgreSQL, hết hạn sau 5 phút và chỉ exchange được một lần. Ticket được đổi qua `POST /api/legacy/session/exchange` thành JWT HS256 có audience `hendy-legacy-account`, thời hạn 5 phút. Secret ký JWT cần `LEGACY_SESSION_SECRET` (tối thiểu 32 ký tự). Nếu không sử dụng cổng đăng nhập truyền thống, không cần bật luồng này. Không nhập mật khẩu hoặc OTP bên thứ ba vào Telegram.
 
 ### Kho tài khoản ABCVIP
 
@@ -197,7 +195,7 @@ Menu có nút **🏦 KHO TÀI KHOẢN ABCVIP**. Admin có thể khai báo `ABCVI
 
 ## Tích hợp Telegram Bot với Dashboard Admin
 
-Telegram BOT1 và BOT2 sử dụng cùng backend PHP/PostgreSQL và cùng dữ liệu của Mini App. Mỗi bot có cấu hình menu riêng trong `bot_menu_configs`; dashboard tab **Menu & Bot** có thể đổi Reply Keyboard/Inline Keyboard, số cột, nội dung giới thiệu, nhãn và mô tả. Telegram Bot API không hỗ trợ màu tùy chỉnh cho từng nút; các giá trị style trong Dashboard chỉ là metadata giao diện, không được gửi như thuộc tính không hợp lệ tới Telegram.
+Telegram BOT1 và BOT2 sử dụng cùng backend PHP/PostgreSQL và cùng nguồn dữ liệu nghiệp vụ. Các thao tác thành viên chạy trực tiếp bằng Reply Keyboard/Inline Keyboard. Mỗi bot có cấu hình menu riêng trong `bot_menu_configs`; trang `/admin` có thể đổi Reply Keyboard/Inline Keyboard, số cột, nội dung giới thiệu, nhãn và mô tả. Telegram Bot API không hỗ trợ màu tùy chỉnh cho từng nút; các giá trị style trong Dashboard chỉ là metadata giao diện, không được gửi như thuộc tính không hợp lệ tới Telegram.
 
 ### Lệnh Telegram
 
@@ -225,7 +223,7 @@ Bot hỗ trợ một hoặc nhiều Admin: đặt `ADMIN_ID` và/hoặc `ADMIN_I
 4. Admin mở `/admin_payments` hoặc Dashboard → **Duyệt nạp**. Chỉ sau khi đối chiếu sao kê ngân hàng, Admin mới chọn Duyệt/Từ chối.
 5. Duyệt ghi một ledger reference duy nhất `payment:<payment_id>`, cập nhật balance/total_deposited/VIP và thông báo thành viên. Unique reference + transaction giúp chặn cộng ví hai lần. Từ chối không đổi số dư.
 
-Tạo QR/yêu cầu nạp không phải bằng chứng ngân hàng đã nhận tiền. Không cộng ví từ ảnh chụp màn hình hoặc nội dung người dùng tự khai. `/webhook/bank` vẫn trả HTTP 503 vì chưa có adapter chữ ký callback theo nhà cung cấp; không bật `BANK_WEBHOOK_ENABLED` trong bản hiện tại.
+Tạo QR/yêu cầu nạp không phải bằng chứng ngân hàng đã nhận tiền. `payment_requests` lưu snapshot ngân hàng, số tài khoản, chủ tài khoản, nội dung chuyển khoản và trạng thái tại thời điểm tạo; lịch sử Telegram tra cứu lại đúng snapshot đó. `VIETQR_BANK_ID`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME` được lưu private (`is_public=false`), không trả về bootstrap công khai. Giao dịch thực ghi vào `transactions` và `wallet_ledger` kèm `wallet_type`. Không cộng ví từ ảnh chụp màn hình hoặc nội dung người dùng tự khai. `/webhook/bank` vẫn trả HTTP 503 vì chưa có adapter chữ ký callback theo nhà cung cấp; không bật `BANK_WEBHOOK_ENABLED` trong bản hiện tại.
 
 ### Vietsub và video jobs
 
