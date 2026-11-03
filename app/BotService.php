@@ -894,6 +894,7 @@ final class BotService
             $text = implode("\n", [
                 '💳 <b>YÊU CẦU ' . self::escape((string) $payment['payment_id']) . '</b>',
                 'Thành viên: <b>' . self::escape($name) . '</b>',
+                'Bot nguồn: <b>' . self::escape(strtoupper((string) ($payment['bot_key'] ?? 'primary'))) . '</b>',
                 'Telegram ID: <code>' . self::escape((string) $payment['user_id']) . '</code>',
                 'Số tiền: <b>' . self::money($payment['amount']) . '</b>',
                 'Nội dung chuyển khoản: <code>' . self::escape((string) $payment['transfer_content']) . '</code>',
