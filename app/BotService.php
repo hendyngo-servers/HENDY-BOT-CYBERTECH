@@ -258,16 +258,16 @@ final class BotService
         $user = $this->getUser($userId, $name, $username);
         $config = $this->menuConfig();
         $items = $this->menuItems($config, $userId);
-        $settings = $this->settings(['website_url', 'GROUP_URL', 'CHANNEL_URL', 'bot_username']);
+        $settings = $this->settings(['website_url', 'GROUP_URL', 'CHANNEL_URL', 'bot_username', 'bot_display_name']);
 
         $websiteUrl = trim((string) ($settings['website_url'] ?? 'https://hendy-bot-tele.onrender.com'));
         if (!self::isHttpsUrl($websiteUrl)) {
             $websiteUrl = 'https://hendy-bot-tele.onrender.com';
         }
 
-        $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/lethituanem_nhomchat')));
+        $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/Hendy_Support_Group')));
         if (!self::isHttpsUrl($groupUrl)) {
-            $groupUrl = 'https://t.me/lethituanem_nhomchat';
+            $groupUrl = 'https://t.me/Hendy_Support_Group';
         }
 
         $botUsername = trim(ltrim((string) ($settings['bot_username'] ?? Env::get('BOT_USERNAME', 'tuanem2027_bot')), '@'));
@@ -275,6 +275,10 @@ final class BotService
             $botUsername = 'tuanem2027_bot';
         }
         $botUrl = 'https://t.me/' . rawurlencode($botUsername);
+        $botDisplayName = trim(ltrim((string) ($settings['bot_display_name'] ?? 'HendyBot_Bot'), '@'));
+        if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $botDisplayName)) {
+            $botDisplayName = $botUsername;
+        }
 
         $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
         $timeGreeting = match (true) {
@@ -286,6 +290,12 @@ final class BotService
         };
 
         $displayName = $firstName !== '' ? $firstName : ($name !== '' ? $name : ($username !== '' ? '@' . $username : 'bạn'));
+        $welcomePhrases = [
+            'Chọn một chức năng để bắt đầu trải nghiệm hệ sinh thái HENDY.',
+            'Công nghệ kết nối giá trị thật — cảm ơn bạn đã đồng hành cùng HENDY.',
+            'Chúc bạn có trải nghiệm nhanh chóng, thuận tiện và nhiều niềm vui.',
+        ];
+        $dynamicWelcome = $welcomePhrases[random_int(0, count($welcomePhrases) - 1)];
         $vipLevel = (int) ($user['vip_level'] ?? 0);
         $memberStatus = $vipLevel > 0 ? 'VIP ' . $vipLevel : 'Bình thường';
         $descriptions = array_map(
@@ -294,24 +304,24 @@ final class BotService
         );
 
         $text = implode("\n", [
-            '💠🤩 <b>HENDY BOT · TUẤN EM</b> 🤩💠',
+            '💠 <b>⩤ BOT 💠 HENDY ⩥</b> 🤩',
             '<b>LETHITUANEM TEAM</b> · BOT SERVICE LIVESTREAM',
+            '✨ <i>Công nghệ kết nối giá trị thật</i>',
             '━━━━━━━━━━━━━━━━━━━━',
             '👋 Chúc ' . $timeGreeting . ' vui vẻ, <b>' . self::escape($displayName) . '</b>!',
             '📱 Telegram ID: <code>' . self::escape($userId) . '</code>',
             '━━━━━━━━━━━━━━━━━━━━',
             '🔢 <b>TỔNG NẠP: ' . self::money($user['total_deposited'] ?? 0) . '</b>',
-            '➖❍➖',
             '😄 <b>Ví Chính:</b> ' . self::money($user['balance'] ?? 0),
             '😄 <b>Ví NYC:</b> ' . self::money($user['nyc_wallet'] ?? 0),
             '━━━━━━━━━━━━━━━━━━━━',
-            '👍 <b>Trạng thái thành viên:</b> [' . self::escape($memberStatus) . ']',
+            '💠 <b>Trạng thái thành viên:</b> [' . self::escape($memberStatus) . ']',
             '━━━━━━━━━━━━━━━━━━━━',
             '🌟 <b>Website:</b> <a href="' . self::escape($websiteUrl) . '">Mở website Hendy</a>',
-            '💥 <b>Nhóm:</b> <a href="' . self::escape($groupUrl) . '">LETHITUANEM · NHÓM PUBLIC</a>',
-            '🤖 <b>Bot:</b> <a href="' . self::escape($botUrl) . '">@' . self::escape($botUsername) . '</a>',
+            '💥 <b>Nhóm:</b> <a href="' . self::escape($groupUrl) . '">HENDY · NHÓM PUBLIC</a>',
+            '🤖 <b>Bot:</b> <a href="' . self::escape($botUrl) . '">@' . self::escape($botDisplayName) . '</a>',
             '',
-            self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT. Chọn một chức năng để tiếp tục 🚀.')),
+            self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT.')) . ' ' . self::escape($dynamicWelcome) . ' 🚀',
             '',
             '<b>HỆ SINH THÁI DỊCH VỤ</b>',
             'Tool · Phần mềm · Dịch vụ công nghệ · Điểm thưởng game · Proxy · OTP · Livestream · Trí tuệ nhân tạo',
@@ -1168,14 +1178,19 @@ final class BotService
             : 'Cần nạp thêm <b>' . self::money($status['amountToNext']) . '</b> để đạt mốc tiếp theo (' . self::money($status['nextThreshold']) . ').';
         $checkinText = $status['checkedInToday'] ? '✅ Hôm nay bạn đã điểm danh.' : '🎁 Hôm nay bạn chưa điểm danh.';
 
+        $barLength = 10;
+        $filled = (int) round(((int) ($status['progressPercent'] ?? 0)) / 10);
+        $progressBar = str_repeat('🟦', max(0, min($barLength, $filled))) . str_repeat('⬛', $barLength - max(0, min($barLength, $filled)));
         $this->telegram->sendMessage($chatId, implode("\n", [
-            '💎 <b>TRUNG TÂM VIP — TRI ÂN THÀNH VIÊN</b>',
+            '💠 <b>⩤ HENDY VIP PRO ⩥</b> 👑',
+            '✨ <i>Đặc quyền hội viên · Nâng tầm trải nghiệm</i>',
+            '━━━━━━━━━━━━━━━━━━━━',
             'Xin chào <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>!',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '👑 Hạng hiện tại: <b>VIP ' . $status['currentLevel'] . '</b>',
+            '🏆 Hạng hiện tại: <b>VIP ' . $status['currentLevel'] . '</b>',
             '💳 Tổng nạp tích lũy: <b>' . self::money($status['totalDeposited']) . '</b>',
             '⭐ Điểm thành viên: <b>' . number_format($status['pointOld'], 0, ',', '.') . '</b>',
+            '📈 Tiến trình lên hạng: ' . $progressBar . ' <b>' . (int) ($status['progressPercent'] ?? 0) . '%</b>',
             $next,
             $checkinText,
             '🔥 Chuỗi điểm danh: <b>' . $status['streak'] . ' ngày</b>',
