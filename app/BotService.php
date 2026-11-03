@@ -11,6 +11,13 @@ final class BotService
     private const TTL_MINUTES = 10;
     private const BRANDS = ['QQ88', 'HI88', '78WIN', 'RR88', 'MM88', 'GG88', 'ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB', 'AD88', 'SC88', 'C168', 'CM88', 'F8BET'];
 
+    private const MINIGAME_GROUPS = [
+        'group1' => ['label' => 'Nhóm 1 · QQ88 HI88 78WIN', 'brands' => ['QQ88', 'HI88', '78WIN']],
+        'group2' => ['label' => 'Nhóm 2 · RR88 MM88 GG88', 'brands' => ['RR88', 'MM88', 'GG88']],
+        'group3' => ['label' => 'Nhóm 3 · ABCVIP XX8 U888 J88 ABC8 88CLB', 'brands' => ['ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB']],
+    ];
+
+
     private const MENU = [
         ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Kho tài khoản, dịch vụ Mini Game và hỗ trợ đơn.', 'style' => 'primary'],
         ['action' => 'tools', 'label' => '🧰 THUÊ TOOL', 'description' => 'Thuê công cụ và theo dõi thời hạn.', 'style' => 'success'],
@@ -220,7 +227,7 @@ final class BotService
             return;
         }
         if (preg_match('/^\/minigame(?:@\w+)?$/u', $text)) {
-            $this->showLiveAccounts($chatId, $userId);
+            $this->showMinigameGroups($chatId, $userId);
             return;
         }
         if (preg_match('/^\/otp(?:@\w+)?$/u', $text)) {
@@ -293,11 +300,11 @@ final class BotService
             $legacyActions = [
                 'back_home' => 'home',
                 'menu_minigame' => 'live',
-                'rr88_game' => 'minigame-products',
-                'mm88_game' => 'minigame-products',
-                'gg88_game' => 'minigame-products',
+                'rr88_game' => 'live-game:RR88',
+                'mm88_game' => 'live-game:MM88',
+                'gg88_game' => 'live-game:GG88',
                 'ad88_game' => 'minigame-products',
-                'abcvip_kho' => 'minigame-products',
+                'abcvip_kho' => 'live-game:ABCVIP',
                 'menu_tool' => 'tools',
                 'menu_code' => 'codes',
                 'menu_nap' => 'wallet',
@@ -370,7 +377,10 @@ final class BotService
             default => 'buổi đêm',
         };
         $name = $firstName !== '' ? $firstName : ($username !== '' ? '@' . $username : 'bạn');
-        $botLabel = $this->botKey === 'secondary' ? 'HENDY BOT 2' : 'HENDY BOT 1';
+        $botLabel = trim((string) Env::get(
+            $this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME',
+            $this->botKey === 'secondary' ? 'HENDY BOT THỬ NGHIỆM' : 'HENDY BOT CHÍNH'
+        ));
         $vipLevel = (int) ($user['vip_level'] ?? 0);
         $intro = trim((string) ($config['intro_text'] ?? ''));
 
@@ -396,7 +406,7 @@ final class BotService
         if (self::isHttpsUrl($groupUrl)) $links[] = '<a href="' . self::escape($groupUrl) . '">💬 Nhóm hỗ trợ</a>';
         $botUsername = trim(ltrim((string) Env::get(
             $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME',
-            $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot'
+            $this->botKey === 'secondary' ? 'hendymono_bot' : 'HendyBot_Bot'
         ), '@'));
         if (preg_match('/^[A-Za-z0-9_]{5,32}$/', $botUsername)) {
             $links[] = '<a href="https://t.me/' . self::escape($botUsername) . '">🤖 @' . self::escape($botUsername) . '</a>';
@@ -553,6 +563,49 @@ final class BotService
 
     private function dispatchAction(string $chatId, string $userId, string $action): void
     {
+        if (preg_match('/^live-group:(group[1-3])$/', $action, $matches)) {
+            $this->showMinigameGroupGames($chatId, $userId, $matches[1]);
+            return;
+        }
+        if (preg_match('/^live-game:([A-Z0-9]+)$/', $action, $matches)) {
+            $brand = strtoupper($matches[1]);
+            if ($this->minigameGroupForBrand($brand) === null) {
+                throw new RuntimeException('Game Mini Game không thuộc nhóm được hỗ trợ.');
+            }
+            $this->showMinigameGame($chatId, $userId, $brand);
+            return;
+        }
+        if (preg_match('/^live-warehouse:([A-Z0-9]+)$/', $action, $matches)) {
+            $brand = strtoupper($matches[1]);
+            if ($this->minigameGroupForBrand($brand) === null) {
+                throw new RuntimeException('Kho ACC không hợp lệ.');
+            }
+            $this->showMinigamePackageManager($chatId, $userId, $brand, 0);
+            return;
+        }
+        if (preg_match('/^live-package:([A-Z0-9]+):(\d{1,18})$/', $action, $matches)) {
+            $brand = strtoupper($matches[1]);
+            if ($this->minigameGroupForBrand($brand) === null) {
+                throw new RuntimeException('Gói Mini Game không hợp lệ.');
+            }
+            $this->showMinigamePackageManager($chatId, $userId, $brand, (int) $matches[2]);
+            return;
+        }
+        if (preg_match('/^live-add-acc:([A-Z0-9]+):(\d{1,18})$/', $action, $matches)) {
+            $brand = strtoupper($matches[1]);
+            if ($this->minigameGroupForBrand($brand) === null) {
+                throw new RuntimeException('Nhà cái không hợp lệ.');
+            }
+            $productId = (int) $matches[2];
+            $this->setPending($userId, 'live_acc_username', ['brand' => $brand, 'product_id' => $productId]);
+            $this->telegram->sendMessage(
+                $chatId,
+                '➕ <b>THÊM ACC ' . self::escape($brand) . '</b>' . "\n" .
+                'Hãy gửi duy nhất username cần lưu vào kho cá nhân (3–64 ký tự, không có khoảng trắng).' . "\n" .
+                'Không gửi mật khẩu, PIN, OTP hoặc mã xác minh. Yêu cầu hết hạn sau ' . self::TTL_MINUTES . ' phút.'
+            );
+            return;
+        }
         if (preg_match('/^deposit:(\d{4,12})$/', $action, $matches)) {
             $this->showDeposit($chatId, $userId, (int) $matches[1]);
             return;
@@ -598,7 +651,7 @@ final class BotService
                 $this->sendHome($chatId, ['id' => $userId]);
                 return;
             case 'live':
-                $this->showLiveAccounts($chatId, $userId);
+                $this->showMinigameGroups($chatId, $userId);
                 return;
             case 'link-new':
                 $rows = [];
@@ -749,6 +802,234 @@ final class BotService
             default:
                 $this->telegram->sendMessage($chatId, 'Chức năng chưa được cấu hình. Hãy chọn lại menu chính bằng /menu.');
         }
+    }
+
+    private function minigameGroupForBrand(string $brand): ?string
+    {
+        foreach (self::MINIGAME_GROUPS as $groupKey => $group) {
+            if (in_array($brand, $group['brands'], true)) {
+                return $groupKey;
+            }
+        }
+        return null;
+    }
+
+    private function minigameProductsForBrand(string $brand): array
+    {
+        $pattern = '%' . strtoupper($brand) . '%';
+        return Database::all(
+            "SELECT id, name, price, description, stock, duration_days, vip_level FROM products " .
+            "WHERE category = 'minigame' AND is_active = TRUE " .
+            "AND (stock IS NULL OR stock > 0) " .
+            "AND (UPPER(COALESCE(metadata->>'brand', '')) = ? OR UPPER(slug) LIKE ? OR UPPER(name) LIKE ?) " .
+            'ORDER BY created_at DESC LIMIT 10',
+            [$brand, $pattern, $pattern]
+        );
+    }
+
+    private function showMinigameGroups(string $chatId, string $userId): void
+    {
+        $counts = Database::all(
+            'SELECT brand, COUNT(*) AS account_count FROM linked_accounts WHERE user_id = ? GROUP BY brand',
+            [$userId]
+        );
+        $countByBrand = [];
+        foreach ($counts as $count) {
+            $countByBrand[strtoupper((string) $count['brand'])] = (int) $count['account_count'];
+        }
+
+        $lines = [
+            '🚀 <b>MINIGAME LIVE · CHỌN NHÓM NHÀ CÁI</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Chọn nhóm để xem danh sách game. Kho ACC cá nhân được thống kê riêng theo username đã lưu.',
+        ];
+        $rows = [];
+        foreach (self::MINIGAME_GROUPS as $groupKey => $group) {
+            $total = 0;
+            foreach ($group['brands'] as $brand) {
+                $total += $countByBrand[$brand] ?? 0;
+            }
+            $lines[] = '• ' . self::escape($group['label']) . ' — <b>' . $total . ' ACC</b>';
+            $rows[] = [[
+                'text' => $group['label'],
+                'callback_data' => 'member:live-group:' . $groupKey,
+            ]];
+        }
+        $rows[] = [['text' => '« QUAY LẠI MENU CHÍNH', 'callback_data' => 'member:home']];
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu($rows),
+        ]);
+    }
+
+    private function showMinigameGroupGames(string $chatId, string $userId, string $groupKey): void
+    {
+        $group = self::MINIGAME_GROUPS[$groupKey] ?? null;
+        if ($group === null) {
+            throw new RuntimeException('Nhóm nhà cái không tồn tại.');
+        }
+
+        $lines = [
+            '🎮 <b>' . self::escape($group['label']) . '</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Chọn game cụ thể để xem gói dịch vụ, điều kiện Code Live và kho ACC cá nhân.',
+        ];
+        $rows = [];
+        foreach ($group['brands'] as $brand) {
+            $count = (int) Database::value(
+                'SELECT COUNT(*) FROM linked_accounts WHERE user_id = ? AND brand = ?',
+                [$userId, $brand]
+            );
+            $rows[] = [[
+                'text' => '🎮 ' . $brand . ' MINI GAME',
+                'callback_data' => 'member:live-game:' . $brand,
+            ]];
+            $lines[] = '• ' . self::escape($brand) . ': <b>' . $count . ' ACC cá nhân</b>';
+        }
+        $rows[] = [['text' => '« QUAY LẠI', 'callback_data' => 'member:live']];
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu($rows),
+        ]);
+    }
+
+    private function showMinigameGame(string $chatId, string $userId, string $brand): void
+    {
+        $groupKey = $this->minigameGroupForBrand($brand);
+        if ($groupKey === null) {
+            throw new RuntimeException('Game Mini Game không hợp lệ.');
+        }
+
+        $count = (int) Database::value(
+            'SELECT COUNT(*) FROM linked_accounts WHERE user_id = ? AND brand = ?',
+            [$userId, $brand]
+        );
+        $products = $this->minigameProductsForBrand($brand);
+        $lines = [
+            '🎮 <b>' . self::escape($brand) . ' MINI GAME</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '📌 <b>ĐIỀU KIỆN NHẬN CODE LIVE</b>',
+            'Đọc điều kiện trong mô tả gói do Admin cấu hình trước khi sử dụng. HENDY chỉ lưu username; không nhập mật khẩu, PIN hoặc OTP.',
+            '',
+            '📦 <b>KHO ACC CÁ NHÂN</b>: ' . $count . ' tài khoản',
+            'Chọn gói dịch vụ hoặc mở kho ACC để quản lý username của bạn.',
+        ];
+        $rows = [];
+
+        if ($brand === 'RR88') {
+            $rows[] = [[
+                'text' => '📦 RR88 MINI | 88 ĐIỂM - 9,000đ',
+                'callback_data' => 'member:live-package:RR88:0',
+            ]];
+            $lines[] = '• Gói mặc định: <b>88 điểm · 9.000đ</b> (thông tin hiển thị, chưa tạo giao dịch).';
+        }
+
+        foreach ($products as $product) {
+            $label = self::truncate(
+                '📦 ' . (string) $product['name'] . ' · ' . self::money($product['price']),
+                55
+            );
+            $rows[] = [[
+                'text' => $label,
+                'callback_data' => 'member:live-package:' . $brand . ':' . (int) $product['id'],
+            ]];
+            if (trim((string) ($product['description'] ?? '')) !== '') {
+                $lines[] = '• ' . self::escape((string) $product['name']) . ': ' .
+                    self::escape(self::truncate((string) $product['description'], 160));
+            }
+        }
+
+        if ($products === [] && $brand !== 'RR88') {
+            $lines[] = 'ℹ️ Chưa có gói dịch vụ cho game này trong catalog. Admin cần tạo sản phẩm loại minigame và gắn brand trong metadata/slug/tên sản phẩm.';
+        }
+        $rows[] = [[
+            'text' => '📦 KHO ACC ' . $brand,
+            'callback_data' => 'member:live-warehouse:' . $brand,
+        ]];
+        $rows[] = [['text' => '« QUAY LẠI', 'callback_data' => 'member:live-group:' . $groupKey]];
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu($rows),
+        ]);
+    }
+
+    private function showMinigamePackageManager(string $chatId, string $userId, string $brand, int $productId): void
+    {
+        if ($this->minigameGroupForBrand($brand) === null) {
+            throw new RuntimeException('Nhà cái không hợp lệ.');
+        }
+
+        $packageName = 'KHO ACC ' . $brand;
+        $packageDescription = 'Quản lý username Mini Game cá nhân.';
+        $packagePrice = '';
+        if ($productId > 0) {
+            $product = null;
+            foreach ($this->minigameProductsForBrand($brand) as $candidate) {
+                if ((int) $candidate['id'] === $productId) {
+                    $product = $candidate;
+                    break;
+                }
+            }
+            if ($product === null) {
+                throw new RuntimeException('Gói dịch vụ không còn khả dụng hoặc không thuộc game đã chọn.');
+            }
+            $packageName = (string) $product['name'];
+            $packageDescription = trim((string) ($product['description'] ?? ''));
+            $packagePrice = self::money($product['price']);
+        } elseif ($brand === 'RR88') {
+            $packageName = 'RR88 MINI | 88 ĐIỂM';
+            $packageDescription = 'Thông tin gói mẫu do bạn cung cấp. Điều kiện nhận Code Live cần được Admin xác nhận trước khi sử dụng.';
+            $packagePrice = '9.000đ';
+        }
+
+        $user = $this->getUser($userId);
+        $accounts = Database::all(
+            'SELECT id, username, created_at FROM linked_accounts WHERE user_id = ? AND brand = ? ORDER BY created_at DESC LIMIT 50',
+            [$userId, $brand]
+        );
+
+        $lines = [
+            '📦 <b>QUẢN LÝ KHO ACC CÁ NHÂN</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Game: <b>' . self::escape($brand) . ' MINI GAME</b>',
+            'Gói: <b>' . self::escape($packageName) . '</b>',
+        ];
+        if ($packagePrice !== '') {
+            $lines[] = 'Giá tham khảo: <b>' . self::escape($packagePrice) . '</b>';
+        }
+        if ($packageDescription !== '') {
+            $lines[] = 'Thông tin: ' . self::escape(self::truncate($packageDescription, 220));
+        }
+        $lines[] = '💰 Số dư Ví Chính: <b>' . self::money($user['balance'] ?? 0) . '</b>';
+        $lines[] = '📊 ACC khả dụng trong kho cá nhân: <b>' . count($accounts) . '</b>';
+        $lines[] = 'Chỉ lưu username thuộc tài khoản của bạn. Mở màn hình này không tự trừ ví hoặc tạo đơn hàng.';
+        if ($accounts === []) {
+            $lines[] = '';
+            $lines[] = 'Kho đang trống. Bấm ➕ THÊM ACC để lưu username đầu tiên.';
+        } else {
+            $lines[] = '';
+            $lines[] = '<b>DANH SÁCH ACC</b>';
+            foreach ($accounts as $account) {
+                $lines[] = '• <code>' . self::escape((string) $account['username']) . '</code>';
+            }
+        }
+
+        $rows = [[[
+            'text' => '➕ THÊM ACC',
+            'callback_data' => 'member:live-add-acc:' . $brand . ':' . $productId,
+        ]]];
+        foreach (array_chunk($accounts, 2) as $chunk) {
+            $row = [];
+            foreach ($chunk as $account) {
+                $row[] = [
+                    'text' => '🗑 XÓA ACC #' . (int) $account['id'],
+                    'callback_data' => 'member:link-delete:' . (int) $account['id'],
+                ];
+            }
+            $rows[] = $row;
+        }
+        $rows[] = [['text' => '« QUAY LẠI', 'callback_data' => 'member:live-game:' . $brand]];
+        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu($rows),
+        ]);
     }
 
     private function showLiveAccounts(string $chatId, string $userId): void
@@ -1897,6 +2178,30 @@ final class BotService
                 } catch (Throwable $error) {
                     $this->telegram->sendMessage($chatId, '❌ Không thể chuyển ví: ' . self::escape($error->getMessage()));
                 }
+                return true;
+
+            case 'live_acc_username':
+                $brand = strtoupper((string) ($payload['brand'] ?? ''));
+                $productId = (int) ($payload['product_id'] ?? 0);
+                if ($this->minigameGroupForBrand($brand) === null
+                    || mb_strlen($text) < 3
+                    || mb_strlen($text) > 64
+                    || preg_match('/[\x00-\x20]/', $text)) {
+                    $this->telegram->sendMessage($chatId, 'Username không hợp lệ. Nhập 3–64 ký tự, không có khoảng trắng. Không gửi mật khẩu/PIN/OTP.');
+                    return true;
+                }
+                $inserted = Database::run(
+                    'INSERT INTO linked_accounts (user_id, brand, username) VALUES (?, ?, ?) ' .
+                    'ON CONFLICT (user_id, brand, username) DO NOTHING RETURNING id',
+                    [$userId, $brand, $text]
+                );
+                $this->clearPending($userId);
+                if ($inserted->rowCount() === 0) {
+                    $this->telegram->sendMessage($chatId, 'Tài khoản này đã có trong kho ' . self::escape($brand) . '.');
+                } else {
+                    $this->telegram->sendMessage($chatId, '✅ Đã thêm username vào kho ACC ' . self::escape($brand) . '.');
+                }
+                $this->showMinigamePackageManager($chatId, $userId, $brand, $productId);
                 return true;
 
             case 'link_username':
