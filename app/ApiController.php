@@ -18,7 +18,7 @@ final class HttpException extends RuntimeException
 final class ApiController
 {
     private const CATEGORIES = ['minigame', 'tools', 'codes', 'otp', 'proxy', 'vip'];
-    private const ORDER_STATUSES = ['pending', 'processing', 'completed', 'rejected', 'cancelled'];
+    private const ORDER_STATUSES = ['pending', 'processing', 'completed', 'rejected', 'cancelled', 'refunded'];
     private const SETTINGS = [
         'homepage_title', 'announcement', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
@@ -987,7 +987,7 @@ final class ApiController
             if ($current === null) {
                 throw new HttpException(404, 'Không tìm thấy đơn hàng.');
             }
-            $terminal = ['completed', 'rejected', 'cancelled'];
+            $terminal = ['completed', 'rejected', 'cancelled', 'refunded'];
             if (in_array($current['status'], $terminal, true) && $current['status'] !== $status) {
                 throw new HttpException(409, 'Đơn hàng đã kết thúc và không thể thay đổi trạng thái.');
             }
@@ -998,7 +998,7 @@ final class ApiController
             );
             $refunded = false;
 
-            if (in_array($status, ['rejected', 'cancelled'], true) && !in_array($current['status'], $terminal, true)) {
+            if (in_array($status, ['rejected', 'cancelled', 'refunded'], true) && !in_array($current['status'], $terminal, true)) {
                 $amount = (int) $current['amount'];
                 if ($amount > 0) {
                     $credit = Database::run(
