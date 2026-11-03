@@ -171,6 +171,14 @@ Khi thay Blueprint trên một service đã tồn tại, đừng giả định c
 
 Nếu dùng chính PostgreSQL hiện tại, giữ đúng database đang có dữ liệu; không tạo database mới thay thế trước khi sao lưu và đối soát. Mở database → Connect để lấy đúng URL: Render service cùng region/workspace dùng Internal Database URL; local/CI hoặc service khác region phải dùng External Database URL đầy đủ với `sslmode=require` và `DATABASE_SSL=true`. Blueprint mẫu tạo database `hendy-bot-tele-db` tại Singapore; nếu database hiện tại ở Oregon thì không áp dụng nguyên xi cấu hình này lên service đang chạy. Nếu Render báo xung đột resource, hãy ghép service với database hiện hữu thay vì xóa database.
 
+## Website chính thức và tích hợp URL
+
+Thiết lập `website_url` tại **Quản trị → Cấu hình**. Giá trị mặc định từ banner tham chiếu là `https://lethituanem.com`; URL phải dùng HTTPS. Liên kết này được gửi trong lời chào Telegram của BOT1/BOT2 và hiển thị tại trang chủ Mini App. Có thể cập nhật URL mà không cần sửa source hoặc environment. Việc lưu URL không triển khai source website độc lập; website phải được host riêng và trỏ DNS/TLS đúng.
+
+## Chuyển dữ liệu MySQL cũ
+
+Ứng dụng hiện dùng PostgreSQL; không chạy `CREATE DATABASE ... CHARACTER SET utf8mb4` trên PostgreSQL. Chưa nhập dữ liệu MySQL cho đến khi có file export `telegram_bot_db.sql(.gz)` và full PostgreSQL backup trước migration. Xem [runbook nhập MySQL sang PostgreSQL](docs/IMPORT-MYSQL-TO-POSTGRES.md) để export, backup, staging, dry-run và đối soát. Không tự cộng transactions vào số dư đã chuyển từ `main_wallet`.
+
 ## Tích hợp Telegram Bot với Dashboard Admin
 
 Telegram BOT1 và BOT2 sử dụng cùng backend PHP/PostgreSQL và cùng dữ liệu của Mini App. Mỗi bot có cấu hình menu riêng trong `bot_menu_configs`; dashboard tab **Menu & Bot** có thể đổi Reply Keyboard/Inline Keyboard, số cột, nội dung giới thiệu, nhãn và mô tả. Telegram Bot API không hỗ trợ màu tùy chỉnh cho từng nút; các giá trị style trong Dashboard chỉ là metadata giao diện, không được gửi như thuộc tính không hợp lệ tới Telegram.
