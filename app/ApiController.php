@@ -25,7 +25,7 @@ final class ApiController
         'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name',
     ];
     private const MENU_ACTIONS = [
-        'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
+        'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'miniapp',
         'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin', 'vietsub', 'history', 'jobs', 'abcvip',
     ];
 
@@ -91,10 +91,12 @@ final class ApiController
             return self::response([
                 'user' => $user,
                 'isAdmin' => $this->isAdmin(),
+                'botKey' => $this->botKey,
                 'products' => $this->listProducts(null, false),
                 'settings' => $publicSettings,
                 'referralCount' => $referrals,
-                'botUsername' => (string) ($publicSettings['bot_username'] ?? Env::get('BOT_USERNAME', 'tuanem2027_bot')),
+                'botUsername' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME', $publicSettings['bot_username'] ?? Env::get('BOT_USERNAME', '')),
+                'botDisplayName' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME', ''),
             ]);
         }
 
@@ -210,44 +212,44 @@ final class ApiController
             }
             $order = Database::transaction(function () use ($userId, $productId): array {
                 $product = Database::one('SELECT * FROM products WHERE id = ? AND is_active = TRUE FOR UPDATE', [$productId]);
-                if ($product === null) {
-                    throw new HttpException(404, 'Sản phẩm hiện không còn bán.');
-                }
-                if ($product['stock'] !== null && (int) $product['stock'] <= 0) {
-                    throw new HttpException(409, 'Sản phẩm đã hết hàng.');
-                }
+                if ($product === null) throw new HttpException(404, 'Sản phẩm hiện không còn bán.');
+                if ($product['stock'] !== null && (int) $product['stock'] <= 0) throw new HttpException(409, 'Sản phẩm đã hết hàng.');
                 Database::run(
                     "INSERT INTO users (user_id, name, username) VALUES (?, ?, ?) ON CONFLICT (user_id) DO NOTHING",
                     [$userId, $this->text($this->user['first_name'] ?? '', 120), $this->text($this->user['username'] ?? '', 64)]
                 );
-                $member = Database::one('SELECT balance FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
-                $price = (int) $product['price'];
-                if ($member === null || (int) $member['balance'] < $price) {
-                    throw new HttpException(402, 'Số dư không đủ. Vui lòng nạp thêm tiền.');
+                $member = Database::one('SELECT balance, nyc_wallet, vip_level FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+                if ($member === null) throw new HttpException(404, 'Không tìm thấy hồ sơ thành viên.');
+                if ((int) ($product['vip_level'] ?? 0) > (int) ($member['vip_level'] ?? 0)) {
+                    throw new HttpException(403, 'Sản phẩm yêu cầu VIP ' . (int) $product['vip_level'] . '.');
                 }
-
+                $walletType = in_array((string) $product['category'], ['otp', 'proxy'], true) ? 'NYC' : 'MAIN';
+                $walletColumn = $walletType === 'NYC' ? 'nyc_wallet' : 'balance';
+                $price = (int) $product['price'];
+                if ((int) $member[$walletColumn] < $price) {
+                    throw new HttpException(402, 'Số dư Ví ' . $walletType . ' không đủ. Vui lòng nạp/chuyển ví.');
+                }
                 $orderCode = self::orderCode();
-                Database::run('UPDATE users SET balance = balance - ? WHERE user_id = ?', [$price, $userId]);
+                Database::run("UPDATE users SET {$walletColumn} = {$walletColumn} - ? WHERE user_id = ?", [$price, $userId]);
                 $created = Database::one(
                     "INSERT INTO orders (order_code, user_id, product_id, product_name, category, amount, status) " .
                     "VALUES (?, ?, ?, ?, ?, ?, 'pending') RETURNING id, order_code, product_name, category, amount, status, created_at",
                     [$orderCode, $userId, $product['id'], $product['name'], $product['category'], $price]
                 );
                 Database::run(
-                    "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'PURCHASE', ?)",
-                    ['order:' . $orderCode, $userId, -$price, 'Thanh toán đơn ' . $orderCode]
+                    "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description, wallet_type) VALUES (?, ?, ?, 'PURCHASE', ?, ?)",
+                    ['order:' . $orderCode, $userId, -$price, 'Thanh toán đơn ' . $orderCode, $walletType]
                 );
                 Database::run(
-                    "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'PURCHASE', ?, 'paid')",
-                    [$userId, $price, $orderCode]
+                    "INSERT INTO transactions (user_id, amount, type, reference_code, status, wallet_type) VALUES (?, ?, 'PURCHASE', ?, 'paid', ?)",
+                    [$userId, $price, $orderCode, $walletType]
                 );
-                if ($product['stock'] !== null) {
-                    Database::run('UPDATE products SET stock = stock - 1, updated_at = NOW() WHERE id = ?', [$product['id']]);
-                }
-                $created['balance'] = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
+                if ($product['stock'] !== null) Database::run('UPDATE products SET stock = stock - 1, updated_at = NOW() WHERE id = ?', [$product['id']]);
+                $created['balance'] = (int) Database::value("SELECT {$walletColumn} FROM users WHERE user_id = ?", [$userId]);
+                $created['walletType'] = $walletType;
                 return $created;
             });
-            return self::response(['order' => $order, 'message' => 'Đơn hàng đã được tạo và trừ số dư thành công.'], 201);
+            return self::response(['order' => $order, 'message' => 'Đơn hàng đã được tạo và trừ đúng loại ví thành công.'], 201);
         }
 
         if ($path === '/api/wallet' && $method === 'GET') {
@@ -325,7 +327,8 @@ final class ApiController
                 [$userId]
             );
             $commission = $this->settings(['referral_commission_percent'], true);
-            $username = ltrim((string) Env::get('BOT_USERNAME', ''), '@');
+            $usernameKey = $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME';
+            $username = ltrim((string) Env::get($usernameKey, Env::get('BOT_USERNAME', '')), '@');
             $link = $username !== '' ? 'https://t.me/' . $username . '?start=ref_' . $userId : '';
             return self::response([
                 'totalInvited' => $count,
@@ -425,176 +428,6 @@ final class ApiController
             return self::response(['request' => $request, 'message' => 'Đã gửi yêu cầu voucher để Admin kiểm tra.'], 201);
         }
 
-        if ($path === '/api/matchmaking/leaderboard' && $method === 'GET') {
-            $limit = (int) ($this->query['limit'] ?? 10);
-            return self::response([
-                'players' => MatchmakingService::leaderboard($limit),
-                'currentPlayer' => MatchmakingService::ensureStats($userId),
-            ]);
-        }
-
-        if ($path === '/api/matchmaking' && $method === 'GET') {
-            $stats = MatchmakingService::ensureStats($userId);
-            $match = Database::one(
-                "SELECT id, mode, status, created_at, player_one, player_two, CASE WHEN player_one = ? THEN player_two ELSE player_one END AS opponent_id " .
-                "FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
-                [$userId, $userId, $userId]
-            );
-            if ($match !== null) {
-                $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$match['opponent_id']]);
-                $opponentStats = MatchmakingService::ensureStats((string) $match['opponent_id']);
-                $result = Database::one(
-                    'SELECT score_one, score_two, status, reported_by, created_at FROM matchmaking_results WHERE match_id = ?',
-                    [$match['id']]
-                );
-                return self::response([
-                    'status' => $match['status'] === 'disputed' ? 'disputed' : 'matched',
-                    'matchId' => (string) $match['id'],
-                    'mode' => $match['mode'],
-                    'opponentId' => $match['opponent_id'],
-                    'opponentName' => ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy'),
-                    'createdAt' => $match['created_at'],
-                    'rating' => (int) $stats['rating'],
-                    'points' => (int) $stats['points'],
-                    'opponentRating' => (int) $opponentStats['rating'],
-                    'isPlayerOne' => $match['player_one'] === $userId,
-                    'pendingResult' => $result !== null ? [
-                        'scoreOne' => (int) $result['score_one'],
-                        'scoreTwo' => (int) $result['score_two'],
-                        'status' => $result['status'],
-                        'reportedByMe' => $result['reported_by'] === $userId,
-                    ] : null,
-                ]);
-            }
-
-            $waiting = Database::one(
-                "SELECT id, mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1",
-                [$userId]
-            );
-            return self::response($waiting !== null
-                ? ['status' => 'waiting', 'mode' => $waiting['mode'], 'createdAt' => $waiting['created_at'], 'rating' => (int) $stats['rating'], 'points' => (int) $stats['points']]
-                : ['status' => 'idle', 'rating' => (int) $stats['rating'], 'points' => (int) $stats['points']]);
-        }
-
-        if ($path === '/api/matchmaking/join' && $method === 'POST') {
-            $mode = $this->text($this->body['mode'] ?? 'quick', 24);
-            if (!in_array($mode, ['quick', 'practice'], true)) {
-                throw new HttpException(400, 'Chế độ ghép đôi không hợp lệ.');
-            }
-            $match = Database::transaction(function () use ($userId, $mode): ?array {
-                Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-matchmaking:' . $mode]);
-                $myStats = MatchmakingService::ensureStats($userId);
-                $myRating = (int) $myStats['rating'];
-                $active = Database::one(
-                    "SELECT * FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
-                    [$userId, $userId]
-                );
-                if ($active !== null) {
-                    return $active;
-                }
-                $current = Database::one("SELECT id FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1 FOR UPDATE", [$userId]);
-                if ($current !== null) {
-                    return null;
-                }
-                $partner = Database::one(
-                    "SELECT q.id, q.user_id FROM matchmaking_queue q " .
-                    "LEFT JOIN matchmaking_player_stats s ON s.user_id = q.user_id " .
-                    "WHERE q.status = 'waiting' AND q.mode = ? AND q.user_id <> ? " .
-                    "AND (? <> 'quick' OR ABS(COALESCE(s.rating, 1000) - ?) <= LEAST(600, 150 + (EXTRACT(EPOCH FROM (NOW() - q.created_at)) / 30 * 25))) " .
-                    "ORDER BY CASE WHEN ? = 'quick' THEN ABS(COALESCE(s.rating, 1000) - ?) ELSE 0 END ASC, q.created_at ASC " .
-                    "LIMIT 1 FOR UPDATE OF q",
-                    [$mode, $userId, $mode, $myRating, $mode, $myRating]
-                );
-                if ($partner === null) {
-                    Database::run("INSERT INTO matchmaking_queue (user_id, mode, status) VALUES (?, ?, 'waiting')", [$userId, $mode]);
-                    return null;
-                }
-                MatchmakingService::ensureStats((string) $partner['user_id']);
-                $created = Database::one(
-                    "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, ?, 'matched') RETURNING *",
-                    [$partner['user_id'], $userId, $mode]
-                );
-                Database::run(
-                    "UPDATE matchmaking_queue SET status = 'paired', matched_user_id = ?, match_id = ?, updated_at = NOW() WHERE id = ?",
-                    [$userId, $created['id'], $partner['id']]
-                );
-                Database::run(
-                    "INSERT INTO matchmaking_queue (user_id, mode, status, matched_user_id, match_id) VALUES (?, ?, 'paired', ?, ?)",
-                    [$userId, $mode, $partner['user_id'], $created['id']]
-                );
-                return $created;
-            });
-
-            if ($match !== null && $match['status'] === 'disputed') {
-                return self::response(['status' => 'disputed', 'matchId' => (string) $match['id'], 'message' => 'Lượt ghép đang được quản trị viên xử lý tranh chấp.']);
-            }
-            if ($match !== null) {
-                $opponentId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
-                $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
-                $name = ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy');
-                $this->notify($userId, '🎮 Bạn đã được ghép đôi với ' . $name . '. Mã ghép #' . $match['id']);
-                $this->notify($opponentId, '🎮 Bạn đã được ghép đôi với một thành viên. Mã ghép #' . $match['id']);
-                return self::response(['status' => 'matched', 'matchId' => (string) $match['id'], 'opponentId' => $opponentId, 'opponentName' => $name]);
-            }
-            return self::response(['status' => 'waiting', 'message' => 'Đang chờ người chơi có điểm xếp hạng phù hợp.']);
-        }
-
-        if ($path === '/api/matchmaking/leave' && $method === 'POST') {
-            $updated = Database::run("UPDATE matchmaking_queue SET status = 'cancelled', updated_at = NOW() WHERE user_id = ? AND status = 'waiting' RETURNING id", [$userId]);
-            if ($updated->rowCount() === 0) {
-                $active = Database::one("SELECT id FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) LIMIT 1", [$userId, $userId]);
-                if ($active !== null) {
-                    throw new HttpException(409, 'Bạn đã được ghép đôi hoặc đang chờ xử lý kết quả. Không thể rời lượt ghép.');
-                }
-            }
-            return self::response(['success' => true, 'status' => 'idle']);
-        }
-
-        if ($path === '/api/matchmaking/report' && $method === 'POST') {
-            $matchId = (string) ($this->body['matchId'] ?? '');
-            $scoreOne = filter_var($this->body['scoreOne'] ?? null, FILTER_VALIDATE_INT);
-            $scoreTwo = filter_var($this->body['scoreTwo'] ?? null, FILTER_VALIDATE_INT);
-            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $scoreOne === false || $scoreTwo === false || $scoreOne < 0 || $scoreOne > 999 || $scoreTwo < 0 || $scoreTwo > 999) {
-                throw new HttpException(400, 'Mã lượt ghép và tỷ số phải là số nguyên từ 0 đến 999.');
-            }
-            try {
-                $result = MatchmakingService::report((int) $matchId, $userId, (int) $scoreOne, (int) $scoreTwo);
-            } catch (RuntimeException $error) {
-                throw new HttpException(409, $error->getMessage());
-            }
-            $this->notify(
-                (string) $result['opponentId'],
-                '🧾 Đối thủ đã gửi tỷ số trận #' . $matchId . ': ' . (int) $scoreOne . '-' . (int) $scoreTwo . ' (thứ tự A-B). Mở mục Ghép đôi trong bot để xác nhận hoặc báo sai.'
-            );
-            return self::response(['result' => $result['result'], 'status' => 'pending', 'message' => 'Đã gửi tỷ số. Chờ đối thủ xác nhận.'], 201);
-        }
-
-        if ($path === '/api/matchmaking/confirm' && $method === 'POST') {
-            $matchId = (string) ($this->body['matchId'] ?? '');
-            $approved = filter_var($this->body['approved'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || !array_key_exists('approved', $this->body) || $approved === null) {
-                throw new HttpException(400, 'Mã lượt ghép hoặc lựa chọn xác nhận không hợp lệ.');
-            }
-            $match = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$matchId]);
-            try {
-                $result = MatchmakingService::confirm((int) $matchId, $userId, $approved);
-            } catch (RuntimeException $error) {
-                throw new HttpException(409, $error->getMessage());
-            }
-            if ($match !== null) {
-                $otherId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
-                $message = $result['status'] === 'disputed'
-                    ? '⚠️ Kết quả trận #' . $matchId . ' đang tranh chấp. Elo và điểm chưa thay đổi; quản trị viên sẽ kiểm tra.'
-                    : '✅ Kết quả trận #' . $matchId . ' đã được hai bên xác nhận. Điểm và Elo đã được cập nhật.';
-                $this->notify((string) $otherId, $message);
-            }
-            return self::response($result);
-        }
-
-        if ($path === '/api/matchmaking/finish' && $method === 'POST') {
-            throw new HttpException(410, 'Không thể kết thúc lượt ghép trực tiếp. Hãy gửi tỷ số và chờ đối thủ xác nhận.');
-        }
-
         if ($path === '/api/vip' && $method === 'GET') {
             return self::response([
                 ...VipService::status($userId),
@@ -626,35 +459,6 @@ final class ApiController
 
     private function handleAdmin(string $method, string $path): array
     {
-        if ($method === 'GET' && $path === '/api/admin/matchmaking/disputes') {
-            return self::response([
-                'disputes' => Database::all(
-                    "SELECT r.id AS result_id, r.match_id, r.score_one, r.score_two, r.reported_by, r.confirmed_by, r.created_at, m.mode, m.player_one, m.player_two " .
-                    "FROM matchmaking_results r JOIN matchmaking_matches m ON m.id = r.match_id " .
-                    "WHERE r.status = 'disputed' ORDER BY r.created_at ASC LIMIT 100"
-                ),
-            ]);
-        }
-        if ($method === 'POST' && preg_match('#^/api/admin/matchmaking/([0-9]{1,18})/resolve$#', $path, $match)) {
-            $scoreOne = filter_var($this->body['scoreOne'] ?? null, FILTER_VALIDATE_INT);
-            $scoreTwo = filter_var($this->body['scoreTwo'] ?? null, FILTER_VALIDATE_INT);
-            if ($scoreOne === false || $scoreTwo === false || $scoreOne < 0 || $scoreOne > 999 || $scoreTwo < 0 || $scoreTwo > 999) {
-                throw new HttpException(400, 'Tỷ số phải là số nguyên từ 0 đến 999.');
-            }
-            $matchRow = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$match[1]]);
-            try {
-                $resolved = MatchmakingService::resolveDispute((int) $match[1], (string) $this->user['id'], (int) $scoreOne, (int) $scoreTwo);
-            } catch (RuntimeException $error) {
-                throw new HttpException(409, $error->getMessage());
-            }
-            $this->audit('matchmaking.resolve', $match[1], ['scoreOne' => (int) $scoreOne, 'scoreTwo' => (int) $scoreTwo]);
-            if ($matchRow !== null) {
-                $notice = '✅ Quản trị viên đã xử lý tranh chấp trận #' . $match[1] . '. Tỷ số cuối: ' . (int) $scoreOne . '-' . (int) $scoreTwo . '. Elo và điểm nội bộ đã được cập nhật.';
-                $this->notify((string) $matchRow['player_one'], $notice);
-                $this->notify((string) $matchRow['player_two'], $notice);
-            }
-            return self::response(['result' => $resolved, 'message' => 'Đã xử lý tranh chấp và cập nhật bảng xếp hạng.']);
-        }
         if ($method === 'GET' && $path === '/api/admin/payments') {
             return self::response(['payments' => PaymentService::pending(100), 'stats' => PaymentService::stats()]);
         }
@@ -1079,30 +883,32 @@ final class ApiController
         if (!in_array($mode, ['reply_keyboard', 'inline_keyboard'], true)) {
             throw new HttpException(400, 'Loại menu phải là reply_keyboard hoặc inline_keyboard.');
         }
-        if ($columns < 1 || $columns > 3) {
-            throw new HttpException(400, 'Số cột menu phải từ 1 đến 3.');
-        }
-
+        if ($columns < 1 || $columns > 3) throw new HttpException(400, 'Số cột menu phải từ 1 đến 3.');
         $labels = $this->validateMap($this->body['buttonLabels'] ?? [], 'Tên nút', 60);
         $descriptions = $this->validateMap($this->body['buttonDescriptions'] ?? [], 'Mô tả nút', 160);
         $styles = $this->validateMap($this->body['buttonStyles'] ?? [], 'Màu nút', 12, ['primary', 'success', 'danger']);
+        $icons = $this->validateMap($this->body['buttonIcons'] ?? [], 'Custom Emoji ID', 32);
+        foreach ($icons as $iconId) {
+            if (!preg_match('/^[0-9]{5,32}$/', (string) $iconId)) {
+                throw new HttpException(400, 'Custom Emoji ID phải là chuỗi số từ 5 đến 32 ký tự.');
+            }
+        }
         $intro = $this->text($this->body['introText'] ?? '', 600);
         $persistent = array_key_exists('persistentKeyboard', $this->body) ? $this->toBool($this->body['persistentKeyboard']) : true;
         $resize = array_key_exists('resizeKeyboard', $this->body) ? $this->toBool($this->body['resizeKeyboard']) : true;
-
         $saved = Database::one(
-            'INSERT INTO bot_menu_configs (bot_key, menu_mode, intro_text, menu_columns, persistent_keyboard, resize_keyboard, button_labels, button_descriptions, button_styles, updated_at) ' .
-            'VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, NOW()) ' .
+            'INSERT INTO bot_menu_configs (bot_key, menu_mode, intro_text, menu_columns, persistent_keyboard, resize_keyboard, button_labels, button_descriptions, button_styles, button_icons, updated_at) ' .
+            'VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb, NOW()) ' .
             'ON CONFLICT (bot_key) DO UPDATE SET menu_mode = EXCLUDED.menu_mode, intro_text = EXCLUDED.intro_text, menu_columns = EXCLUDED.menu_columns, ' .
             'persistent_keyboard = EXCLUDED.persistent_keyboard, resize_keyboard = EXCLUDED.resize_keyboard, button_labels = EXCLUDED.button_labels, ' .
-            'button_descriptions = EXCLUDED.button_descriptions, button_styles = EXCLUDED.button_styles, updated_at = NOW() RETURNING *',
-            [$botKey, $mode, $intro, $columns, $persistent, $resize, json_encode($labels, JSON_UNESCAPED_UNICODE), json_encode($descriptions, JSON_UNESCAPED_UNICODE), json_encode($styles, JSON_UNESCAPED_UNICODE)]
+            'button_descriptions = EXCLUDED.button_descriptions, button_styles = EXCLUDED.button_styles, button_icons = EXCLUDED.button_icons, updated_at = NOW() RETURNING *',
+            [$botKey, $mode, $intro, $columns, $persistent, $resize, json_encode($labels, JSON_UNESCAPED_UNICODE), json_encode($descriptions, JSON_UNESCAPED_UNICODE), json_encode($styles, JSON_UNESCAPED_UNICODE), json_encode($icons, JSON_UNESCAPED_UNICODE)]
         );
-        $this->audit('bot-menu.update', $botKey, ['menuMode' => $mode, 'menuColumns' => $columns]);
+        $this->audit('bot-menu.update', $botKey, ['menuMode' => $mode, 'menuColumns' => $columns, 'customEmojiCount' => count($icons)]);
         return self::response([
             'success' => true,
             'menu' => $this->publicMenu($saved),
-            'message' => 'Đã lưu cấu hình menu. Thay đổi có hiệu lực ở lần mở menu tiếp theo.',
+            'message' => 'Đã lưu cấu hình riêng của bot. Custom Emoji ID chỉ hoạt động khi tài khoản sở hữu bot đủ điều kiện Telegram Premium.',
         ]);
     }
 
@@ -1268,6 +1074,7 @@ final class ApiController
             'buttonLabels' => self::jsonArray($row['button_labels']),
             'buttonDescriptions' => self::jsonArray($row['button_descriptions']),
             'buttonStyles' => self::jsonArray($row['button_styles']),
+            'buttonIcons' => self::jsonArray($row['button_icons'] ?? []),
             'updatedAt' => $row['updated_at'],
         ];
     }
