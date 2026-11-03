@@ -41,6 +41,11 @@ putenv('ADMIN_IDS=' . $realtimeAdminTwo);
 $realtimeTicket = Realtime::issueAdminTicket($realtimeAdminTwo);
 $assert(Realtime::consumeAdminTicket($realtimeTicket), 'one-time WebSocket ticket accepts any configured admin');
 $assert(!Realtime::consumeAdminTicket($realtimeTicket), 'WebSocket ticket cannot be reused');
+$realtimeUserId = '9500000003';
+$memberTicket = Realtime::issueTicket($realtimeUserId, 'users');
+$memberIdentity = Realtime::consumeTicket($memberTicket);
+$assert($memberIdentity !== null && $memberIdentity['userId'] === $realtimeUserId && $memberIdentity['audience'] === 'users', 'member WebSocket ticket is bound to the authenticated user audience');
+$assert(Realtime::consumeTicket($memberTicket) === null, 'member WebSocket ticket cannot be reused');
 if ($previousAdminId === false) putenv('ADMIN_ID'); else putenv('ADMIN_ID=' . $previousAdminId);
 if ($previousAdminIds === false) putenv('ADMIN_IDS'); else putenv('ADMIN_IDS=' . $previousAdminIds);
 
@@ -52,6 +57,11 @@ $latestRealtimeEvent = Database::one(
 );
 $assert($notificationCount >= 1, 'PostgreSQL LISTEN/NOTIFY wakes the realtime worker');
 $assert($latestRealtimeEvent !== null && $latestRealtimeEvent['event_type'] === 'admin.realtime.smoke' && $latestRealtimeEvent['audience'] === 'admin', 'realtime publish persists event before notification');
+Realtime::publish('user.data.changed', ['kind' => 'wallet'], 'users');
+$userRealtimeEvent = Database::one(
+    "SELECT event_type, audience, payload FROM realtime_events WHERE event_type = 'user.data.changed' ORDER BY id DESC LIMIT 1"
+);
+$assert($userRealtimeEvent !== null && $userRealtimeEvent['audience'] === 'users', 'member data change is broadcast only to authenticated website sessions');
 
 
 $accountUser = '95' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
@@ -94,6 +104,39 @@ Database::run(
 );
 $user = Database::one('SELECT user_id, name, balance, vip_level FROM users WHERE user_id = ?', [$userId]);
 $assert($user !== null && $user['name'] === 'PHP Smoke Test', 'create/read users');
+
+// Website browser sessions are signed, bot-bound, cookie-only, and resolve their identity from PostgreSQL.
+$previousWebsiteSecret = getenv('LEGACY_SESSION_SECRET');
+$previousCookie = $_COOKIE['hendy_web_session'] ?? null;
+$previousBotHeader = $_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] ?? null;
+$websiteSecret = str_repeat('hendy-website-session-test-', 2);
+putenv('LEGACY_SESSION_SECRET=' . $websiteSecret);
+$base64Url = static fn (string $value): string => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+$websiteHeader = $base64Url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+$websitePayload = $base64Url(json_encode([
+    'sub' => $userId,
+    'bot' => 'secondary',
+    'aud' => 'hendy-legacy-account',
+    'iat' => time(),
+    'exp' => time() + 3600,
+]));
+$websiteUnsigned = $websiteHeader . '.' . $websitePayload;
+$websiteSignature = $base64Url(hash_hmac('sha256', $websiteUnsigned, $websiteSecret, true));
+$_COOKIE['hendy_web_session'] = $websiteUnsigned . '.' . $websiteSignature;
+$_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = 'secondary';
+$websiteIdentity = TelegramAuth::authenticateRequest();
+$assert($websiteIdentity['id'] === $userId && $websiteIdentity['_bot_key'] === 'secondary', 'website cookie resolves PostgreSQL identity and originating bot');
+$_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = 'primary';
+$crossBotCookieRejected = false;
+try {
+    TelegramAuth::authenticateRequest();
+} catch (Throwable) {
+    $crossBotCookieRejected = true;
+}
+$assert($crossBotCookieRejected, 'website cookie cannot authenticate the other bot flow');
+if ($previousWebsiteSecret === false) putenv('LEGACY_SESSION_SECRET'); else putenv('LEGACY_SESSION_SECRET=' . $previousWebsiteSecret);
+if ($previousCookie === null) unset($_COOKIE['hendy_web_session']); else $_COOKIE['hendy_web_session'] = $previousCookie;
+if ($previousBotHeader === null) unset($_SERVER['HTTP_X_TELEGRAM_BOT_KEY']); else $_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = $previousBotHeader;
 
 $rollbackId = '987654321013';
 try {
