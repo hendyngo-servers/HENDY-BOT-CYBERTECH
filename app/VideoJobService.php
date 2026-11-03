@@ -48,6 +48,7 @@ final class VideoJobService
             throw new RuntimeException('Link không hợp lệ. Chỉ nhận HTTPS từ nền tảng video đã cấu hình.');
         }
         return Database::transaction(function () use ($userId, $sourceUrl, $botKey): array {
+            Database::run('INSERT INTO users (user_id) VALUES (?) ON CONFLICT (user_id) DO NOTHING', [$userId]);
             $user = Database::one('SELECT user_id FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
             if ($user === null) {
                 throw new RuntimeException('Không tìm thấy tài khoản. Hãy gửi /start trước khi tạo video job.');
