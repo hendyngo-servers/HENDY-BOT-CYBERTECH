@@ -34,6 +34,29 @@ CREATE TABLE IF NOT EXISTS deposit_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Telegram bank-transfer requests are manually reviewed. A request never
+-- credits a wallet until an administrator approves it.
+CREATE TABLE IF NOT EXISTS payment_requests (
+    payment_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    amount NUMERIC(18, 0) NOT NULL CHECK (amount BETWEEN 10000 AND 500000000),
+    bot_key TEXT NOT NULL DEFAULT 'primary' CHECK (bot_key IN ('primary','secondary')),
+    transfer_content TEXT NOT NULL UNIQUE,
+    bank_id TEXT NOT NULL,
+    account_number TEXT NOT NULL,
+    account_holder TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','cancelled')),
+    reviewed_by TEXT,
+    reviewed_at TIMESTAMPTZ,
+    admin_note TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_status_created
+    ON payment_requests(status, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_user_created
+    ON payment_requests(user_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS products (
     id BIGSERIAL PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
@@ -87,6 +110,29 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- PostgreSQL-backed queue for video subtitle jobs. The optional worker
+-- dispatches jobs to a configured provider; without a provider they stay queued.
+CREATE TABLE IF NOT EXISTS video_jobs (
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    bot_key TEXT NOT NULL DEFAULT 'primary' CHECK (bot_key IN ('primary','secondary')),
+    source_url TEXT NOT NULL,
+    provider_job_id TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','processing','completed','failed')),
+    progress SMALLINT NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+    output_url TEXT NOT NULL DEFAULT '',
+    error_message TEXT NOT NULL DEFAULT '',
+    attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    claimed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_video_jobs_queue
+    ON video_jobs(status, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_video_jobs_user_created
+    ON video_jobs(user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS giftcodes (
     code TEXT PRIMARY KEY,
