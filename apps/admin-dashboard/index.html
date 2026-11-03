@@ -343,6 +343,7 @@
       ).join('') + '</section>' +
       '<div class="section-head"><h3>Trung tâm khách hàng</h3><span>' + Number(state.boot.referralCount || 0) + ' lượt giới thiệu</span></div>' +
       '<button class="card" data-page="customer" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid #e1e9fb"><b style="font-size:13px">💎 Quản lý tài khoản và hỗ trợ</b><span class="price">Mở trung tâm →</span></button>' +
+      (settings.website_url ? '<a class="card" href="' + escapeHtml(settings.website_url) + '" target="_blank" rel="noopener noreferrer" style="display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit"><b>🌐 WEBSITE CHÍNH THỨC</b><span class="price">Mở website ↗</span></a>' : '') +
       (state.boot.isAdmin ? '<div class="notice good" style="margin-top:12px">Tài khoản quản trị đã được xác thực. Mục Quản trị chỉ hiển thị với Admin.</div>' : '');
   }
 
@@ -717,6 +718,7 @@
     return '<form id="admin-settings-form" class="card form"><b>Cấu hình hiển thị và nghiệp vụ</b>' +
       field('homepage_title','Tên thương hiệu') +
       '<div class="field"><label>Thông báo trang chủ</label><textarea name="announcement">' + escapeHtml(s.announcement || '') + '</textarea></div>' +
+      field('website_url','Website chính thức (HTTPS)','url') +
       field('VIETQR_BANK_ID','Mã ngân hàng VietQR') +
       field('VIETQR_ACCOUNT_NO','Số tài khoản nhận tiền') +
       field('VIETQR_ACCOUNT_NAME','Tên chủ tài khoản') +
@@ -725,7 +727,8 @@
       field('referral_commission_percent','Hoa hồng giới thiệu (%)','number') +
       '<div class="field"><label>Lời nhắn CSKH</label><textarea name="support_message">' + escapeHtml(s.support_message || '') + '</textarea></div>' +
       '<button class="primary">Lưu cấu hình</button></form>' +
-      '<div class="notice warn">Các trường trên là cấu hình nghiệp vụ không phải secret. BOT1_TOKEN, DATABASE_URL, WEBHOOK_SECRET và API key chỉ thay đổi trong Render Environment, không lưu ở cơ sở dữ liệu ứng dụng.</div>';
+      '<div class="notice">Website được hiển thị trong lời chào Telegram và trang chủ Mini App. Chỉ lưu URL HTTPS; không nhập token hoặc mật khẩu vào đây.</div>' +
+      '<div class="notice warn">Các trường còn lại là cấu hình nghiệp vụ không phải secret. BOT1_TOKEN, DATABASE_URL, WEBHOOK_SECRET và API key chỉ thay đổi trong Render Environment, không lưu ở cơ sở dữ liệu ứng dụng.</div>';
   }
 
 
