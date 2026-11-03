@@ -591,51 +591,6 @@
       '<button class="primary">Kiểm tra và nhận thưởng</button></form>';
   }
 
-  async function renderMatchmaking() {
-    const data = await api('/api/matchmaking');
-    const leaderboard = await api('/api/matchmaking/leaderboard?limit=5');
-    const ranking = (leaderboard.players || []).map((player, index) =>
-      '<div class="list-row"><div><b>#' + (index + 1) + ' ' + escapeHtml(player.display_name) + '</b><div class="small muted">Elo ' + Number(player.rating) + ' · ' + Number(player.matches_played) + ' trận · ' + Number(player.wins) + ' thắng</div></div><strong>' + Number(player.points) + ' điểm</strong></div>'
-    ).join('');
-    const stats = '<div class="stat-grid"><div class="stat"><small>Elo của bạn</small><b>' + Number(data.rating || 1000) + '</b></div><div class="stat"><small>Điểm xếp hạng</small><b>' + Number(data.points || 0) + '</b></div></div>';
-
-    if (data.status === 'matched') {
-      const pending = data.pendingResult;
-      let action = '';
-      if (pending && pending.status === 'pending' && pending.reportedByMe) {
-        action = '<div class="notice">Đã gửi tỷ số <b>' + (pending.scoreOne) + ' - ' + (pending.scoreTwo) + '</b>. Đang chờ đối thủ xác nhận.</div>';
-      } else if (pending && pending.status === 'pending' && !pending.reportedByMe) {
-        action = '<div class="notice">Đối thủ báo tỷ số A-B: <b>' + pending.scoreOne + ' - ' + pending.scoreTwo + '</b>. Chọn xác nhận hoặc báo tranh chấp.</div>' +
-          '<div class="two-col"><button class="primary" data-match-confirm="' + escapeHtml(data.matchId) + '" data-approved="true">Xác nhận kết quả</button><button class="danger" data-match-confirm="' + escapeHtml(data.matchId) + '" data-approved="false">Báo sai kết quả</button></div>';
-      } else {
-        action = '<div class="card"><div class="field"><label>Tỷ số người chơi A</label><input id="match-score-one" type="number" min="0" max="999" step="1" value="0" required></div>' +
-          '<div class="field"><label>Tỷ số người chơi B</label><input id="match-score-two" type="number" min="0" max="999" step="1" value="0" required></div>' +
-          '<p class="small muted">A là người chơi A trong trận, B là người chơi B. Đối thủ cần xác nhận trước khi Elo/điểm được cập nhật.</p>' +
-          '<button class="primary" data-match-report="' + escapeHtml(data.matchId) + '" style="width:100%">Gửi tỷ số cho đối thủ xác nhận</button></div>';
-      }
-      return '<div class="hero"><div class="eyebrow">RATED MATCH</div><h2>Đã tìm thấy đối thủ 🤝</h2><p>Hãy hoàn thành trận đấu rồi báo kết quả. Elo chỉ thay đổi sau xác nhận của cả hai bên.</p></div>' +
-        stats +
-        '<div class="card"><div class="field"><label>Đối thủ</label><b>' + escapeHtml(data.opponentName) + '</b><p class="small muted">Telegram ID: ' + escapeHtml(data.opponentId) + ' · Elo ' + Number(data.opponentRating || 1000) + '</p></div>' +
-        '<div class="code-box"><span>Mã trận #' + escapeHtml(data.matchId) + '</span><button class="tiny-btn" data-copy="' + escapeHtml(data.matchId) + '">Sao chép</button></div>' +
-        '<p class="small muted">Bạn là người chơi ' + (data.isPlayerOne ? 'A' : 'B') + '.</p></div>' + action;
-    }
-    if (data.status === 'disputed') {
-      return '<div class="hero"><div class="eyebrow">MATCH REVIEW</div><h2>Trận đang tranh chấp ⚠️</h2><p>Hai bên chưa thống nhất tỷ số. Elo và điểm chưa được thay đổi; quản trị viên cần xác minh kết quả.</p></div>' +
-        stats + '<div class="notice">Mã trận #' + escapeHtml(data.matchId) + '. Vui lòng chờ quản trị viên xử lý.</div>';
-    }
-    if (data.status === 'waiting') {
-      return '<div class="hero"><div class="eyebrow">MATCHMAKING</div><h2>Đang tìm người chơi…</h2><p>Hệ thống ghép theo Elo và mở rộng phạm vi theo thời gian chờ.</p></div>' +
-        stats + '<div class="notice">Bạn đang ở hàng chờ từ ' + new Date(data.createdAt).toLocaleString('vi-VN') + '.</div>' +
-        '<div class="two-col"><button class="secondary" data-match-refresh>Làm mới trạng thái</button><button class="danger" data-match-leave>Rời hàng chờ</button></div>';
-    }
-    return '<div class="hero"><div class="eyebrow">HENDY MATCH</div><h2>Ghép đôi xếp hạng 🎮</h2><p>Đối thủ có Elo tương đương sẽ được ưu tiên. Xác nhận hai phía giúp hạn chế báo sai kết quả.</p></div>' +
-      stats +
-      '<div class="card"><div class="field"><label>Chế độ ghép đôi</label><select id="match-mode"><option value="quick">Ghép nhanh · có Elo</option><option value="practice">Luyện tập · không đổi Elo</option></select></div>' +
-      '<button class="primary" data-match-join style="width:100%">🤝 Tìm đối thủ ngay</button></div>' +
-      '<div class="card"><h3>Bảng xếp hạng Hendy</h3>' + (ranking || '<p class="muted">Chưa có dữ liệu xếp hạng.</p>') + '</div>' +
-      '<div class="notice">Thắng Ghép nhanh: +10 điểm, thua: +3 điểm, hòa: +5 điểm. Chế độ Luyện tập không thay đổi Elo; điểm thưởng không quy đổi thành tiền.</div>';
-  }
-
   async function renderVip() {
     const data = await api('/api/vip');
     const products = data.products || [];
@@ -685,7 +640,6 @@
     if (tab === 'bot-menus') state.adminData.botMenus = (await api('/api/admin/bot-menus')).menus;
     if (tab === 'giftcodes') state.adminData.giftcodes = (await api('/api/admin/giftcodes')).giftcodes;
     if (tab === 'users') state.adminData.users = (await api('/api/admin/users')).users;
-    if (tab === 'matchmaking') state.adminData.matchDisputes = (await api('/api/admin/matchmaking/disputes')).disputes || [];
     if (tab === 'payments') state.adminData.payments = (await api('/api/admin/payments')).payments || [];
     if (tab === 'vouchers') state.adminData.vouchers = (await api('/api/admin/vouchers')).requests || [];
     if (tab === 'video-jobs') {
@@ -696,7 +650,7 @@
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
@@ -881,16 +835,6 @@
       ).join('') : empty('Chưa có video job','Người dùng gửi link Vietsub từ Telegram hoặc Mini App sẽ được lưu ở đây.'));
   }
 
-  function adminMatchmaking() {
-    const disputes = state.adminData.matchDisputes || [];
-    return '<div class="notice warn">Chỉ xử lý sau khi đối chiếu bằng chứng. Tỷ số nhập theo thứ tự A (player_one) – B (player_two). Quyết định sẽ cập nhật Elo và điểm nội bộ cho cả hai người chơi.</div>' +
-      (disputes.length ? disputes.map(item =>
-        '<article class="record"><div class="record-top"><div><b>Trận #' + escapeHtml(item.match_id) + ' · ' + escapeHtml(item.mode) + '</b><small>A: ' + escapeHtml(item.player_one) + '<br>B: ' + escapeHtml(item.player_two) + '</small></div><span class="status rejected">Tranh chấp</span></div>' +
-        '<p>Tỷ số đang bị phản đối: <b>' + Number(item.score_one) + ' - ' + Number(item.score_two) + '</b><br>Người gửi: ' + escapeHtml(item.reported_by) + ' · Người phản đối: ' + escapeHtml(item.confirmed_by || '') + '</p>' +
-        '<form class="form" data-match-resolve="' + escapeHtml(item.match_id) + '"><div class="two-col"><div class="field"><label>Tỷ số A</label><input name="scoreOne" type="number" min="0" max="999" step="1" required></div><div class="field"><label>Tỷ số B</label><input name="scoreTwo" type="number" min="0" max="999" step="1" required></div></div><button class="primary">Xác nhận kết quả cuối cùng</button></form></article>'
-      ).join('') : empty('Không có trận tranh chấp','Các kết quả đang chờ đối thủ xác nhận sẽ không xuất hiện ở đây.'));
-  }
-
   function adminUsers() {
     const users = state.adminData.users || [];
     return '<form class="form" id="admin-user-search"><div class="field"><label>Tìm theo Telegram ID, tên hoặc username</label><input name="search" placeholder="Nhập từ khóa"></div><button class="secondary">Tìm thành viên</button></form>' +
@@ -913,7 +857,6 @@
     if (state.adminTab === 'bot-menus') body = adminBotMenus();
     if (state.adminTab === 'giftcodes') body = adminGiftcodes();
     if (state.adminTab === 'users') body = adminUsers();
-    if (state.adminTab === 'matchmaking') body = adminMatchmaking();
     if (state.adminTab === 'payments') body = adminPayments();
     if (state.adminTab === 'vouchers') body = adminVouchers();
     if (state.adminTab === 'video-jobs') body = adminVideoJobs();
@@ -939,7 +882,6 @@
       else if (page === 'referrals') html = await renderReferrals();
       else if (page === 'giftcode') html = renderGiftcode();
       else if (page === 'vip') html = await renderVip();
-      else if (page === 'matchmaking') html = await renderMatchmaking();
       else if (page === 'admin') html = await renderAdmin();
       else html = renderHome();
       $('app').innerHTML = html;
@@ -1022,52 +964,6 @@
     if (adminTab) {
       state.adminTab=adminTab.dataset.adminTab;
       await renderPage();
-      return;
-    }
-    const joinMatch = event.target.closest('[data-match-join]');
-    if (joinMatch) {
-      const mode = $('match-mode').value;
-      joinMatch.disabled = true;
-      try {
-        const result = await api('/api/matchmaking/join','POST',{mode});
-        toast(result.status === 'matched' ? 'Đã tìm thấy đối thủ.' : 'Đã vào hàng chờ ghép đôi.');
-        await renderPage();
-      } catch (error) { toast(error.message); joinMatch.disabled = false; }
-      return;
-    }
-    const leaveMatch = event.target.closest('[data-match-leave]');
-    if (leaveMatch) {
-      try { await api('/api/matchmaking/leave','POST',{}); toast('Đã rời hàng chờ.'); await renderPage(); }
-      catch (error) { toast(error.message); }
-      return;
-    }
-    const refreshMatch = event.target.closest('[data-match-refresh]');
-    if (refreshMatch) { await renderPage(); return; }
-    const reportMatch = event.target.closest('[data-match-report]');
-    if (reportMatch) {
-      const scoreOne = Number($('#match-score-one').value);
-      const scoreTwo = Number($('#match-score-two').value);
-      if (!Number.isInteger(scoreOne) || !Number.isInteger(scoreTwo) || scoreOne < 0 || scoreOne > 999 || scoreTwo < 0 || scoreTwo > 999) {
-        toast('Tỷ số phải là số nguyên từ 0 đến 999.');
-        return;
-      }
-      reportMatch.disabled = true;
-      try {
-        await api('/api/matchmaking/report','POST',{matchId:reportMatch.dataset.matchReport,scoreOne,scoreTwo});
-        toast('Đã gửi tỷ số. Đang chờ đối thủ xác nhận.');
-        await renderPage();
-      } catch (error) { toast(error.message); reportMatch.disabled = false; }
-      return;
-    }
-    const confirmMatch = event.target.closest('[data-match-confirm]');
-    if (confirmMatch) {
-      const approved = confirmMatch.dataset.approved === 'true';
-      confirmMatch.disabled = true;
-      try {
-        const result = await api('/api/matchmaking/confirm','POST',{matchId:confirmMatch.dataset.matchConfirm,approved});
-        toast(result.status === 'disputed' ? 'Đã báo tranh chấp. Elo chưa thay đổi.' : 'Đã xác nhận và cập nhật Elo, điểm xếp hạng.');
-        await renderPage();
-      } catch (error) { toast(error.message); confirmMatch.disabled = false; }
       return;
     }
     const vipCheckin = event.target.closest('[data-vip-checkin]');
@@ -1289,12 +1185,6 @@
       } else if (form.id === 'admin-user-search') {
         state.adminData.users = (await api('/api/admin/users?search=' + encodeURIComponent(data.search || ''))).users;
         $('app').innerHTML = adminTabs() + adminUsers();
-      } else if (form.dataset.matchResolve) {
-        data.scoreOne = Number(data.scoreOne);
-        data.scoreTwo = Number(data.scoreTwo);
-        await api('/api/admin/matchmaking/' + form.dataset.matchResolve + '/resolve','POST',data);
-        toast('Đã xử lý tranh chấp và cập nhật Elo.');
-        await renderPage();
       } else if (form.dataset.orderForm) {
         await api('/api/admin/orders/' + form.dataset.orderForm,'PATCH',data);
         toast('Đã cập nhật đơn hàng và gửi thông báo.');
