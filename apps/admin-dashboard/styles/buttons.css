@@ -10,7 +10,7 @@
   --btn-focus: rgba(53,112,232,.28);
 }
 
-/* Bảng màu tập trung cho tất cả nút Mini App. Chỉnh token tại :root. */
+/* Bảng màu tập trung cho tất cả nút Website HENDY. Chỉnh token tại :root. */
 button {
   -webkit-tap-highlight-color: transparent;
   transition: transform .16s ease, filter .16s ease, box-shadow .16s ease, background .16s ease;
