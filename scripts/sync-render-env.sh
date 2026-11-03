@@ -25,7 +25,7 @@ while IFS=$'\t' read -r key default_value; do
     printf -v "$key" '%s' "$default_value"
     export "$key"
   fi
-done < <(jq -r '.variables | to_entries[] | select(.value.classification == "variable" and has("default")) | [.key, .value.default] | @tsv' "$SCHEMA")
+done < <(jq -r '.variables | to_entries[] | select(.value.classification == "variable" and (.value | has("default"))) | [.key, .value.default] | @tsv' "$SCHEMA")
 
 required=(BOT1_TOKEN ADMIN_ID)
 for key in "${required[@]}"; do
