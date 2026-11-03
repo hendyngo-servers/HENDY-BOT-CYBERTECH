@@ -281,7 +281,11 @@
     });
     let data = {};
     try { data = await response.json(); } catch (error) {}
-    if (!response.ok) throw new Error(data.error || 'Không thể thực hiện yêu cầu.');
+    if (!response.ok) {
+      const error = new Error(typeof data.error === 'string' ? data.error : (data.error?.message || data.message || 'Không thể thực hiện yêu cầu.'));
+      error.status = response.status;
+      throw error;
+    }
     return data;
   }
 
@@ -949,6 +953,13 @@
       });
       socket.addEventListener('error', () => setRealtimeStatus('Realtime tạm thời gián đoạn',false));
     } catch (error) {
+      if (error && (error.status === 401 || error.status === 403)) {
+        realtimeStopped = true;
+        window.clearInterval(realtimeHeartbeat);
+        realtimeHeartbeat = null;
+        setRealtimeStatus(error.status === 403 ? 'Realtime: Telegram ID chưa có quyền Admin' : 'Realtime: phiên Telegram hết hạn, hãy mở lại Mini App',false);
+        return;
+      }
       setRealtimeStatus('WebSocket chưa sẵn sàng',false);
       if (!realtimeStopped) {
         realtimeRetryCount = Math.min(realtimeRetryCount + 1, 6);
