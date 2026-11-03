@@ -18,6 +18,9 @@ foreach (['Env.php', 'Database.php', 'TelegramAuth.php', 'Realtime.php'] as $fil
 }
 Env::load(dirname(__DIR__) . '/.env');
 
+// Ratchet 0.4.4 uses dynamic connection properties; hide vendor-only PHP 8.3 deprecations.
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 // The web service applies schema migrations. Realtime waits for its durable tables.
 $waitSeconds = max(0, Env::int('DB_STARTUP_WAIT_SECONDS', 90));
 $deadline = microtime(true) + $waitSeconds;
@@ -231,6 +234,11 @@ final class AdminRealtimeServer implements MessageComponentInterface
     {
         return $this->clients->count();
     }
+
+    public function maxConnections(): int
+    {
+        return $this->maxConnections;
+    }
 }
 
 // Take the durable cursor before LISTEN, then replay once immediately after
@@ -270,5 +278,6 @@ Loop::addPeriodicTimer(60.0, static function () use ($server): void {
 
 echo "Hendy realtime WebSocket listening on {$host}:{$port}; allowed origins="
     . implode(',', $serverOrigins = array_map('htmlspecialchars', explode(',', (string) Env::get('WEBSOCKET_ALLOWED_ORIGINS', ''))))
-    . "; max connections=" . $server->connectionCount() . "\n";
+    . "; active connections=" . $server->connectionCount()
+    . "; max connections=" . $server->maxConnections() . "\n";
 $io->run();
