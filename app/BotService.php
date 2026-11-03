@@ -253,11 +253,52 @@ final class BotService
             if ($callbackId !== '') {
                 $this->telegram->answerCallback($callbackId);
             }
-            if (!preg_match('/^\d{5,20}$/', $userId) || !str_starts_with($data, 'member:')) {
+            if (!preg_match('/^\d{5,20}$/', $userId)) {
                 return;
             }
-            $action = substr($data, 7);
-            $this->dispatchAction($chatId, $userId, $action);
+            if (str_starts_with($data, 'member:')) {
+                $this->dispatchAction($chatId, $userId, substr($data, 7));
+                return;
+            }
+
+            $legacyActions = [
+                'back_home' => 'home',
+                'menu_minigame' => 'live',
+                'rr88_game' => 'minigame-products',
+                'mm88_game' => 'minigame-products',
+                'gg88_game' => 'minigame-products',
+                'ad88_game' => 'minigame-products',
+                'abcvip_kho' => 'minigame-products',
+                'menu_tool' => 'tools',
+                'menu_code' => 'codes',
+                'menu_nap' => 'wallet',
+                'menu_otp' => 'otp',
+                'shop_otp' => 'otp-products',
+                'shop_proxy' => 'proxy-products',
+                'get_free_proxy' => 'proxy-products',
+                'proxy_xoay' => 'proxy-products',
+                'otp_abcvip' => 'otp-products',
+                'otp_fb' => 'otp-products',
+                'otp_tele' => 'otp-products',
+                'otp_sc88' => 'otp-products',
+                'menu_kho_cc' => 'viptools',
+                'menu_cskh' => 'customer',
+                'menu_ghep_doi' => 'duel',
+                'ref' => 'ref',
+                'vip' => 'vip',
+                'giftcode' => 'gift',
+                'cskh' => 'support',
+                'tool_1' => 'tools',
+                'tool_2' => 'tools',
+                'tool_3' => 'tools',
+                // Legacy tool_4 was labelled bulk SMS spam; this only opens the
+                // normal tool catalogue and does not execute or send messages.
+                'tool_4' => 'tools',
+            ];
+            if (!isset($legacyActions[$data])) {
+                return;
+            }
+            $this->dispatchAction($chatId, $userId, $legacyActions[$data]);
         } catch (Throwable $error) {
             error_log('[telegram:' . $this->botKey . '] ' . $error->getMessage());
             $this->telegram->sendMessage($chatId, '❌ ' . self::escape($error->getMessage()));
@@ -543,6 +584,16 @@ final class BotService
                     'reply_markup' => $this->inlineMenu($rows),
                 ]);
                 return;
+            case 'minigame-products':
+                $this->showProducts($chatId, ['minigame'], '🎮 KHO SẢN PHẨM MINI GAME');
+                return;
+            case 'otp-products':
+                $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS');
+                return;
+            case 'proxy-products':
+            case 'proxy':
+                $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY');
+                return;
             case 'tools':
                 $this->showProducts($chatId, ['tools'], '🧰 THUÊ TOOL');
                 return;
@@ -605,7 +656,7 @@ final class BotService
                 return;
             case 'support-abuse':
                 $this->setPending($userId, 'support_abuse', ['stage' => 'order']);
-                $this->telegram->sendMessage($chatId, '🆘 <b>HỖ TRỢ DÍNH LẠM DỤNG (60%)</b>' . "\\n" . 'Vui lòng nhập mã đơn hàng đã hoàn tất để CSKH kiểm tra. Yêu cầu chỉ được ghi nhận sau khi đối chiếu đơn; không tự động hoàn tiền hoặc cộng voucher.');
+                $this->telegram->sendMessage($chatId, '🆘 <b>HỖ TRỢ DÍNH LẠM DỤNG (60%)</b>' . "\n" . 'Vui lòng nhập mã đơn hàng đã hoàn tất để CSKH kiểm tra. Yêu cầu chỉ được ghi nhận sau khi đối chiếu đơn; không tự động hoàn tiền hoặc cộng voucher.');
                 return;
             case 'support':
                 $this->setPending($userId, 'support');
@@ -1447,8 +1498,8 @@ final class BotService
                     }
                     $orderCode = (string) ($payload['order_code'] ?? '');
                     $subject = 'Hỗ trợ dính lạm dụng (60%) · Đơn ' . $orderCode;
-                    $message = 'Đơn hàng: ' . $orderCode . "\\n" .
-                        'Sản phẩm: ' . (string) ($payload['product_name'] ?? '') . "\\n\\n" .
+                    $message = 'Đơn hàng: ' . $orderCode . "\n" .
+                        'Sản phẩm: ' . (string) ($payload['product_name'] ?? '') . "\n\n" .
                         mb_substr($text, 0, 2600);
                     $ticket = Database::one(
                         "INSERT INTO support_tickets (user_id, ticket_type, subject, message) VALUES (?, 'dinh_lam', ?, ?) RETURNING id",
@@ -1456,10 +1507,10 @@ final class BotService
                     );
                     $this->clearPending($userId);
                     $this->notifyAdmins(
-                        '🆘 <b>YÊU CẦU DÍNH LẠM DỤNG (60%)</b>' . "\\n" .
-                        'Ticket: <code>#' . (int) $ticket['id'] . '</code>' . "\\n" .
-                        'User: <code>' . self::escape($userId) . '</code>' . "\\n" .
-                        'Đơn: <code>' . self::escape($orderCode) . '</code>' . "\\n" .
+                        '🆘 <b>YÊU CẦU DÍNH LẠM DỤNG (60%)</b>' . "\n" .
+                        'Ticket: <code>#' . (int) $ticket['id'] . '</code>' . "\n" .
+                        'User: <code>' . self::escape($userId) . '</code>' . "\n" .
+                        'Đơn: <code>' . self::escape($orderCode) . '</code>' . "\n" .
                         'Nội dung: ' . self::escape(mb_substr($text, 0, 1600)),
                         ['inline_keyboard' => [[['text' => '🎧 MỞ QUẢN LÝ TICKET', 'callback_data' => 'member:admin']]]]
                     );
