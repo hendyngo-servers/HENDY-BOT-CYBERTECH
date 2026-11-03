@@ -20,6 +20,7 @@ require dirname(__DIR__) . '/app/VipService.php';
 require dirname(__DIR__) . '/app/BotService.php';
 require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ModuleRegistry.php';
+require dirname(__DIR__) . '/app/WebServiceContract.php';
 require dirname(__DIR__) . '/app/WebServiceKernel.php';
 require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
 require dirname(__DIR__) . '/app/ApiController.php';
