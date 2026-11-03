@@ -30,17 +30,38 @@ final class PaymentService
             throw new RuntimeException('Chưa cấu hình thông tin tài khoản nhận tiền.');
         }
 
-        $paymentId = 'HD' . strtoupper(bin2hex(random_bytes(5)));
-        $transferContent = 'NAP ' . $paymentId;
-        $row = Database::one(
-            "INSERT INTO payment_requests (payment_id, user_id, amount, bot_key, transfer_content, bank_id, account_number, account_holder) " .
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING payment_id, user_id, amount, status, transfer_content, bank_id, account_number, account_holder, created_at",
-            [$paymentId, $userId, $amount, $botKey, $transferContent, $bankId, $accountNumber, $accountHolder]
-        );
-        if ($row === null) {
-            throw new RuntimeException('Không thể tạo yêu cầu nạp tiền.');
-        }
-        return $row;
+        return Database::transaction(function () use ($userId, $amount, $botKey, $bankId, $accountNumber, $accountHolder): array {
+            $user = Database::one('SELECT user_id FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+            if ($user === null) {
+                throw new RuntimeException('Không tìm thấy tài khoản. Hãy gửi /start trước khi tạo yêu cầu nạp.');
+            }
+            $pending = (int) Database::value(
+                "SELECT COUNT(*) FROM payment_requests WHERE user_id = ? AND status = 'pending'",
+                [$userId]
+            );
+            if ($pending > 0) {
+                throw new RuntimeException('Bạn đang có yêu cầu nạp chờ duyệt. Hãy chờ Admin xử lý trước khi tạo yêu cầu mới.');
+            }
+            $recent = (int) Database::value(
+                "SELECT COUNT(*) FROM payment_requests WHERE user_id = ? AND created_at >= NOW() - INTERVAL '1 hour'",
+                [$userId]
+            );
+            if ($recent >= 5) {
+                throw new RuntimeException('Bạn đã tạo quá nhiều yêu cầu nạp trong 1 giờ. Vui lòng thử lại sau.');
+            }
+
+            $paymentId = 'HD' . strtoupper(bin2hex(random_bytes(5)));
+            $transferContent = 'NAP ' . $paymentId;
+            $row = Database::one(
+                "INSERT INTO payment_requests (payment_id, user_id, amount, bot_key, transfer_content, bank_id, account_number, account_holder) " .
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING payment_id, user_id, amount, status, transfer_content, bank_id, account_number, account_holder, created_at",
+                [$paymentId, $userId, $amount, $botKey, $transferContent, $bankId, $accountNumber, $accountHolder]
+            );
+            if ($row === null) {
+                throw new RuntimeException('Không thể tạo yêu cầu nạp tiền.');
+            }
+            return $row;
+        });
     }
 
     public static function pending(int $limit = 10): array
