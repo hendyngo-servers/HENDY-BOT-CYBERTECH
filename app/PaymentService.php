@@ -88,7 +88,7 @@ final class PaymentService
     {
         $limit = max(1, min(30, $limit));
         return Database::all(
-            'SELECT payment_id, amount, status, bot_key, transfer_content, admin_note, created_at, reviewed_at FROM payment_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT ' . $limit,
+            'SELECT payment_id, amount, status, bot_key, transfer_content, bank_id, account_number, account_holder, admin_note, created_at, reviewed_at FROM payment_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT ' . $limit,
             [$userId]
         );
     }
