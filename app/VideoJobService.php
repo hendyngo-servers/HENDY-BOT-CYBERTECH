@@ -47,16 +47,36 @@ final class VideoJobService
         if (!self::isAllowedMediaUrl($sourceUrl)) {
             throw new RuntimeException('Link không hợp lệ. Chỉ nhận HTTPS từ nền tảng video đã cấu hình.');
         }
-        $id = self::uuid();
-        $job = Database::one(
-            "INSERT INTO video_jobs (id, user_id, bot_key, source_url, status, progress) " .
-            "VALUES (?, ?, ?, ?, 'queued', 0) RETURNING id, status, progress, created_at",
-            [$id, $userId, $botKey, $sourceUrl]
-        );
-        if ($job === null) {
-            throw new RuntimeException('Không thể tạo video job.');
-        }
-        return $job;
+        return Database::transaction(function () use ($userId, $sourceUrl, $botKey): array {
+            $user = Database::one('SELECT user_id FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+            if ($user === null) {
+                throw new RuntimeException('Không tìm thấy tài khoản. Hãy gửi /start trước khi tạo video job.');
+            }
+            $active = (int) Database::value(
+                "SELECT COUNT(*) FROM video_jobs WHERE user_id = ? AND status IN ('queued','processing')",
+                [$userId]
+            );
+            if ($active >= 3) {
+                throw new RuntimeException('Bạn đang có 3 video jobs chưa hoàn tất. Hãy chờ xử lý xong trước khi gửi thêm.');
+            }
+            $recent = (int) Database::value(
+                "SELECT COUNT(*) FROM video_jobs WHERE user_id = ? AND created_at >= NOW() - INTERVAL '1 hour'",
+                [$userId]
+            );
+            if ($recent >= 10) {
+                throw new RuntimeException('Bạn đã đạt giới hạn 10 video jobs trong 1 giờ. Vui lòng thử lại sau.');
+            }
+            $id = self::uuid();
+            $job = Database::one(
+                "INSERT INTO video_jobs (id, user_id, bot_key, source_url, status, progress) " .
+                "VALUES (?, ?, ?, ?, 'queued', 0) RETURNING id, status, progress, created_at",
+                [$id, $userId, $botKey, $sourceUrl]
+            );
+            if ($job === null) {
+                throw new RuntimeException('Không thể tạo video job.');
+            }
+            return $job;
+        });
     }
 
     public static function forUser(string $userId, int $limit = 10): array
@@ -157,6 +177,9 @@ final class VideoJobService
         $processorSecret = (string) Env::get('VIDEO_PROCESSOR_SECRET', '');
         if ($processorUrl === '' || $processorSecret === '') {
             throw new RuntimeException('Chưa cấu hình VIDEO_PROCESSOR_URL và VIDEO_PROCESSOR_SECRET. Job vẫn nằm trong hàng chờ.');
+        }
+        if (strlen($processorSecret) < 32) {
+            throw new RuntimeException('VIDEO_PROCESSOR_SECRET phải có ít nhất 32 ký tự.');
         }
         $parts = parse_url($processorUrl);
         if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
