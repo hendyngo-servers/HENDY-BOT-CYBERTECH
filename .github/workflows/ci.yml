@@ -49,6 +49,11 @@ jobs:
           set -euo pipefail
           find app public bin tests -name '*.php' -print0 | xargs -0 -n1 php -l
 
+      - name: Smoke test public HTTP entrypoint wiring
+        run: |
+          set -euo pipefail
+          php -r '\$_SERVER["REQUEST_METHOD"]="GET"; \$_SERVER["REQUEST_URI"]="/"; require "public/index.php";' >/dev/null
+
       - name: Audit environment manifest and regex patterns
         run: |
           set -euo pipefail
