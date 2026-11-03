@@ -22,7 +22,7 @@ final class ApiController
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
-        'referral_commission_percent', 'support_message', 'vip_checkin_points',
+        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username',
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
@@ -87,13 +87,14 @@ final class ApiController
         if ($method === 'GET' && $path === '/api/bootstrap') {
             $user = $this->userRow();
             $referrals = (int) Database::value('SELECT COUNT(*) FROM users WHERE ref_by = ?', [$userId]);
+            $publicSettings = $this->settings(self::SETTINGS, true);
             return self::response([
                 'user' => $user,
                 'isAdmin' => $this->isAdmin(),
                 'products' => $this->listProducts(null, false),
-                'settings' => $this->settings(self::SETTINGS, true),
+                'settings' => $publicSettings,
                 'referralCount' => $referrals,
-                'botUsername' => (string) Env::get('BOT_USERNAME', ''),
+                'botUsername' => (string) ($publicSettings['bot_username'] ?? Env::get('BOT_USERNAME', 'tuanem2027_bot')),
             ]);
         }
 
@@ -906,6 +907,12 @@ final class ApiController
             $values = [];
             foreach ($this->body as $key => $value) {
                 $text = $this->text($value, 500);
+                if ($key === 'bot_username') {
+                    $text = ltrim($text, '@');
+                    if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $text)) {
+                        throw new HttpException(400, 'Tên bot phải là username Telegram hợp lệ, không cần ký tự @.');
+                    }
+                }
                 if ($key === 'vip_checkin_points') {
                     $points = filter_var($text, FILTER_VALIDATE_INT);
                     if ($points === false || $points < 0 || $points > 1000) {
