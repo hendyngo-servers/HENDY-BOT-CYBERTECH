@@ -248,6 +248,13 @@ final class BotService
 
         $action = $this->actionForText($text, $userId);
         if ($action !== null) {
+            // Reply Keyboard sends a normal message, not a callback query.
+            // Show Telegram's typing indicator while the catalog/database request runs.
+            try {
+                $this->telegram->sendChatAction($chatId, 'typing');
+            } catch (Throwable $actionError) {
+                error_log('[telegram:' . $this->botKey . '] Chat action failed: ' . $actionError->getMessage());
+            }
             $this->dispatchAction($chatId, $userId, $action);
         }
     }
@@ -263,7 +270,12 @@ final class BotService
 
         try {
             if ($callbackId !== '') {
-                $this->telegram->answerCallback($callbackId);
+                try {
+                    $this->telegram->answerCallback($callbackId, 'Đã nhận, đang xử lý…');
+                } catch (Throwable $ackError) {
+                    // Callback acknowledgement failure must not cancel the requested business action.
+                    error_log('[telegram:' . $this->botKey . '] Callback acknowledgement failed: ' . $ackError->getMessage());
+                }
             }
             if (!preg_match('/^\d{5,20}$/', $userId)) {
                 return;
