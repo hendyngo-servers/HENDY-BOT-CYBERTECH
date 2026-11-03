@@ -1550,28 +1550,137 @@ final class BotService
         ]);
     }
 
+
     private function showMatchmaking(string $chatId, string $userId): void
     {
-        // The Mini App owns the ranked queue, Elo, result confirmation and
-        // dispute flow. Do not leave legacy FIFO callbacks able to finalize
-        // a match without bilateral result confirmation.
-        $url = $this->webAppUrl('matchmaking');
-        if ($url === '') {
-            $this->telegram->sendMessage($chatId, 'Ghép đôi xếp hạng cần WEBAPP_URL hoặc APP_URL HTTPS. Vui lòng liên hệ quản trị viên.');
-            return;
+        $stats = MatchmakingService::ensureStats($userId);
+        $match = Database::one(
+            "SELECT id, player_one, player_two, mode, status, created_at
+             FROM matchmaking_matches
+             WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?)
+             ORDER BY created_at DESC LIMIT 1",
+            [$userId, $userId]
+        );
+        $lines = [
+            '⚔️ <b>HENDY MATCH · GHÉP ĐÔI TRỰC TIẾP TRÊN TELEGRAM</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '🏅 Elo: <b>' . (int) $stats['rating'] . '</b> · Điểm: <b>' . number_format((int) $stats['points'], 0, ',', '.') . '</b>',
+            '🎮 Trận: <b>' . (int) $stats['matches_played'] . '</b> · Thắng: <b>' . (int) $stats['wins'] . '</b> · Thua: <b>' . (int) $stats['losses'] . '</b>',
+            '',
+        ];
+        $rows = [];
+        if ($match !== null) {
+            $opponentId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
+            $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]) ?? [];
+            $opponentName = (string) (($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên HENDY'));
+            $lines[] = '🆚 Đối thủ: <b>' . self::escape($opponentName) . '</b>';
+            $lines[] = 'Mã trận: <code>#' . (int) $match['id'] . '</code> · ' . ($match['mode'] === 'quick' ? 'Xếp hạng' : 'Luyện tập');
+            if ($match['status'] === 'disputed') {
+                $lines[] = '⚠️ Trận đang tranh chấp. Admin sẽ kiểm tra; Elo/điểm chưa cập nhật.';
+            } else {
+                $result = Database::one('SELECT score_one, score_two, status, reported_by FROM matchmaking_results WHERE match_id = ?', [$match['id']]);
+                if ($result === null) {
+                    $lines[] = 'Trạng thái: <b>Đã ghép đôi</b>. Gửi tỷ số sau khi trận đấu kết thúc.';
+                    $rows[] = [['text' => '🧾 GỬI KẾT QUẢ TRẬN', 'callback_data' => 'member:duel-report:' . $match['id']]];
+                } elseif ($result['status'] === 'pending' && (string) $result['reported_by'] !== $userId) {
+                    $lines[] = 'Tỷ số đối thủ báo: <b>' . (int) $result['score_one'] . ' - ' . (int) $result['score_two'] . '</b> (thứ tự A-B).';
+                    $rows[] = [
+                        ['text' => '✅ XÁC NHẬN ĐÚNG', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':yes'],
+                        ['text' => '⚠️ BÁO SAI', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':no'],
+                    ];
+                } elseif ($result['status'] === 'pending') {
+                    $lines[] = 'Bạn đã gửi tỷ số <b>' . (int) $result['score_one'] . ' - ' . (int) $result['score_two'] . '</b>. Đang chờ đối thủ xác nhận.';
+                }
+            }
+            $rows[] = [['text' => '🔄 CẬP NHẬT TRẠNG THÁI', 'callback_data' => 'member:duel']];
+        } else {
+            $waiting = Database::one(
+                "SELECT mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1",
+                [$userId]
+            );
+            if ($waiting !== null) {
+                $lines[] = '⏳ Bạn đang trong hàng chờ (' . ($waiting['mode'] === 'quick' ? 'Xếp hạng' : 'Luyện tập') . ').';
+                $rows[] = [['text' => '⛔ RỜI HÀNG CHỜ', 'callback_data' => 'member:duel-leave']];
+            } else {
+                $lines[] = 'Chọn chế độ ghép đôi để tìm đối thủ.';
+                $rows[] = [['text' => '🏆 GHÉP ĐÔI XẾP HẠNG', 'callback_data' => 'member:duel-join-quick']];
+                $rows[] = [['text' => '🎯 CHẾ ĐỘ LUYỆN TẬP', 'callback_data' => 'member:duel-join-practice']];
+            }
         }
 
-        $this->telegram->sendMessage(
-            $chatId,
-            '⚔️ <b>HENDY MATCH — GHÉP ĐÔI XẾP HẠNG</b>' .
-            "\nTìm đối thủ theo Elo, gửi tỷ số, xác nhận kết quả hai phía và theo dõi bảng xếp hạng." .
-            "\nĐiểm thưởng là điểm nội bộ, không quy đổi thành tiền.",
-            [
-                'reply_markup' => $this->inlineMenu([
-                    [['text' => '🚀 MỞ HỆ THỐNG GHÉP ĐÔI', 'web_app' => ['url' => $url]]],
-                ]),
-            ]
+        $leaders = MatchmakingService::leaderboard(5);
+        if ($leaders !== []) {
+            $lines[] = '';
+            $lines[] = '<b>🏆 TOP 5 HENDY MATCH</b>';
+            foreach ($leaders as $index => $leader) {
+                $name = (string) (($leader['name'] ?? '') ?: (($leader['username'] ?? '') ?: 'Thành viên'));
+                $lines[] = ($index + 1) . '. ' . self::escape($name) . ' · Elo ' . (int) $leader['rating'] . ' · ' . (int) $leader['points'] . ' điểm';
+            }
+        }
+        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
+    }
+
+    private function joinMatchmaking(string $chatId, string $userId, string $mode): void
+    {
+        try {
+            $result = MatchmakingService::join($userId, $mode);
+            if (($result['status'] ?? '') === 'matched' && isset($result['match'])) {
+                $match = $result['match'];
+                $opponentId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
+                $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]) ?? [];
+                $name = (string) (($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên HENDY'));
+                $this->telegram->sendMessage($chatId, '🎮 Đã ghép đôi với <b>' . self::escape($name) . '</b>. Mã trận <code>#' . (int) $match['id'] . '</code>.');
+                $this->notifyUserOnBot($this->botKey, $opponentId, '🎮 Bạn đã được ghép đôi trong HENDY MATCH. Mã trận #' . (int) $match['id'] . '. Mở nút GHÉP ĐÔI trong bot để xem chi tiết.');
+            } elseif (($result['status'] ?? '') === 'disputed') {
+                $this->telegram->sendMessage($chatId, '⚠️ Bạn đang có trận tranh chấp chờ Admin xử lý.');
+            } else {
+                $this->telegram->sendMessage($chatId, '⏳ Đã vào hàng chờ. Bot sẽ ghép với người chơi phù hợp khi có đối thủ.');
+            }
+        } catch (Throwable $error) {
+            $this->telegram->sendMessage($chatId, '❌ Không thể ghép đôi: ' . self::escape($error->getMessage()));
+        }
+        $this->showMatchmaking($chatId, $userId);
+    }
+
+    private function startMatchReport(string $chatId, string $userId, int $matchId): void
+    {
+        $match = Database::one(
+            "SELECT id, player_one, player_two FROM matchmaking_matches
+             WHERE id = ? AND status = 'matched' AND (player_one = ? OR player_two = ?)",
+            [$matchId, $userId, $userId]
         );
+        if ($match === null) {
+            $this->telegram->sendMessage($chatId, 'Không tìm thấy trận đang hoạt động hoặc bạn không thuộc trận này.');
+            return;
+        }
+        $this->setPending($userId, 'duel_score_me', [
+            'match_id' => $matchId,
+            'player_one' => (string) $match['player_one'],
+            'player_two' => (string) $match['player_two'],
+        ]);
+        $this->telegram->sendMessage($chatId, '🧾 <b>BÁO CÁO KẾT QUẢ TRẬN #' . $matchId . '</b>' . "\nHãy nhập số điểm của bạn (0–999). Sau đó bot sẽ hỏi điểm đối thủ.");
+    }
+
+    private function confirmMatchResult(string $chatId, string $userId, int $matchId, bool $approved): void
+    {
+        $match = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$matchId]);
+        if ($match === null) {
+            $this->telegram->sendMessage($chatId, 'Không tìm thấy trận đấu.');
+            return;
+        }
+        try {
+            $result = MatchmakingService::confirm($matchId, $userId, $approved);
+            $otherId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
+            $message = ($result['status'] ?? '') === 'disputed'
+                ? '⚠️ Trận #' . $matchId . ' đang tranh chấp. Elo và điểm chưa thay đổi; Admin sẽ kiểm tra.'
+                : '✅ Hai bên đã xác nhận kết quả trận #' . $matchId . '. Elo và điểm nội bộ đã cập nhật.';
+            $this->telegram->sendMessage($chatId, $message);
+            $this->notifyUserOnBot($this->botKey, $otherId, $message);
+        } catch (Throwable $error) {
+            $this->telegram->sendMessage($chatId, '❌ Không thể xác nhận: ' . self::escape($error->getMessage()));
+        }
+        $this->showMatchmaking($chatId, $userId);
     }
 
     private function showDeposit(string $chatId, string $userId, int $amount): void
