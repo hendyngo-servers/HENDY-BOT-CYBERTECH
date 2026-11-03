@@ -198,8 +198,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       </section>
       <section class="wallets">
         <div class="wallet"><small>💰 VÍ CHÍNH</small><b>${money(user.balance)}</b></div>
-        <div class="wallet"><small>🪙 VÍ NYC</small><b>${money(user.nyc_wallet)}</b></div>
-        <div class="wallet"><small>🎟️ VÍ VOUCHER</small><b>${money(user.voucher_wallet)}</b></div>
+        <div class="wallet"><small>🪙 VÍ NYC</small><b>${money(user.nycWallet)}</b></div>
+        <div class="wallet"><small>🎟️ VÍ VOUCHER</small><b>${money(user.voucherWallet)}</b></div>
       </section>
       <div class="section-heading"><h2>🌈 HỆ SINH THÁI HENDY</h2><span>7 sắc màu · icon động</span></div>
       <section class="tiles">${tileData.map((tile,index)=>`
@@ -209,9 +209,9 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
         </button>`).join('')}</section>
       <section class="panel">
         <h3>👑 THÀNH VIÊN HENDY</h3>
-        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(user.user_id)}</b></div>
-        <div class="row-card"><span class="muted small">Hạng thành viên</span><span class="status">${Number(user.vip_level||0)>0?'VIP '+user.vip_level:'MEMBER'}</span></div>
-        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(user.total_deposited)}</b></div>
+        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(user.id)}</b></div>
+        <div class="row-card"><span class="muted small">Hạng thành viên</span><span class="status">${Number(user.vipLevel||0)>0?'VIP '+user.vipLevel:'MEMBER'}</span></div>
+        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(user.totalDeposited)}</b></div>
         <div class="row-card"><span class="muted small">Bot đang kết nối</span><b>HENDY ${botKey==='secondary'?'BOT 2':'BOT 1'}</b></div>
       </section>`;
     setNav('home');
@@ -230,7 +230,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     state.products=data.products||[];
     const body=state.products.length?'<div class="product-list">'+state.products.map(product=>`
       <article class="product">
-        <div><b>${escapeHtml(product.name)}</b><small>${escapeHtml(product.description||'')||'Dịch vụ HENDY'} · Kho: ${product.stock===null?'Có sẵn':Number(product.stock)}</small><small>Ví thanh toán: ${['otp','proxy'].includes(product.category)?'Ví NYC':'Ví Chính'} ${Number(product.vip_level||0)>0?'· Yêu cầu VIP '+product.vip_level:''}</small></div>
+        <div><b>${escapeHtml(product.name)}</b><small>${escapeHtml(product.description||'')||'Dịch vụ HENDY'} · Kho: ${product.stock===null?'Có sẵn':Number(product.stock)}</small><small>Ví thanh toán: ${['otp','proxy'].includes(product.category)?'Ví NYC':'Ví Chính'} ${Number(product.vipLevel||0)>0?'· Yêu cầu VIP '+product.vipLevel:''}</small></div>
         <div style="text-align:right"><div class="price">${money(product.price)}</div><button class="btn primary" style="margin-top:8px" data-buy="${product.id}">MUA</button></div>
       </article>`).join('')+'</div>':'<div class="notice">Kho hiện chưa có sản phẩm đang bán. Admin có thể thêm sản phẩm trong Dashboard.</div>';
     pageFrame(title,'Giá và tồn kho đang lấy trực tiếp từ PostgreSQL',body);
@@ -240,7 +240,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const [user,requests]=await Promise.all([api('/api/me'),api('/api/wallet/payment-requests')]);
     const u=user.user, list=requests.requests||[];
     pageFrame('💳 VÍ & NẠP TIỀN','VietQR · đối soát thủ công',`
-      <section class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nyc_wallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucher_wallet)}</b></div></section>
+      <section class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div></section>
       <div class="panel"><h3>＋ TẠO YÊU CẦU NẠP</h3><label class="form-label" for="deposit-amount">Số tiền (VNĐ)</label><input id="deposit-amount" class="field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO QR VIETQR</button><p class="muted small">Ví chỉ được cộng sau khi Admin xác minh sao kê ngân hàng.</p><div id="payment-result"></div></div>
       <div class="panel"><h3>🧾 YÊU CẦU NẠP GẦN ĐÂY</h3>${list.length?list.map(item=>`<div class="row-card"><div><b>${money(item.amount)}</b><small class="muted small" style="display:block">${escapeHtml(item.payment_id)} · CK: ${escapeHtml(item.transfer_content)}</small></div><span class="status">${escapeHtml(item.status)}</span></div>`).join(''):'<p class="muted small">Chưa có yêu cầu nạp.</p>'}</div>`);
   }
@@ -284,11 +284,11 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     pageFrame('👤 TRUNG TÂM KHÁCH HÀNG','Hồ sơ và quản lý thành viên',`
       <div class="panel"><h3>HỒ SƠ THÀNH VIÊN</h3>
         <div class="row-card"><span class="muted small">Họ tên</span><b>${escapeHtml(u.name||memberName())}</b></div>
-        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(u.user_id)}</b></div>
-        <div class="row-card"><span class="muted small">VIP</span><span class="status">${Number(u.vip_level||0)>0?'VIP '+u.vip_level:'MEMBER'}</span></div>
-        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(u.total_deposited)}</b></div>
+        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(u.id)}</b></div>
+        <div class="row-card"><span class="muted small">VIP</span><span class="status">${Number(u.vipLevel||0)>0?'VIP '+u.vipLevel:'MEMBER'}</span></div>
+        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(u.totalDeposited)}</b></div>
       </div>
-      <div class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nyc_wallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucher_wallet)}</b></div></div>
+      <div class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div></div>
       <div class="panel"><h3>📊 THỐNG KÊ ĐƠN</h3><div class="grid-2">
         <div class="row-card"><span class="muted small">Tổng đơn</span><b>${s.totalOrders||0}</b></div><div class="row-card"><span class="muted small">Đang xử lý</span><b>${s.processingOrders||0}</b></div>
         <div class="row-card"><span class="muted small">Hoàn tất</span><b>${s.completedOrders||0}</b></div><div class="row-card"><span class="muted small">Đã hủy</span><b>${s.cancelledOrders||0}</b></div>
