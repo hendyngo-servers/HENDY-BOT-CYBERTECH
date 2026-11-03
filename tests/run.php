@@ -26,6 +26,16 @@ $assert(TelegramAuth::safeEquals('same-secret', 'same-secret'), 'so sánh chuỗ
 $assert(!TelegramAuth::safeEquals('different', 'same-secret'), 'so sánh chuỗi khác');
 $assert(!TelegramAuth::safeEquals('', ''), 'secret rỗng bị từ chối');
 
+$previousAdminId = getenv('ADMIN_ID');
+$previousAdminIds = getenv('ADMIN_IDS');
+putenv('ADMIN_ID=9500000001');
+putenv('ADMIN_IDS=9500000002,9500000001,invalid');
+$assert(TelegramAuth::adminIds() === ['9500000001', '9500000002'], 'admin allowlist merges and deduplicates ADMIN_ID and ADMIN_IDS');
+$assert(TelegramAuth::isAdmin('9500000002'), 'secondary admin is authorized by shared admin allowlist');
+if ($previousAdminId === false) putenv('ADMIN_ID'); else putenv('ADMIN_ID=' . $previousAdminId);
+if ($previousAdminIds === false) putenv('ADMIN_IDS'); else putenv('ADMIN_IDS=' . $previousAdminIds);
+
+
 $assert(WebServiceKernel::handles('/api/services/system/health'), 'Web Service kernel nhận route đã đăng ký');
 $assert(!WebServiceKernel::handles('/api/not-services/system/health'), 'Web Service kernel không nhận route ngoài namespace');
 $assert(in_array('system', WebServiceKernel::registeredServices(), true), 'System Web Service được đăng ký trong allow-list');
