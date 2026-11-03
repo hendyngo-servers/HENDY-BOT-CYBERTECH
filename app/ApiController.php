@@ -517,12 +517,18 @@ final class ApiController
             if ($scoreOne === false || $scoreTwo === false || $scoreOne < 0 || $scoreOne > 999 || $scoreTwo < 0 || $scoreTwo > 999) {
                 throw new HttpException(400, 'Tỷ số phải là số nguyên từ 0 đến 999.');
             }
+            $matchRow = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$match[1]]);
             try {
                 $resolved = MatchmakingService::resolveDispute((int) $match[1], (string) $this->user['id'], (int) $scoreOne, (int) $scoreTwo);
             } catch (RuntimeException $error) {
                 throw new HttpException(409, $error->getMessage());
             }
             $this->audit('matchmaking.resolve', $match[1], ['scoreOne' => (int) $scoreOne, 'scoreTwo' => (int) $scoreTwo]);
+            if ($matchRow !== null) {
+                $notice = '✅ Quản trị viên đã xử lý tranh chấp trận #' . $match[1] . '. Tỷ số cuối: ' . (int) $scoreOne . '-' . (int) $scoreTwo . '. Elo và điểm nội bộ đã được cập nhật.';
+                $this->notify((string) $matchRow['player_one'], $notice);
+                $this->notify((string) $matchRow['player_two'], $notice);
+            }
             return self::response(['result' => $resolved, 'message' => 'Đã xử lý tranh chấp và cập nhật bảng xếp hạng.']);
         }
         if ($method === 'GET' && $path === '/api/admin/modules') {
