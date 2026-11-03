@@ -11,7 +11,9 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 - Dashboard tiếng Việt: tổng quan, sản phẩm, đơn hàng, thành viên, điều chỉnh số dư, ticket CSKH, giftcode, thiết lập VietQR/liên kết cộng đồng và cấu hình menu của hai bot.
 - Telegram Mini App authentication bằng chữ ký initData và HMAC SHA-256; không tin Telegram ID do client tự nhập.
 - Sản phẩm/dịch vụ: Mini Game Live, thuê tool, code, OTP, proxy, VIP.
-- Hồ sơ thành viên, liên kết tài khoản game bằng thương hiệu và username, không lưu mật khẩu/OTP.
+- Hồ sơ Trung tâm khách hàng: ví chính (balance), ví NYC, ví Voucher, tổng nạp, điểm thành viên; thống kê đơn pending/processing/completed/cancelled/refunded, lịch sử giao dịch, ticket CSKH và yêu cầu voucher 72 giờ. Dữ liệu gắn với Telegram initData đã xác thực, không có Telegram ID mẫu.
+- Trung tâm VIP với thông tin các cấp, điểm danh mỗi ngày theo múi giờ Việt Nam, chống cộng điểm trùng và phần thưởng điểm nội bộ có thể cấu hình trong Admin; điểm không phải tiền.
+- Liên kết tài khoản game bằng thương hiệu và username, không lưu mật khẩu/OTP.
 - Ví, lịch sử giao dịch, VietQR, nhận callback ngân hàng qua secret riêng và idempotency theo mã giao dịch.
 - Đơn hàng, trừ ví trong transaction, hoàn tiền khi Admin từ chối/hủy, bàn giao khi hoàn tất.
 - Giftcode có số lượt, hạn dùng, khóa/mở và giới hạn mỗi thành viên một lần.
