@@ -268,14 +268,15 @@
 
 
   async function api(path, method, body) {
-    if (!initData) throw new Error('Hãy mở Mini App từ Telegram Bot để xác thực tài khoản.');
+    const authHeaders = initData ? {'Authorization':'tma ' + initData} : {};
     const response = await fetch(path, {
       method:method || 'GET',
       headers:{
         'Content-Type':'application/json',
-        'Authorization':'tma ' + initData,
+        ...authHeaders,
         'X-Telegram-Bot-Key':botKey
       },
+      credentials:'same-origin',
       body:body === undefined ? undefined : JSON.stringify(body),
       cache:'no-store'
     });
@@ -908,7 +909,7 @@
   }
 
   async function connectAdminRealtime() {
-    if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped || realtimeSocket) return;
+    if (!state.boot || !state.boot.isAdmin || realtimeStopped || realtimeSocket) return;
     try {
       const auth = await api('/api/admin/realtime-ticket','POST',{});
       const socket = new WebSocket(auth.url);
@@ -1278,13 +1279,6 @@
   });
 
   async function start() {
-    if (!initData) {
-      $('page-title').textContent='HENDY · DASHBOARD ADMIN';
-      $('page-subtitle').textContent='Mở Dashboard bằng nút quản trị trong cuộc trò chuyện Telegram.';
-      $('app').innerHTML='<div class="hero"><h2>HENDY BOT</h2><p>Giao diện thành viên đã chuyển hoàn toàn sang menu Telegram. Dashboard web chỉ dành cho Admin.</p></div><div class="notice warn">Không có dữ liệu xác thực Telegram Web App. Hãy mở lại bằng nút BẢNG ĐIỀU KHIỂN ADMIN trong bot.</div>';
-      $('profile-name').textContent='Chưa đăng nhập';
-      return;
-    }
     try {
       state.boot = await api('/api/bootstrap');
       if (!state.boot.isAdmin) {
@@ -1301,6 +1295,13 @@
       state.page = 'admin';
       renderPage();
     } catch (error) {
+      if (!initData) {
+        $('page-title').textContent='HENDY · ĐĂNG NHẬP ADMIN';
+        $('page-subtitle').textContent='Đăng nhập website qua bot HENDY, sau đó mở lại trang quản trị.';
+        $('app').innerHTML='<div class="notice warn">Phiên website chưa đăng nhập hoặc đã hết hạn.</div><p><a class="btn primary" href="https://t.me/hendymono_bot?start=web_login">🔐 ĐĂNG NHẬP QUA BOT 1</a> <a class="btn" href="https://t.me/HendyBot_Bot?start=web_login">ĐĂNG NHẬP QUA BOT 2</a></p>';
+        $('profile-name').textContent='Chưa đăng nhập';
+        return;
+      }
       $('page-title').textContent='Không thể xác thực';
       $('page-subtitle').textContent='Vui lòng mở lại Mini App từ Telegram Bot.';
       $('app').innerHTML='<div class="notice warn">' + escapeHtml(error.message) + '</div>';
