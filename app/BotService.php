@@ -724,12 +724,14 @@ final class BotService
             $opponentId = $isPlayerOne ? $playerTwo : $playerOne;
             $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
             $opponentName = ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy');
+            $opponentStats = MatchmakingService::ensureStats($opponentId);
+            $opponentRating = (int) ($opponentStats['rating'] ?? 1000);
             $result = Database::one('SELECT score_one, score_two, status, reported_by FROM matchmaking_results WHERE match_id = ?', [$match['id']]);
 
             $summary = '🤝 <b>HENDY MATCH #' . self::escape((string) $match['id']) . '</b>' .
                 "\nĐối thủ: <b>" . self::escape($opponentName) . '</b>' .
                 "\nElo của bạn: <b>" . (int) $stats['rating'] . '</b> · Điểm: <b>' . (int) $stats['points'] . '</b>' .
-                "\nElo đối thủ: <b>" . (int) MatchmakingService::ensureStats($opponentId)['rating'] . '</b>';
+                "\nElo đối thủ: <b>" . $opponentRating . '</b>';
 
             if ($match['status'] === 'disputed') {
                 $this->telegram->sendMessage($chatId, $summary . "\n\n⚠️ Kết quả đang tranh chấp. Quản trị viên cần xác minh trước khi cập nhật Elo và điểm.");
