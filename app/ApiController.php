@@ -926,7 +926,7 @@ final class ApiController
                         throw new HttpException(400, 'Tỷ lệ hoa hồng phải từ 0 đến 30%.');
                     }
                 }
-                if (in_array($key, ['website_url', 'GROUP_URL', 'CHANNEL_URL'], true)) {
+                if (in_array($key, ['website_url', 'GROUP_URL', 'CHANNEL_URL', 'ABCVIP_CONNECT_URL'], true)) {
                     self::validateHttps($text, 'Liên kết website/nhóm/kênh phải sử dụng HTTPS.');
                     if ($text !== '' && filter_var($text, FILTER_VALIDATE_URL) === false) {
                         throw new HttpException(400, 'Liên kết website phải là URL hợp lệ.');
