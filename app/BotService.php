@@ -966,6 +966,46 @@ final class BotService
         }
     }
 
+    private function processMatchScore(string $chatId, string $userId, string $text, array $payload): bool
+    {
+        $matched = preg_match('~\\A\\s*([0-9]{1,3})\\s*[-:]\\s*([0-9]{1,3})\\s*\\z~', $text, $scores);
+        if ($matched !== 1) {
+            $this->telegram->sendMessage($chatId, 'Tỷ số không hợp lệ. Hãy nhập A-B, ví dụ 2-1.');
+            return true;
+        }
+
+        $matchId = (string) ($payload['matchId'] ?? '');
+        if (preg_match('~\\A[0-9]{1,18}\\z~', $matchId) !== 1) {
+            $this->clearPending($userId);
+            $this->telegram->sendMessage($chatId, 'Phiên gửi tỷ số không hợp lệ. Hãy mở lại chức năng GHÉP ĐÔI.');
+            return true;
+        }
+
+        try {
+            $submission = MatchmakingService::report((int) $matchId, $userId, (int) $scores[1], (int) $scores[2]);
+            $this->clearPending($userId);
+            $this->telegram->sendMessage($chatId, 'Đã gửi tỷ số trận #' . self::escape($matchId) . ': ' . (int) $scores[1] . '-' . (int) $scores[2] . '. Đang chờ đối thủ xác nhận.');
+
+            $keyboard = [
+                [['text' => 'XÁC NHẬN', 'callback_data' => 'member:duel-confirm:' . $matchId . ':yes']],
+                [['text' => 'BÁO SAI', 'callback_data' => 'member:duel-confirm:' . $matchId . ':no']],
+            ];
+            try {
+                (new self($this->botKey))->telegram->sendMessage(
+                    (string) $submission['opponentId'],
+                    'Đối thủ đã gửi tỷ số trận #' . self::escape($matchId) . ': ' . (int) $scores[1] . '-' . (int) $scores[2] . '. Hãy xác nhận hoặc báo sai.',
+                    ['reply_markup' => ['inline_keyboard' => $keyboard]]
+                );
+            } catch (Throwable $error) {
+                error_log('Không gửi được yêu cầu xác nhận tỷ số: ' . $error->getMessage());
+            }
+        } catch (Throwable $error) {
+            $this->telegram->sendMessage($chatId, 'Chưa thể gửi tỷ số: ' . self::escape($error->getMessage()));
+        }
+
+        return true;
+    }
+
     private function showDeposit(string $chatId, string $userId, int $amount): void
     {
         if ($amount < 10000 || $amount > 500000000) {
@@ -1011,36 +1051,7 @@ final class BotService
         $payload = self::jsonArray($pending['payload'] ?? []);
         switch ((string) $pending['input_type']) {
             case 'match_score':
-                if (!preg_match('~\\A\\s*([0-9]{1,3})\\s*[-:]\\s*([0-9]{1,3})\\s*\\z~', $text, $scoreMatch)) {
-                    $this->telegram->sendMessage($chatId, 'Tỷ số không hợp lệ. Hãy nhập theo dạng A-B, ví dụ <code>2-1</code> hoặc <code>1:1</code>.');
-                    return true;
-                }
-                $matchId = (string) ($payload['matchId'] ?? '');
-                if (!preg_match('~\\A[0-9]{1,18}\\z~', $matchId)) {
-                    $this->clearPending($userId);
-                    $this->telegram->sendMessage($chatId, 'Phiên gửi tỷ số không hợp lệ. Hãy mở lại chức năng GHÉP ĐÔI.');
-                    return true;
-                }
-                try {
-                    $submission = MatchmakingService::report((int) $matchId, $userId, (int) $scoreMatch[1], (int) $scoreMatch[2]);
-                    $this->clearPending($userId);
-                    $this->telegram->sendMessage($chatId, '✅ Đã gửi tỷ số trận #' . self::escape($matchId) . ': <b>' . (int) $scoreMatch[1] . ' - ' . (int) $scoreMatch[2] . '</b>. Đang chờ đối thủ xác nhận.');
-                    try {
-                        (new self($this->botKey))->telegram->sendMessage(
-                            (string) $submission['opponentId'],
-                            '🧾 Đối thủ đã gửi tỷ số trận #' . self::escape($matchId) . ': <b>' . (int) $scoreMatch[1] . ' - ' . (int) $scoreMatch[2] . '</b> (thứ tự A-B). Bạn hãy xác nhận hoặc báo sai kết quả.',
-                            ['reply_markup' => $this->inlineMenu([
-                                [['text' => '✅ XÁC NHẬN', 'callback_data' => 'member:duel-confirm:' . $matchId . ':yes']],
-                                [['text' => '⚠️ BÁO SAI', 'callback_data' => 'member:duel-confirm:' . $matchId . ':no']],
-                            ])]
-                        );
-                    } catch (Throwable $error) {
-                        error_log('Không gửi được yêu cầu xác nhận tỷ số: ' . $error->getMessage());
-                    }
-                } catch (Throwable $error) {
-                    $this->telegram->sendMessage($chatId, 'Chưa thể gửi tỷ số: ' . self::escape($error->getMessage()));
-                }
-                return true;
+                return $this->processMatchScore($chatId, $userId, $text, $payload);
 
             case 'wallet':
                 if (!preg_match('/^\d{4,12}$/', $text) || (int) $text < 10000 || (int) $text > 500000000) {
