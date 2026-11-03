@@ -226,7 +226,7 @@ Vào **Actions → Sync Runtime Config & Verify Telegram → Run workflow**:
 
 Workflow mặc định không ghi cấu hình và không deploy. Khóa nội bộ còn thiếu được tạo bằng `openssl rand -hex 32`, che khỏi log, lưu lại trong GitHub Environment và Render để không đổi ở các lần chạy tiếp theo. `BOT1_TOKEN`, `ADMIN_ID`, `DATABASE_URL` không bao giờ được tự sinh.
 
-Script dùng endpoint cập nhật **từng biến** của Render, không dùng PUT thay thế toàn bộ danh sách environment variables. Vì vậy biến khác không nằm trong manifest được giữ nguyên. Các biến do Render Blueprint/Environment Group quản lý có thể cần chỉnh tại đúng nguồn quản lý; riêng `DATABASE_URL` được bỏ qua có chủ đích.
+Script dùng endpoint cập nhật **từng biến** của Render, không dùng PUT thay thế toàn bộ danh sách environment variables. Vì vậy biến khác không nằm trong manifest được giữ nguyên. Các biến do Render Blueprint/Environment Group quản lý có thể cần chỉnh tại đúng nguồn quản lý; riêng `DATABASE_URL` được bỏ qua có chủ đích. Nếu `BOT2_TOKEN` hoặc `TELEGRAM_SECOND_WEBHOOK_SECRET` không còn được cung cấp, manifest đánh dấu `delete_on_empty` để xóa đúng key trực tiếp khỏi service Render, không ảnh hưởng các key khác. API per-key không áp dụng cho biến nằm trong linked Environment Group.
 
 ### Giới hạn của các tích hợp ngoài
 
