@@ -1,16 +1,19 @@
 # Hendy Bot Tele — PHP Edition
 
-Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. Giao diện thành viên được vận hành trực tiếp trong Telegram bằng Reply Keyboard/Inline Keyboard. Trang `/` chỉ là landing page dẫn vào bot; trang web `/admin` là khu vực quản trị riêng, không còn mở giao diện Mini App dành cho khách hàng.
+Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. BOT1 và BOT2 có webhook, session, menu, danh tính Mini App và link giới thiệu riêng; hai bot dùng chung một bộ mã Mini App và backend, xác thực riêng bằng token của từng bot. Trang `/` là landing page HENDY mới, `/mini-app?bot=primary|secondary` là Mini App dùng chung giao diện, còn `/admin` là Dashboard quản trị riêng.
 
 > **Chỉ dùng hai biến Telegram Bot Token:** **BOT1_TOKEN** và **BOT2_TOKEN**. BOT2_TOKEN có thể để trống để chỉ chạy một bot. ADMIN_ID là Telegram user ID dùng chung cho hai bot.
 
 ## Những tính năng được giữ lại
 
-- Hai Telegram bot độc lập trong một ứng dụng PHP, cùng dùng một PostgreSQL database.
+- Hai Telegram bot độc lập trong một ứng dụng PHP, cùng dùng một PostgreSQL database; `telegram_updates`, `bot_pending_inputs` và `bot_menu_configs` được phân vùng theo `primary`/`secondary` để tránh chồng lẫn trạng thái.
+- Một source Mini App dùng chung, nhưng URL và xác thực tách riêng: `/mini-app?bot=primary` dùng BOT1_TOKEN; `/mini-app?bot=secondary` dùng BOT2_TOKEN. API gửi header `X-Telegram-Bot-Key` để backend xác thực bằng đúng bot token.
+- `/start` chỉ gửi một tin giới thiệu HENDY kèm menu so le; menu theo cấu hình riêng từng bot.
 - Reply Keyboard dạng lưới cố định phía dưới khung nhập và Inline Keyboard nằm dưới tin nhắn; từng bot có thể chọn loại menu, số cột, phần giới thiệu, tên/mô tả nút, màu semantic, resize và persistent.
 - Dashboard tiếng Việt: tổng quan, sản phẩm, đơn hàng, thành viên, điều chỉnh số dư, ticket CSKH, giftcode, thiết lập VietQR/liên kết cộng đồng và cấu hình menu của hai bot.
-- Màn hình chào mừng Telegram đồng bộ thương hiệu `⩤ BOT 💠 HENDY ⩥`, có lời chào theo giờ Việt Nam, ID Telegram, tổng nạp, Ví Chính, Ví NYC, trạng thái thành viên, website, nhóm cộng đồng và bot liên hệ; số dư lấy trực tiếp từ PostgreSQL, không dùng ID mẫu.
-- Web `/admin` chỉ dành cho Admin và yêu cầu Telegram WebApp initData có chữ ký HMAC SHA-256 hợp lệ; người dùng thường không truy cập giao diện Mini App thành viên.
+- Màn hình `/start` giới thiệu `⩤ HENDY DIGITAL ECOSYSTEM ⩥`, lời chào theo giờ Việt Nam, phân biệt BOT 1/BOT 2, Telegram ID, Ví Chính, Ví NYC, Ví Voucher, tổng nạp, VIP, website và nhóm hỗ trợ; số dư lấy từ PostgreSQL.
+- Mini App HENDY có layout so le, 7 màu, icon chuyển động CSS, hỗ trợ cài đặt giảm chuyển động; giao diện dành cho thành viên được phục vụ tại `/mini-app` và xác thực `initData` bằng token đúng bot.
+- Web `/admin` chỉ dành cho Admin, cũng xác thực initData bằng bot token của luồng đang mở.
 - Sản phẩm/dịch vụ: Mini Game Live, thuê tool, code, OTP, proxy, VIP.
 - Trung tâm khách hàng chạy trực tiếp trong Telegram: Ví Chính, Ví NYC, Ví Voucher, tổng nạp, VIP, thống kê đơn hàng, lịch sử giao dịch, tài khoản liên kết, ticket CSKH và yêu cầu Voucher 72 giờ; không mở Mini App thành viên.
 - Trung tâm VIP với thông tin các cấp, giao diện thẻ VIP PRO neon/gold, thanh tiến trình lên hạng, điểm danh mỗi ngày theo múi giờ Việt Nam, chống cộng điểm trùng và phần thưởng điểm nội bộ có thể cấu hình trong Admin; điểm không phải tiền.
@@ -21,7 +24,7 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 - Giftcode có số lượt, hạn dùng, khóa/mở và giới hạn mỗi thành viên một lần.
 - Referral, phần trăm hoa hồng, ghi nhận thưởng khi nạp tiền.
 - Ticket hỗ trợ, phản hồi từ Admin qua Telegram.
-- Ghép đôi chạy trực tiếp trong Telegram: hàng chờ nhanh/luyện tập, Elo, báo tỷ số, xác nhận hai phía, tranh chấp và bảng xếp hạng. Điểm là điểm nội bộ, không quy đổi tiền.
+- Web Service Platform tách khỏi vòng đời Telegram: route allow-list, hợp đồng service, System Health/Capabilities và thư mục `app/WebServices/` để phát triển API nghiệp vụ khác. Không tự thực thi tệp upload hoặc tên class do client gửi.
 - Cấu hình menu theo từng bot và nhật ký thao tác quản trị.
 - Tạo feature scaffold bằng PHP CLI và GitHub Actions.
 - Health checks, CI PHP lint và unit test xác thực Telegram.
@@ -45,9 +48,14 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
     ├── public/
     │   ├── index.php
     │   └── .htaccess
-    ├── apps/admin-dashboard/
-    │   ├── index.html
-    │   └── styles/buttons.css
+    ├── apps/
+    │   ├── mini-app/index.html
+    │   ├── telegram-landing/index.html
+    │   └── admin-dashboard/index.html
+    ├── app/WebServiceContract.php
+    ├── app/WebServiceKernel.php
+    ├── app/WebServices/SystemWebService.php
+    └── services/README.md
     ├── docker/
     │   ├── apache-vhost.conf
     │   └── start.sh
@@ -62,7 +70,7 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 
 Backend chạy PHP: nhận webhook Telegram, gửi Telegram Bot API, xác thực WebApp, API, xử lý giao dịch, quản trị, database, migration và bảo mật HTTP.
 
-JavaScript trong apps/admin-dashboard/index.html chỉ chạy trong trình duyệt để dựng giao diện, gọi API và thao tác form. Không cần và không nên thay JavaScript phía trình duyệt bằng PHP; PHP phục vụ HTML và xử lý dữ liệu trên máy chủ. Mini App dùng một bộ token CSS tập trung cho màu nút, hiệu ứng ripple, trạng thái loading/success và icon động; các emoji được gắn class tự động bằng text node để không thay đổi dữ liệu đầu vào. Tôn trọng cài đặt giảm chuyển động của thiết bị.
+JavaScript trong `apps/mini-app/index.html` và `apps/admin-dashboard/index.html` chạy ở trình duyệt để dựng UI và gọi API. Mini App thành viên dùng CSS 7 màu, layout so le, hoạt ảnh icon (rocket, gem, gift, bell...) và tôn trọng `prefers-reduced-motion`. Hai bot dùng cùng file Mini App, nhưng token, botKey, menu và phiên xác thực tách riêng. Telegram keyboard không chạy CSS animation; chỉ nhận các style semantic được Telegram hỗ trợ, còn hiệu ứng nhiều màu/chuyển động được thể hiện trong Mini App.
 
 ## Cấu hình môi trường
 
@@ -239,7 +247,21 @@ Nếu worker/container bị restart khi job ở trạng thái `processing`, bộ
 
 Repository chưa được cung cấp một nhà cung cấp phụ đề, API endpoint hay credential thực tế. Vì vậy worker và callback contract đã có trong source, nhưng chức năng tải video/chuyển giọng/tạo phụ đề thực tế **chưa thể chạy** cho đến khi kết nối provider hợp lệ. Có thể chạy worker bằng Render Background Worker với Start Command `php bin/video-worker.php`; tạo thêm Background Worker có thể phát sinh chi phí Render. Không bật service worker khi chưa có provider.
 
-### API mới
+### Phát triển Web Service độc lập
+
+Backend có một lớp điều phối Web Service mở rộng:
+
+- `app/WebServiceContract.php`: hợp đồng xử lý HTTP cho service.
+- `app/WebServiceKernel.php`: router allow-list; không cho phép client chọn tên class hoặc chạy file upload.
+- `app/WebServices/SystemWebService.php`: service mẫu an toàn cung cấp health/capabilities.
+- `services/README.md`: hướng dẫn tạo service mới.
+
+Endpoint có sẵn (đều yêu cầu Telegram Mini App `initData` hợp lệ và `X-Telegram-Bot-Key`):
+- `GET /api/services/system/health`
+- `GET /api/services/system/capabilities`
+
+Để bổ sung service, tạo class PHP trong `app/WebServices/`, implement `WebServiceContract`, validate input/quyền, viết test, đăng ký key trong allow-list `WebServiceKernel::SERVICES`, sau đó chạy CI và deploy. Web Service không phụ thuộc vòng đời polling/webhook bot nên có thể phục vụ API hoặc tiện ích web khác nhưng vẫn dùng chung PostgreSQL và quyền truy cập tập trung.
+## API mới
 
 - `GET /api/wallet/payment-requests`, `POST /api/wallet/payment-requests`: xem/tạo yêu cầu nạp dùng chung với Telegram.
 - `GET /api/admin/payments`, `POST /api/admin/payments/{paymentId}/approve|reject`: admin đối soát yêu cầu nạp.
@@ -258,18 +280,20 @@ Các adapter App Store Connect, Google Play và Microsoft Store mới là khung 
 
 ## Endpoint chính
 
-- GET /: Dashboard / Telegram Mini App.
+- GET /: Landing page giới thiệu HENDY mới.
+- GET /mini-app?bot=primary|secondary: Mini App dùng chung giao diện, xác thực riêng theo bot.
 - GET /healthz: Health check cho Render.
 - GET /api/health: trạng thái database và cấu hình hai bot.
 - POST /webhook/telegram: webhook BOT1.
 - POST /webhook/telegram/secondary: webhook BOT2 (khi bật).
 - POST /webhook/bank: callback ngân hàng (đang khóa an toàn, HTTP 503 cho đến khi có adapter chữ ký nhà cung cấp).
 - POST /webhook/video: callback HMAC từ nhà xử lý video đã cấu hình.
-- /api/bootstrap, /api/products, /api/me, /api/orders, /api/wallet, /api/wallet/payment-requests, /api/referrals, /api/giftcodes/redeem, /api/support/tickets, /api/matchmaking, /api/vip.
+- /api/bootstrap, /api/products, /api/me, /api/orders, /api/wallet, /api/wallet/payment-requests, /api/referrals, /api/giftcodes/redeem, /api/support/tickets, /api/vip.
 - /api/admin/*: Dashboard quản trị; mọi yêu cầu phải có Telegram WebApp initData hợp lệ và thuộc `ADMIN_ID` hoặc `ADMIN_IDS`.
 - GET /api/admin/payments và POST /api/admin/payments/{paymentId}/approve|reject: đối soát yêu cầu nạp.
 - GET /api/admin/video-jobs và POST /api/admin/video-jobs/{uuid}/retry: quản lý hàng đợi Vietsub.
 - POST /api/admin/realtime-ticket: cấp ticket WebSocket ngắn hạn.
+- GET /api/services/system/health và GET /api/services/system/capabilities: Web Service API dùng chung, xác thực Telegram.
 - GET /api/admin/modules và POST /api/admin/modules/upload: quản lý tệp chờ kiểm duyệt.
 
 ## GitHub Actions / kiểm tra
@@ -323,14 +347,14 @@ Script dùng endpoint cập nhật **từng biến** của Render, không dùng 
 - Mini Game OAuth cần tên nhà cung cấp, authorization URL, token URL, profile URL, scope và client credentials hợp lệ.
 - Bank webhook hiện bị khóa an toàn (`BANK_WEBHOOK_ENABLED=false`; endpoint trả HTTP 503). Chưa có adapter chữ ký theo nhà cung cấp; shared secret đơn thuần không đủ để xác minh giao dịch nạp tiền. Chỉ bật sau khi triển khai/verifiy đúng chữ ký, timestamp, chống replay, idempotency và test sandbox của nhà cung cấp.
 - App Store Connect, Google Play và Microsoft Store cần quyền nhà phát hành, issuer/key hoặc service account, package/bundle ID và cấu hình upload theo từng store.
-- Ghép đôi đã có Elo (K=32), ghép theo mức rating gần nhau, bảng xếp hạng, báo tỷ số và xác nhận hai phía; kết quả tranh chấp vào dashboard admin để xử lý. Điểm thưởng chỉ là điểm nội bộ, không cộng ví/không quy đổi tiền và chưa chứng minh kết quả từ game bên ngoài.
+- Chức năng GHÉP ĐÔI đã được gỡ khỏi menu, Mini App, API và Dashboard. Các bảng cũ được giữ lại trong PostgreSQL để không tự ý xóa dữ liệu lịch sử; không còn route/runtime nào sử dụng tính năng này.
 
 Không tự bật login, nạp tiền thật hoặc publish store chỉ bằng cách điền placeholder. Những API/credential bên ngoài chưa được cung cấp phải giữ trạng thái disabled đến khi có cấu hình chính thức và bộ kiểm thử sandbox.
 
 ## Lưu ý nghiệp vụ và bảo mật
 
 - Liên kết Mini Game Live hiện chỉ lưu thương hiệu và username do thành viên nhập; không tự đăng nhập vào dịch vụ bên thứ ba.
-- Nút Ghép đôi trong Telegram mở Mini App xếp hạng. Queue, Elo, xác nhận tỷ số, dispute và bảng xếp hạng nằm trong API/Mini App; đây không phải engine game trực tiếp và chưa có tích hợp xác minh kết quả từ game bên ngoài.
+- BOT1 và BOT2 dùng chung PostgreSQL cho hồ sơ/ví/dịch vụ nhưng có danh tính Telegram/WebApp riêng. `bot_menu_configs` lưu tùy chỉnh menu và custom emoji ID riêng theo bot. Username bot có thể đặt bằng `BOT1_USERNAME` và `BOT2_USERNAME`.
 - VietQR tạo yêu cầu có mã riêng và được Admin đối soát/duyệt thủ công qua Telegram hoặc Dashboard. Tạo QR không tự cộng ví. Endpoint POST /webhook/bank đang bị khóa và không ghi có ví. Chỉ bật nạp tự động sau khi adapter chữ ký callback theo ngân hàng được cài đặt và kiểm thử.
 - Các token bot và webhook secrets không hiển thị hoặc lưu trong Dashboard. Chúng được quản lý tại Render Environment.
 - Migration chỉ tạo bảng/index/setting còn thiếu. Trước khi deploy với dữ liệu hiện hữu, hãy backup PostgreSQL và thử trên staging.
