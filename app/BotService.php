@@ -62,10 +62,27 @@ final class BotService
             }
         }
 
-        if (isset($update['message']) && is_array($update['message'])) {
-            $this->handleMessage($update['message']);
-        } elseif (isset($update['callback_query']) && is_array($update['callback_query'])) {
-            $this->handleCallback($update['callback_query']);
+        try {
+            if (isset($update['message']) && is_array($update['message'])) {
+                $this->handleMessage($update['message']);
+            } elseif (isset($update['callback_query']) && is_array($update['callback_query'])) {
+                $this->handleCallback($update['callback_query']);
+            }
+        } catch (Throwable $error) {
+            error_log('[telegram:' . $this->botKey . '] ' . $error->getMessage());
+            $chatId = (string) (
+                $update['message']['chat']['id']
+                ?? $update['callback_query']['message']['chat']['id']
+                ?? $update['callback_query']['from']['id']
+                ?? ''
+            );
+            if ($chatId !== '') {
+                try {
+                    $this->telegram->sendMessage($chatId, '❌ Hệ thống chưa thể xử lý yêu cầu này. Vui lòng thử lại sau hoặc liên hệ CSKH.');
+                } catch (Throwable $notifyError) {
+                    error_log('[telegram:' . $this->botKey . '] Không gửi được thông báo lỗi: ' . $notifyError->getMessage());
+                }
+            }
         }
 
         Realtime::publish('bot.update', ['botKey' => $this->botKey, 'updateId' => $updateId, 'kind' => isset($update['message']) ? 'message' : (isset($update['callback_query']) ? 'callback' : 'other')]);
