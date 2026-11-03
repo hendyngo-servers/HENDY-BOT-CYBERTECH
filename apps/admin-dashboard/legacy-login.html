@@ -41,10 +41,8 @@
     if(!response.ok) throw new Error(result.error||'Liên kết đã hết hạn hoặc được sử dụng.');
     sessionStorage.setItem('hendy_legacy_session',result.token);
     state.innerHTML='<strong>✓ Đăng nhập thành công</strong><br><span class="muted">Phiên truy cập đã được cấp. Thời hạn token: 5 phút.</span>';
-    const payload=result.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-    const decoded=JSON.parse(decodeURIComponent(Array.from(atob(payload.padEnd(Math.ceil(payload.length/4)*4,'='))).map(c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0')).join('')));
     const profile=document.createElement('p');
-    profile.textContent='Xin chào '+(decoded.name||decoded.username||'thành viên')+' · Telegram ID: '+decoded.sub;
+    profile.textContent='Xin chào '+(result.user?.name||result.user?.username||'thành viên')+' · Telegram ID: '+(result.user?.id||'');
     state.appendChild(profile);
   }catch(error){
     state.textContent=error.message||'Không thể xác minh phiên đăng nhập. Hãy tạo link mới từ bot.';
