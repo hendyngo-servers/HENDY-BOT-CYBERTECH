@@ -20,6 +20,18 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS voucher_wallet NUMERIC(18, 0) NOT NUL
 ALTER TABLE users ADD COLUMN IF NOT EXISTS point_old BIGINT NOT NULL DEFAULT 0;
 
 
+-- Daily VIP check-in. Each member can check in once per Vietnam-local calendar day.
+CREATE TABLE IF NOT EXISTS vip_checkins (
+    id BIGSERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    checkin_date DATE NOT NULL,
+    points_awarded INTEGER NOT NULL DEFAULT 0 CHECK (points_awarded BETWEEN 0 AND 1000),
+    streak_count INTEGER NOT NULL DEFAULT 1 CHECK (streak_count >= 1),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, checkin_date)
+);
+CREATE INDEX IF NOT EXISTS idx_vip_checkins_user_date ON vip_checkins(user_id, checkin_date DESC);
+
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -190,6 +202,10 @@ CREATE TABLE IF NOT EXISTS app_settings (
 -- Admin can change it from the application settings page; preserve later edits.
 INSERT INTO app_settings (key, value, is_public)
 VALUES ('website_url', 'https://lethituanem.com', TRUE)
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO app_settings (key, value, is_public)
+VALUES ('vip_checkin_points', '1', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
