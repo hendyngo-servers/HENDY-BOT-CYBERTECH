@@ -588,11 +588,25 @@
   async function renderVip() {
     const data = await api('/api/vip');
     const products = data.products || [];
-    return '<div class="hero"><div class="eyebrow">VIP MEMBER</div><h2>Đặc quyền hội viên 👑</h2><p>Hạng hiện tại: VIP ' + data.currentLevel + '. Tổng nạp: ' + money(data.totalDeposited) + '.</p></div>' +
-      '<div class="stat-grid"><div class="stat"><small>Cấp VIP hiện tại</small><b>VIP ' + data.currentLevel + '</b></div><div class="stat"><small>Mốc tiếp theo</small><b>' + (data.nextThreshold ? money(data.nextThreshold) : 'Cao nhất') + '</b></div></div>' +
+    const levels = data.levels || [];
+    const checkinButton = data.checkedInToday
+      ? '<button class="secondary" disabled style="width:100%">✅ Đã điểm danh hôm nay</button>'
+      : '<button class="primary" data-vip-checkin style="width:100%">🎁 Điểm danh VIP · +' + Number(data.checkinPoints || 0) + ' điểm</button>';
+    return '<div class="hero"><div class="eyebrow">VIP MEMBER</div><h2>Đặc quyền hội viên 👑</h2><p>Hạng hiện tại: VIP ' + Number(data.currentLevel) + '. Tổng nạp: ' + money(data.totalDeposited) + '.</p></div>' +
+      '<div class="stat-grid"><div class="stat"><small>Cấp VIP hiện tại</small><b>VIP ' + Number(data.currentLevel) + '</b></div>' +
+      '<div class="stat"><small>Mốc tiếp theo</small><b>' + (data.nextThreshold ? money(data.nextThreshold) : 'Cao nhất') + '</b></div>' +
+      '<div class="stat"><small>Điểm thành viên</small><b>' + Number(data.pointOld || 0).toLocaleString('vi-VN') + '</b></div>' +
+      '<div class="stat"><small>Chuỗi điểm danh</small><b>' + Number(data.streak || 0) + ' ngày</b></div></div>' +
+      '<div class="card"><div class="notice">Điểm danh được ghi nhận một lần mỗi ngày theo giờ Việt Nam. Điểm cộng vào điểm thành viên, không phải tiền và không cộng vào ví chính.</div>' +
+      checkinButton + '</div>' +
+      '<div class="section-head"><h3>Thông tin các cấp VIP</h3><span>Mốc tổng nạp</span></div>' +
+      '<div class="stat-grid">' + levels.map(level =>
+        '<div class="stat"><small>' + (Number(level.level) === Number(data.currentLevel) ? '👑 Hạng hiện tại' : 'Cấp VIP') + '</small><b>VIP ' +
+        Number(level.level) + '</b><small>Điều kiện: ' + money(level.threshold) + '</small></div>'
+      ).join('') + '</div>' +
       '<div class="section-head"><h3>Gói nâng cấp VIP</h3><span>' + products.length + ' gói</span></div>' +
       (products.length ? products.map(productCard).join('') : empty('Chưa có gói VIP','Quản trị viên có thể tạo các gói VIP trong phần Quản trị.')) +
-      '<div class="notice">Các quyền lợi và điều kiện nâng cấp do quản trị viên thiết lập. Hạng tự động từ mốc nạp hiện được áp dụng theo chính sách cấu hình trong backend.</div>';
+      '<div class="notice">Quyền lợi chi tiết và gói nâng cấp được hiển thị theo sản phẩm VIP do Admin cấu hình. Mốc xét hạng hiện tại: VIP 1 từ 500.000đ, VIP 2 từ 2.000.000đ, VIP 3 từ 5.000.000đ.</div>';
   }
 
   async function adminLoad(tab) {
@@ -725,6 +739,7 @@
       field('GROUP_URL','Liên kết nhóm HTTPS','url') +
       field('CHANNEL_URL','Liên kết kênh HTTPS','url') +
       field('referral_commission_percent','Hoa hồng giới thiệu (%)','number') +
+      '<div class="field"><label>Điểm nhận khi điểm danh VIP mỗi ngày (0–1.000)</label><input name="vip_checkin_points" type="number" min="0" max="1000" step="1" value="' + escapeHtml(s.vip_checkin_points || '1') + '"></div>' +
       '<div class="field"><label>Lời nhắn CSKH</label><textarea name="support_message">' + escapeHtml(s.support_message || '') + '</textarea></div>' +
       '<button class="primary">Lưu cấu hình</button></form>' +
       '<div class="notice">Website được hiển thị trong lời chào Telegram và trang chủ Mini App. Chỉ lưu URL HTTPS; không nhập token hoặc mật khẩu vào đây.</div>' +
@@ -984,6 +999,19 @@
         toast(result.status === 'disputed' ? 'Đã báo tranh chấp. Elo chưa thay đổi.' : 'Đã xác nhận và cập nhật Elo, điểm xếp hạng.');
         await renderPage();
       } catch (error) { toast(error.message); confirmMatch.disabled = false; }
+      return;
+    }
+    const vipCheckin = event.target.closest('[data-vip-checkin]');
+    if (vipCheckin) {
+      vipCheckin.disabled = true;
+      try {
+        const result = await api('/api/vip/checkin','POST',{});
+        toast(result.message);
+        await renderPage();
+      } catch (error) {
+        toast(error.message);
+        vipCheckin.disabled = false;
+      }
       return;
     }
     const paymentAction = event.target.closest('[data-payment-action]');
