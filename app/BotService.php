@@ -14,7 +14,7 @@ final class BotService
     private const MINIGAME_GROUPS = [
         'group1' => ['label' => 'Nhóm 1 · QQ88 HI88 78WIN', 'brands' => ['QQ88', 'HI88', '78WIN']],
         'group2' => ['label' => 'Nhóm 2 · RR88 MM88 GG88', 'brands' => ['RR88', 'MM88', 'GG88']],
-        'group3' => ['label' => 'Nhóm 3 · ABCVIP XX8 U888 J88 ABC8 88CLB', 'brands' => ['ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB']],
+        'group3' => ['label' => 'Nhóm 3 · [ABCVIP] XX8 U888 J88 ABC8 88CLB', 'brands' => ['ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB']],
     ];
 
 
@@ -640,6 +640,18 @@ final class BotService
             return;
         }
 
+        if (preg_match('/^live-delete-acc:([A-Z0-9]+):(\d{1,18}):(\d{1,18})$/', $action, $matches)) {
+            $brand = strtoupper($matches[1]);
+            if ($this->minigameGroupForBrand($brand) === null) {
+                throw new RuntimeException('Nhà cái không hợp lệ.');
+            }
+            Database::run(
+                'DELETE FROM linked_accounts WHERE id = ? AND user_id = ? AND brand = ?',
+                [$matches[2], $userId, $brand]
+            );
+            $this->showMinigamePackageManager($chatId, $userId, $brand, (int) $matches[3]);
+            return;
+        }
         if (preg_match('/^link-delete:(\d{1,18})$/', $action, $matches)) {
             Database::run('DELETE FROM linked_accounts WHERE id = ? AND user_id = ?', [$matches[1], $userId]);
             $this->showLiveAccounts($chatId, $userId);
@@ -980,6 +992,10 @@ final class BotService
         }
 
         $user = $this->getUser($userId);
+        $accountCount = (int) Database::value(
+            'SELECT COUNT(*) FROM linked_accounts WHERE user_id = ? AND brand = ?',
+            [$userId, $brand]
+        );
         $accounts = Database::all(
             'SELECT id, username, created_at FROM linked_accounts WHERE user_id = ? AND brand = ? ORDER BY created_at DESC LIMIT 50',
             [$userId, $brand]
@@ -998,7 +1014,7 @@ final class BotService
             $lines[] = 'Thông tin: ' . self::escape(self::truncate($packageDescription, 220));
         }
         $lines[] = '💰 Số dư Ví Chính: <b>' . self::money($user['balance'] ?? 0) . '</b>';
-        $lines[] = '📊 ACC khả dụng trong kho cá nhân: <b>' . count($accounts) . '</b>';
+        $lines[] = '📊 ACC khả dụng trong kho cá nhân: <b>' . $accountCount . '</b>';
         $lines[] = 'Chỉ lưu username thuộc tài khoản của bạn. Mở màn hình này không tự trừ ví hoặc tạo đơn hàng.';
         if ($accounts === []) {
             $lines[] = '';
@@ -1020,7 +1036,7 @@ final class BotService
             foreach ($chunk as $account) {
                 $row[] = [
                     'text' => '🗑 XÓA ACC #' . (int) $account['id'],
-                    'callback_data' => 'member:link-delete:' . (int) $account['id'],
+                    'callback_data' => 'member:live-delete-acc:' . $brand . ':' . (int) $account['id'] . ':' . $productId,
                 ];
             }
             $rows[] = $row;
