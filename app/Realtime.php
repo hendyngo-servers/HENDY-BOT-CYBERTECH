@@ -25,7 +25,7 @@ final class Realtime
                 VALUES (?, ?, ?::jsonb, NOW())
                 RETURNING id
             )
-            SELECT pg_notify('" + "hendy_realtime_events" + "', id::text) FROM inserted",
+            SELECT pg_notify('hendy_realtime_events', id::text) FROM inserted",
             [substr($type, 0, 80), substr($audience, 0, 32), $encoded]
         );
     }
