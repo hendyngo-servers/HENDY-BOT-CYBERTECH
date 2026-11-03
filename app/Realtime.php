@@ -60,36 +60,65 @@ final class Realtime
         return $received;
     }
 
-    public static function issueAdminTicket(string $adminId): string
+    public static function issueTicket(string $userId, string $audience = 'users'): string
     {
-        if (!TelegramAuth::isAdmin($adminId)) {
+        if (!preg_match('/^[0-9]{5,20}$/', $userId) || !in_array($audience, ['admin', 'users'], true)) {
+            throw new RuntimeException('Realtime ticket không hợp lệ.');
+        }
+        if ($audience === 'admin' && !TelegramAuth::isAdmin($userId)) {
             throw new RuntimeException('Tài khoản không có quyền quản trị realtime.');
         }
 
         $ticket = bin2hex(random_bytes(32));
         Database::run(
-            "INSERT INTO realtime_tickets (ticket_hash, admin_user_id, expires_at)
-             VALUES (?, ?, NOW() + INTERVAL '60 seconds')",
-            [hash('sha256', $ticket), $adminId]
+            "INSERT INTO realtime_tickets (ticket_hash, admin_user_id, audience, expires_at)
+             VALUES (?, ?, ?, NOW() + INTERVAL '60 seconds')",
+            [hash('sha256', $ticket), $userId, $audience]
         );
         return $ticket;
     }
 
-    public static function consumeAdminTicket(string $ticket): bool
+    public static function issueAdminTicket(string $adminId): string
+    {
+        return self::issueTicket($adminId, 'admin');
+    }
+
+    /**
+     * Consume a one-time ticket. Returned identity is established by the
+     * authenticated HTTP API, never by fields supplied in a WebSocket message.
+     */
+    public static function consumeTicket(string $ticket): ?array
     {
         if (!preg_match('/^[a-f0-9]{64}$/', $ticket)) {
-            return false;
+            return null;
         }
 
         $row = Database::one(
             'UPDATE realtime_tickets
              SET consumed_at = NOW()
              WHERE ticket_hash = ? AND consumed_at IS NULL AND expires_at > NOW()
-             RETURNING admin_user_id',
+             RETURNING admin_user_id, audience',
             [hash('sha256', $ticket)]
         );
+        if ($row === null) {
+            return null;
+        }
 
-        // Use the same multi-admin allowlist as every other server-side admin check.
-        return $row !== null && TelegramAuth::isAdmin((string) $row['admin_user_id']);
+        $userId = (string) $row['admin_user_id'];
+        $audience = (string) ($row['audience'] ?? 'admin');
+        if (!preg_match('/^[0-9]{5,20}$/', $userId)
+            || !in_array($audience, ['admin', 'users'], true)
+            || ($audience === 'admin' && !TelegramAuth::isAdmin($userId))) {
+            return null;
+        }
+        return ['userId' => $userId, 'audience' => $audience];
+    }
+
+    public static function consumeAdminTicket(string $ticket): bool
+    {
+        $identity = self::consumeTicket($ticket);
+        return $identity !== null
+            && $identity['audience'] === 'admin'
+            && TelegramAuth::isAdmin($identity['userId']);
     }
 }
