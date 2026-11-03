@@ -13,19 +13,34 @@ base_url="${APP_URL%/}"
 api_base="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
 api_headers=(-H "Authorization: Bearer $RENDER_API_KEY" -H "Accept: application/json")
 
-echo "Yêu cầu Render triển khai commit $GITHUB_SHA ..."
-deploy_body="$(jq -n --arg commitId "$GITHUB_SHA" '{commitId: $commitId}')"
-deploy_response="$(curl --fail-with-body --silent --show-error \
-  --request POST --url "$api_base/deploys" "${api_headers[@]}" \
-  -H "Content-Type: application/json" --data "$deploy_body")"
+echo "Kiểm tra deploy hiện có cho commit $GITHUB_SHA ..."
+deploy_list="$(curl --fail-with-body --silent --show-error \
+  --url "$api_base/deploys?limit=20" "${api_headers[@]}")"
 
-deploy_id="$(jq -r '.deploy.id // .id // empty' <<<"$deploy_response")"
+# Reuse a live or in-progress deploy for this SHA instead of creating a
+# duplicate deployment when Render Auto-Deploy already reacted to the commit.
+deploy_id="$(jq -r --arg sha "$GITHUB_SHA" '
+  [.[] | (.deploy // .) | select(.commit.id == $sha)] |
+  (map(select(.status == "live")) | last // map(select(.status == "created" or .status == "queued" or .status == "build_in_progress" or .status == "update_in_progress" or .status == "pre_deploy_in_progress")) | last // {}) |
+  .id // empty
+' <<<"$deploy_list")"
+
 if [[ -z "$deploy_id" ]]; then
-  # Render có thể trả 202 khi một deploy đang chạy; lấy deploy mới nhất.
-  deploy_list="$(curl --fail-with-body --silent --show-error \
-    --url "$api_base/deploys?limit=5" "${api_headers[@]}")"
-  deploy_id="$(jq -r '[.[] | (.deploy // .)] | map(select(.commit.id == env.GITHUB_SHA)) | .[0].id // empty' <<<"$deploy_list")"
+  echo "Không có deploy phù hợp; yêu cầu Render triển khai commit..."
+  deploy_body="$(jq -n --arg commitId "$GITHUB_SHA" '{commitId: $commitId}')"
+  deploy_response="$(curl --fail-with-body --silent --show-error \
+    --request POST --url "$api_base/deploys" "${api_headers[@]}" \
+    -H "Content-Type: application/json" --data "$deploy_body")"
+  deploy_id="$(jq -r '.deploy.id // .id // empty' <<<"$deploy_response")"
+  if [[ -z "$deploy_id" ]]; then
+    deploy_list="$(curl --fail-with-body --silent --show-error \
+      --url "$api_base/deploys?limit=20" "${api_headers[@]}")"
+    deploy_id="$(jq -r --arg sha "$GITHUB_SHA" '
+      [.[] | (.deploy // .) | select(.commit.id == $sha)] | last | .id // empty
+    ' <<<"$deploy_list")"
+  fi
 fi
+
 if [[ -z "$deploy_id" ]]; then
   echo "Render không trả về Deploy ID cho commit yêu cầu." >&2
   exit 1
