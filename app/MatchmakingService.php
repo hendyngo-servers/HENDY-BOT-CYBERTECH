@@ -35,6 +35,104 @@ final class MatchmakingService
         ];
     }
 
+    /**
+     * Join the ranked/practice queue from Telegram or another authenticated client.
+     * Queue matching is serialized per mode and reuses the same PostgreSQL state.
+     */
+    public static function join(string $userId, string $mode = 'quick'): array
+    {
+        if (!preg_match('/^[0-9]{5,20}$/', $userId) || !in_array($mode, ['quick', 'practice'], true)) {
+            throw new RuntimeException('Thông tin ghép đôi không hợp lệ.');
+        }
+
+        return Database::transaction(function () use ($userId, $mode): array {
+            Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-matchmaking:' . $mode]);
+            $myStats = self::ensureStats($userId);
+            $myRating = (int) $myStats['rating'];
+
+            $active = Database::one(
+                "SELECT * FROM matchmaking_matches
+                 WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?)
+                 ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                [$userId, $userId]
+            );
+            if ($active !== null) {
+                return ['status' => (string) $active['status'], 'match' => $active];
+            }
+
+            $waiting = Database::one(
+                "SELECT id FROM matchmaking_queue
+                 WHERE user_id = ? AND status = 'waiting'
+                 ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                [$userId]
+            );
+            if ($waiting !== null) {
+                return ['status' => 'waiting', 'match' => null];
+            }
+
+            $partner = Database::one(
+                "SELECT q.id, q.user_id
+                 FROM matchmaking_queue q
+                 LEFT JOIN matchmaking_player_stats s ON s.user_id = q.user_id
+                 WHERE q.status = 'waiting' AND q.mode = ? AND q.user_id <> ?
+                   AND (? <> 'quick' OR ABS(COALESCE(s.rating, 1000) - ?) <= LEAST(600, 150 + (EXTRACT(EPOCH FROM (NOW() - q.created_at)) / 30 * 25)))
+                 ORDER BY CASE WHEN ? = 'quick' THEN ABS(COALESCE(s.rating, 1000) - ?) ELSE 0 END ASC, q.created_at ASC
+                 LIMIT 1 FOR UPDATE OF q",
+                [$mode, $userId, $mode, $myRating, $mode, $myRating]
+            );
+
+            if ($partner === null) {
+                Database::run(
+                    "INSERT INTO matchmaking_queue (user_id, mode, status) VALUES (?, ?, 'waiting')",
+                    [$userId, $mode]
+                );
+                return ['status' => 'waiting', 'match' => null];
+            }
+
+            self::ensureStats((string) $partner['user_id']);
+            $match = Database::one(
+                "INSERT INTO matchmaking_matches (player_one, player_two, mode, status)
+                 VALUES (?, ?, ?, 'matched') RETURNING *",
+                [$partner['user_id'], $userId, $mode]
+            );
+            if ($match === null) {
+                throw new RuntimeException('Không thể tạo lượt ghép đôi.');
+            }
+            Database::run(
+                "UPDATE matchmaking_queue
+                 SET status = 'paired', matched_user_id = ?, match_id = ?, updated_at = NOW()
+                 WHERE id = ?",
+                [$userId, $match['id'], $partner['id']]
+            );
+            Database::run(
+                "INSERT INTO matchmaking_queue (user_id, mode, status, matched_user_id, match_id)
+                 VALUES (?, ?, 'paired', ?, ?)",
+                [$userId, $mode, $partner['user_id'], $match['id']]
+            );
+            return ['status' => 'matched', 'match' => $match];
+        });
+    }
+
+    public static function leaveQueue(string $userId): void
+    {
+        Database::transaction(function () use ($userId): void {
+            $active = Database::one(
+                "SELECT id FROM matchmaking_matches
+                 WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?)
+                 ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                [$userId, $userId]
+            );
+            if ($active !== null) {
+                throw new RuntimeException('Bạn đã được ghép đôi hoặc đang chờ xử lý kết quả; không thể rời lượt ghép.');
+            }
+            Database::run(
+                "UPDATE matchmaking_queue SET status = 'cancelled', updated_at = NOW()
+                 WHERE user_id = ? AND status = 'waiting'",
+                [$userId]
+            );
+        });
+    }
+
     public static function report(int $matchId, string $reporterId, int $scoreOne, int $scoreTwo): array
     {
         self::assertScore($scoreOne);
