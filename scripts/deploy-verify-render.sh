@@ -13,37 +13,48 @@ base_url="${APP_URL%/}"
 api_base="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
 api_headers=(-H "Authorization: Bearer $RENDER_API_KEY" -H "Accept: application/json")
 
-echo "Kiểm tra deploy hiện có cho commit $GITHUB_SHA ..."
+# Environment updates through the API are saved but must be consumed by a
+# subsequent deploy. Do not reuse an older live deploy for the same commit.
+# Wait for any auto-deploy of this commit to finish first, then create a fresh
+# deploy so the new runtime configuration is definitely applied.
+echo "Kiểm tra deploy đang chạy của commit $GITHUB_SHA ..."
 deploy_list="$(curl --fail-with-body --silent --show-error \
   --url "$api_base/deploys?limit=20" "${api_headers[@]}")"
-
-# Reuse a live or in-progress deploy for this SHA instead of creating a
-# duplicate deployment when Render Auto-Deploy already reacted to the commit.
-deploy_id="$(jq -r --arg sha "$GITHUB_SHA" '
-  [.[] | (.deploy // .) | select(.commit.id == $sha)] |
-  (map(select(.status == "live")) | last) as $live |
-  (map(select(.status == "created" or .status == "queued" or .status == "build_in_progress" or .status == "update_in_progress" or .status == "pre_deploy_in_progress")) | last) as $pending |
-  ($live // $pending // {}) | .id // empty
+existing_id="$(jq -r --arg sha "$GITHUB_SHA" '
+  [.[] | (.deploy // .) | select(.commit.id == $sha) |
+    select(.status == "created" or .status == "queued" or .status == "build_in_progress" or .status == "update_in_progress" or .status == "pre_deploy_in_progress)] |
+  last | .id // empty
 ' <<<"$deploy_list")"
 
-if [[ -z "$deploy_id" ]]; then
-  echo "Không có deploy phù hợp; yêu cầu Render triển khai commit..."
-  deploy_body="$(jq -n --arg commitId "$GITHUB_SHA" '{commitId: $commitId}')"
-  deploy_response="$(curl --fail-with-body --silent --show-error \
-    --request POST --url "$api_base/deploys" "${api_headers[@]}" \
-    -H "Content-Type: application/json" --data "$deploy_body")"
-  deploy_id="$(jq -r '.deploy.id // .id // empty' <<<"$deploy_response")"
-  if [[ -z "$deploy_id" ]]; then
-    deploy_list="$(curl --fail-with-body --silent --show-error \
-      --url "$api_base/deploys?limit=20" "${api_headers[@]}")"
-    deploy_id="$(jq -r --arg sha "$GITHUB_SHA" '
-      [.[] | (.deploy // .) | select(.commit.id == $sha)] | last | .id // empty
-    ' <<<"$deploy_list")"
-  fi
+if [[ -n "$existing_id" ]]; then
+  echo "Render đang triển khai commit này; chờ deploy hiện tại kết thúc trước khi áp dụng cấu hình vừa đồng bộ."
+  existing_status=""
+  for attempt in $(seq 1 120); do
+    existing_response="$(curl --fail-with-body --silent --show-error \
+      --url "$api_base/deploys/$existing_id" "${api_headers[@]}")"
+    existing_status="$(jq -r '.status // .deploy.status // "unknown"' <<<"$existing_response")"
+    case "$existing_status" in
+      created|queued|build_in_progress|update_in_progress|pre_deploy_in_progress) sleep 10 ;;
+      *) break ;;
+    esac
+  done
+  case "$existing_status" in
+    created|queued|build_in_progress|update_in_progress|pre_deploy_in_progress)
+      echo "Deploy đang chạy không kết thúc trong thời hạn chờ." >&2
+      exit 1
+      ;;
+  esac
 fi
 
+echo "Yêu cầu một deploy mới để áp dụng environment vừa đồng bộ cho commit $GITHUB_SHA ..."
+deploy_body="$(jq -n --arg commitId "$GITHUB_SHA" '{commitId: $commitId, clearCache: "do_not_clear"}')"
+deploy_response="$(curl --fail-with-body --silent --show-error \
+  --request POST --url "$api_base/deploys" "${api_headers[@]}" \
+  -H "Content-Type: application/json" --data "$deploy_body")"
+deploy_id="$(jq -r '.deploy.id // .id // empty' <<<"$deploy_response")"
+
 if [[ -z "$deploy_id" ]]; then
-  echo "Render không trả về Deploy ID cho commit yêu cầu." >&2
+  echo "Render không trả về Deploy ID cho deploy mới." >&2
   exit 1
 fi
 
