@@ -116,6 +116,8 @@ foreach ($usage as $name => $paths) {
         'name' => $name,
         'classification' => $entry['classification'] ?? 'unknown',
         'source' => $entry['source'] ?? 'unknown',
+        'required' => (bool) ($entry['required'] ?? false),
+        'required_when' => $entry['required_when'] ?? null,
         'used_in' => array_keys($paths),
         'sync_to_render' => (bool) ($entry['sync_to_render'] ?? false),
     ];
@@ -126,10 +128,11 @@ if (in_array('--json', $argv, true)) {
 } else {
     foreach ($report as $item) {
         echo sprintf(
-            "%-36s %-8s %-20s %s\n",
+            "%-36s %-8s %-20s %-10s %s\n",
             $item['name'],
             strtoupper($item['classification']),
             $item['source'],
+            $item['required'] ? 'REQUIRED' : ($item['required_when'] ? 'CONDITIONAL' : 'OPTIONAL'),
             implode(', ', $item['used_in'])
         );
     }
