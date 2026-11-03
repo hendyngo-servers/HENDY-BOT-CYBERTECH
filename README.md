@@ -213,6 +213,8 @@ Tạo QR/yêu cầu nạp không phải bằng chứng ngân hàng đã nhận t
 
 **Hợp đồng tích hợp nhà xử lý video:** cấu hình `VIDEO_PROCESSOR_URL` (HTTPS) và `VIDEO_PROCESSOR_SECRET` (tối thiểu 32 ký tự) ở Render Environment. Worker gửi POST JSON gồm `jobId`, `telegramId`, `sourceUrl`, `callbackUrl`; header `X-Hendy-Video-Signature: sha256=<HMAC-SHA256 của raw request body>`. Nhà xử lý gọi callback `POST /webhook/video` với cùng header và payload JSON: `jobId`, `status` (`processing`, `completed`, `failed`), `progress`, `outputUrl`, `error`, `providerJobId`. Callback hoàn tất phải cung cấp `outputUrl` HTTPS. Backend xác minh chữ ký HMAC trước khi cập nhật job; khi completed/failed sẽ gửi thông báo Telegram cho thành viên.
 
+Nếu worker/container bị restart khi job ở trạng thái `processing`, bộ recovery sẽ đưa job quá hạn (mặc định 90 phút, chỉnh bằng `VIDEO_PROCESSING_STALE_MINUTES`) trở lại hàng chờ tối đa 2 lần; sau 3 lần dispatch mà vẫn timeout thì job thành `failed`. Admin retry sẽ reset bộ đếm. Nhà xử lý cần dùng UUID `jobId` làm idempotency key để tránh xử lý trùng khi worker gửi lại.
+
 Repository chưa được cung cấp một nhà cung cấp phụ đề, API endpoint hay credential thực tế. Vì vậy worker và callback contract đã có trong source, nhưng chức năng tải video/chuyển giọng/tạo phụ đề thực tế **chưa thể chạy** cho đến khi kết nối provider hợp lệ. Có thể chạy worker bằng Render Background Worker với Start Command `php bin/video-worker.php`; tạo thêm Background Worker có thể phát sinh chi phí Render. Không bật service worker khi chưa có provider.
 
 ### API mới
