@@ -125,6 +125,24 @@ VideoJobService::markFailed((string) $failedJob['id'], 'Provider error');
 $retriedJob = VideoJobService::retry((string) $failedJob['id']);
 $assert($retriedJob['status'] === 'queued' && (int) $retriedJob['progress'] === 0, 'admin retry returns failed video job to queue');
 
+$staleRequeueJob = VideoJobService::create($userId, 'https://youtu.be/staleAAA123', 'primary');
+Database::run(
+    "UPDATE video_jobs SET status = 'processing', progress = 40, attempts = 1, claimed_at = NOW() - INTERVAL '120 minutes' WHERE id = ?",
+    [$staleRequeueJob['id']]
+);
+$recovery = VideoJobService::recoverStale(60);
+$staleRequeued = Database::one('SELECT status, progress, attempts FROM video_jobs WHERE id = ?', [$staleRequeueJob['id']]);
+$assert($recovery['requeued'] >= 1 && $staleRequeued['status'] === 'queued' && (int) $staleRequeued['progress'] === 0, 'stale video job is requeued after worker restart');
+
+$staleFailedJob = VideoJobService::create($userId, 'https://youtu.be/staleBBB123', 'secondary');
+Database::run(
+    "UPDATE video_jobs SET status = 'processing', progress = 80, attempts = 3, claimed_at = NOW() - INTERVAL '120 minutes' WHERE id = ?",
+    [$staleFailedJob['id']]
+);
+$failedRecovery = VideoJobService::recoverStale(60);
+$staleFailed = Database::one('SELECT status, error_message FROM video_jobs WHERE id = ?', [$staleFailedJob['id']]);
+$assert($failedRecovery['failed'] >= 1 && $staleFailed['status'] === 'failed', 'stale video job reaches failed state after maximum attempts');
+
 // Matchmaking: report → bilateral confirmation → Elo and internal points.
 $matchUserA = '98' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
 $matchUserB = '97' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
