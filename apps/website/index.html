@@ -137,7 +137,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   'use strict';
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   const params = new URLSearchParams(window.location.search);
-  const botKey = params.get('bot') === 'secondary' ? 'secondary' : 'primary';
+  const savedBotKey = !params.has('bot') ? localStorage.getItem('hendy_bot_key') : '';
+  const botKey = params.get('bot') === 'secondary' || (!params.has('bot') && savedBotKey === 'secondary') ? 'secondary' : 'primary';
   const state = { boot:null, center:null, section:'home', products:[], payment:null, accounts:[], referrals:null, vip:null, lastAction:null };
   const $ = (selector, root=document) => root.querySelector(selector);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -436,7 +437,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       <section class="hero website-login-hero">
         <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
         <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
-        <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần một ứng dụng Website riêng.</p>
+        <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
         <div class="hero-actions">
           <a class="btn primary" href="${botUrl}" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA BOT ${isSecondary?'2':'1'}</a>
           <a class="btn" href="${otherUrl}" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA BOT ${isSecondary?'1':'2'}</a>
@@ -459,6 +460,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     $('#bot-chip').textContent = tg && tg.initData ? (botKey==='secondary'?'BOT 2 · WEBSITE':'BOT 1 · WEBSITE') : 'HENDY WEBSITE';
     try{
       state.boot=await api('/api/bootstrap');
+      localStorage.setItem('hendy_bot_key', botKey);
       if(state.boot.botKey!==botKey)throw new Error('Phiên đăng nhập thuộc bot khác. Hãy mở đúng địa chỉ website BOT 1 hoặc BOT 2.');
       renderHome();
     }catch(error){
