@@ -58,8 +58,7 @@ final class PaymentService
         $limit = max(1, min(50, $limit));
         return Database::all(
             "SELECT payment_id, user_id, amount, status, transfer_content, admin_note, created_at, reviewed_at " .
-            "FROM payment_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT " . $limit,
-            []
+            "FROM payment_requests ORDER BY created_at DESC LIMIT " . $limit
         );
     }
 
@@ -127,16 +126,19 @@ final class PaymentService
             $reward = (int) floor($amount * $commissionRate / 100);
             if ($referrer !== '' && $reward > 0) {
                 $referralLedger = 'referral:' . $paymentId;
-                $referralInsert = Database::run(
-                    "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'REFERRAL_REWARD', ?) ON CONFLICT (reference_code) DO NOTHING RETURNING id",
-                    [$referralLedger, $referrer, $reward, 'Hoa hồng từ giao dịch ' . $paymentId]
-                );
-                if ($referralInsert->rowCount() === 1) {
-                    Database::run('UPDATE users SET balance = balance + ? WHERE user_id = ?', [$reward, $referrer]);
-                    Database::run(
-                        "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'REFERRAL_REWARD', ?, 'paid')",
-                        [$referrer, $reward, $paymentId]
+                $referrerUser = Database::one('SELECT user_id FROM users WHERE user_id = ? FOR UPDATE', [$referrer]);
+                if ($referrerUser !== null) {
+                    $referralInsert = Database::run(
+                        "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'REFERRAL_REWARD', ?) ON CONFLICT (reference_code) DO NOTHING RETURNING id",
+                        [$referralLedger, $referrer, $reward, 'Hoa hồng từ giao dịch ' . $paymentId]
                     );
+                    if ($referralInsert->rowCount() === 1) {
+                        Database::run('UPDATE users SET balance = balance + ? WHERE user_id = ?', [$reward, $referrer]);
+                        Database::run(
+                            "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'REFERRAL_REWARD', ?, 'paid')",
+                            [$referrer, $reward, $paymentId]
+                        );
+                    }
                 }
             }
 
