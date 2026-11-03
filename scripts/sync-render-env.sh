@@ -27,17 +27,27 @@ while IFS=$'\t' read -r key default_value; do
   fi
 done < <(jq -r '.variables | to_entries[] | select(.value.classification == "variable" and (.value | has("default"))) | [.key, .value.default] | @tsv' "$SCHEMA")
 
-required=(BOT1_TOKEN ADMIN_ID)
-for key in "${required[@]}"; do
-  if [[ -z "${!key:-}" ]]; then
-    echo "Thiếu cấu hình bắt buộc: $key" >&2
-    exit 1
-  fi
-done
-
-if [[ ! "$ADMIN_ID" =~ ^[0-9]{5,20}$ ]]; then
+if [[ -z "${BOT1_TOKEN:-}" ]]; then
+  echo "Thiếu cấu hình bắt buộc: BOT1_TOKEN" >&2
+  exit 1
+fi
+if [[ -z "${ADMIN_ID:-}" && -z "${ADMIN_IDS:-}" ]]; then
+  echo "Cần ít nhất một admin ID trong ADMIN_ID hoặc ADMIN_IDS." >&2
+  exit 1
+fi
+if [[ -n "${ADMIN_ID:-}" && ! "$ADMIN_ID" =~ ^[0-9]{5,20}$ ]]; then
   echo "ADMIN_ID phải chỉ gồm 5–20 chữ số." >&2
   exit 1
+fi
+if [[ -n "${ADMIN_IDS:-}" ]]; then
+  IFS=',' read -ra admin_list <<< "$ADMIN_IDS"
+  for admin_id in "${admin_list[@]}"; do
+    admin_id="$(echo "$admin_id" | xargs)"
+    if [[ ! "$admin_id" =~ ^[0-9]{5,20}$ ]]; then
+      echo "ADMIN_IDS phải gồm các Telegram user ID dạng số, phân tách bằng dấu phẩy." >&2
+      exit 1
+    fi
+  done
 fi
 if [[ ! "$BOT1_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]{20,}$ ]]; then
   echo "BOT1_TOKEN không đúng định dạng Telegram Bot Token." >&2
