@@ -80,6 +80,10 @@ foreach ($roots as $relative) {
         if (!$file->isFile()) {
             continue;
         }
+        // Do not scan this scanner's regex definitions/fixtures as runtime code.
+        if ($file->getPathname() === $root . '/scripts/audit-env.php') {
+            continue;
+        }
         $extension = strtolower($file->getExtension());
         if (in_array($extension, $allowed, true)) {
             $files[] = $file->getPathname();
