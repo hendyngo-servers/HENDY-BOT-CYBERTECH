@@ -9,7 +9,8 @@ Hendy\Env::load(dirname(__DIR__) . '/.env');
 $errors = [];
 $bot1 = Hendy\TelegramAuth::token('primary');
 $bot2 = Hendy\TelegramAuth::token('secondary');
-$admin = Hendy\TelegramAuth::adminId();
+$admin = trim((string) Hendy\Env::get('ADMIN_ID', ''));
+$adminList = trim((string) Hendy\Env::get('ADMIN_IDS', ''));
 
 $botTokenPattern = '~\A[0-9]+:[A-Za-z0-9_-]{20,}\z~D';
 $adminPattern = '~\A[0-9]{5,20}\z~D';
@@ -26,8 +27,18 @@ if ($bot2 !== '' && preg_match($botTokenPattern, $bot2) !== 1) {
 if ($bot1 !== '' && $bot2 !== '' && hash_equals($bot1, $bot2)) {
     $errors[] = 'BOT1_TOKEN và BOT2_TOKEN phải là hai token khác nhau.';
 }
-if (preg_match($adminPattern, $admin) !== 1) {
+if ($admin !== '' && preg_match($adminPattern, $admin) !== 1) {
     $errors[] = 'ADMIN_ID phải là Telegram user ID dạng số.';
+}
+$extraAdmins = array_filter(array_map('trim', explode(',', $adminList)));
+foreach ($extraAdmins as $extraAdmin) {
+    if (preg_match($adminPattern, $extraAdmin) !== 1) {
+        $errors[] = 'Từng giá trị trong ADMIN_IDS phải là Telegram user ID dạng số, phân tách bằng dấu phẩy.';
+        break;
+    }
+}
+if (Hendy\TelegramAuth::adminIds() === []) {
+    $errors[] = 'Cần cấu hình ít nhất một Telegram admin trong ADMIN_ID hoặc ADMIN_IDS.';
 }
 
 $dbUrl = Hendy\Env::get('DATABASE_URL');
