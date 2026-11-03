@@ -84,6 +84,21 @@ final class ApiController
 
         $userId = (string) $this->user['id'];
 
+        if (WebServiceKernel::handles($path)) {
+            try {
+                $result = WebServiceKernel::dispatch($method, $path, $this->body, [
+                    'userId' => $userId,
+                    'botKey' => $this->botKey,
+                    'isAdmin' => $this->isAdmin(),
+                ]);
+                return self::response($result);
+            } catch (HttpException $error) {
+                throw $error;
+            } catch (Throwable $error) {
+                throw new HttpException(400, $error->getMessage() ?: 'Không thể xử lý Web Service.');
+            }
+        }
+
         if ($method === 'GET' && $path === '/api/bootstrap') {
             $user = $this->userRow();
             $referrals = (int) Database::value('SELECT COUNT(*) FROM users WHERE ref_by = ?', [$userId]);
