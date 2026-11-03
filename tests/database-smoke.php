@@ -4,9 +4,13 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/MatchmakingService.php';
+require dirname(__DIR__) . '/app/PaymentService.php';
+require dirname(__DIR__) . '/app/VideoJobService.php';
 
 use Hendy\Database;
 use Hendy\MatchmakingService;
+use Hendy\PaymentService;
+use Hendy\VideoJobService;
 use Hendy\Env;
 
 Env::load(dirname(__DIR__) . '/.env');
@@ -88,6 +92,36 @@ Database::run(
 );
 $ticketCount = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
 $assert($ticketCount === 1, 'support ticket schema');
+
+// Telegram payment request: request creation does not credit wallet; admin approval is idempotent.
+$balanceBeforePayment = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
+$payment = PaymentService::create($userId, 50000, 'primary', 'MB', '123456789', 'HENDY TEST');
+$assert($payment['status'] === 'pending' && $payment['transfer_content'] !== '', 'payment request is created in pending state');
+$assert((int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]) === $balanceBeforePayment, 'creating a payment request never credits the wallet');
+$approvedPayment = PaymentService::approve((string) $payment['payment_id'], '99887766');
+$balanceAfterPayment = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
+$assert($approvedPayment['newBalance'] === $balanceBeforePayment + 50000 && $balanceAfterPayment === $balanceBeforePayment + 50000, 'admin payment approval credits the exact amount');
+$duplicateApprovalRejected = false;
+try {
+    PaymentService::approve((string) $payment['payment_id'], '99887766');
+} catch (RuntimeException) {
+    $duplicateApprovalRejected = true;
+}
+$assert($duplicateApprovalRejected, 'payment approval cannot credit wallet twice');
+$rejectedRequest = PaymentService::create($userId, 10000, 'primary', 'MB', '123456789', 'HENDY TEST');
+PaymentService::reject((string) $rejectedRequest['payment_id'], '99887766', 'CI reject');
+$assert((int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]) === $balanceAfterPayment, 'rejecting payment never changes wallet balance');
+
+$videoJob = VideoJobService::create($userId, 'https://youtu.be/dQw4w9WgXcQ', 'primary');
+$assert($videoJob['status'] === 'queued' && $videoJob['progress'] === 0, 'video job enters PostgreSQL queue');
+$processingJob = VideoJobService::updateFromCallback(['jobId' => $videoJob['id'], 'status' => 'processing', 'progress' => 55]);
+$assert($processingJob['status'] === 'processing' && (int) $processingJob['progress'] === 55, 'signed callback state is reflected as processing');
+$completedJob = VideoJobService::updateFromCallback(['jobId' => $videoJob['id'], 'status' => 'completed', 'progress' => 100, 'outputUrl' => 'https://cdn.example.com/subtitles/job.vtt']);
+$assert($completedJob['status'] === 'completed' && $completedJob['output_url'] === 'https://cdn.example.com/subtitles/job.vtt', 'completed video job requires an HTTPS output URL');
+$failedJob = VideoJobService::create($userId, 'https://youtu.be/abcDEF12345', 'secondary');
+VideoJobService::markFailed((string) $failedJob['id'], 'Provider error');
+$retriedJob = VideoJobService::retry((string) $failedJob['id']);
+$assert($retriedJob['status'] === 'queued' && (int) $retriedJob['progress'] === 0, 'admin retry returns failed video job to queue');
 
 // Matchmaking: report → bilateral confirmation → Elo and internal points.
 $matchUserA = '98' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
