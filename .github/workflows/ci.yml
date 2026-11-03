@@ -88,7 +88,15 @@ jobs:
             echo "Validator đã cho phép bank webhook chưa có adapter chữ ký." >&2
             exit 1
           fi
-          bash scripts/sync-render-env.sh --dry-run
+          generated_env_file="$(mktemp)"
+          GITHUB_ENV="$generated_env_file" bash scripts/sync-render-env.sh --dry-run
+          grep -q '^TELEGRAM_SECOND_WEBHOOK_SECRET=' "$generated_env_file"
+          grep -q '^LEGACY_SESSION_SECRET=' "$generated_env_file"
+          if grep -q '^BANK_WEBHOOK_SECRET=' "$generated_env_file"; then
+            echo "Workflow không được tự sinh BANK_WEBHOOK_SECRET khi chưa có provider adapter." >&2
+            exit 1
+          fi
+          rm -f "$generated_env_file"
 
       - name: Validate inline dashboard JavaScript
         run: |
