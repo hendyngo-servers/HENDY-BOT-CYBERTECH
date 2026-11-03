@@ -191,7 +191,8 @@
     vip:['Thành viên VIP','Theo dõi cấp thành viên và quyền lợi.'],
     wallet:['Ví điện tử','Nạp tiền và xem biến động số dư.'],
     orders:['Đơn hàng','Theo dõi trạng thái xử lý và thông tin bàn giao.'],
-    customer:['Trung tâm khách hàng','Hồ sơ, số dư, đơn hàng và hỗ trợ.'],
+    customer:['Trung tâm khách hàng','Hồ sơ, các loại ví, thống kê đơn hàng và hỗ trợ.'],
+    vouchers:['Voucher 72H','Gửi và theo dõi yêu cầu voucher cho đơn hàng quá 72 giờ.'],
     accounts:['Quản lý tài khoản','Liên kết và quản lý tài khoản Mini Game Live.'],
     support:['Chăm sóc khách hàng','Gửi yêu cầu và theo dõi phản hồi từ đội ngũ hỗ trợ.'],
     referrals:['Giới thiệu bạn bè','Chia sẻ liên kết và theo dõi người được giới thiệu.'],
@@ -412,7 +413,7 @@
   }
 
   function statusLabel(status) {
-    return ({pending:'Chờ xử lý',processing:'Đang xử lý',completed:'Hoàn tất',rejected:'Từ chối',cancelled:'Đã hủy',open:'Mở',resolved:'Đã giải quyết',closed:'Đã đóng'})[status] || status;
+    return ({pending:'Chờ xử lý',processing:'Đang xử lý',completed:'Hoàn tất',approved:'Đã duyệt',rejected:'Từ chối',cancelled:'Đã hủy',refunded:'Đã hoàn tiền',open:'Mở',resolved:'Đã giải quyết',closed:'Đã đóng'})[status] || status;
   }
 
   async function renderAccounts() {
@@ -431,38 +432,96 @@
   }
 
   async function renderCustomer() {
-    const user = state.boot.user;
-    const [wallet, orders, tickets, referrals] = await Promise.all([
-      api('/api/wallet'), api('/api/orders'), api('/api/support/tickets'), api('/api/referrals')
+    const [center, referrals, vouchers] = await Promise.all([
+      api('/api/customer-center'), api('/api/referrals'), api('/api/vouchers')
     ]);
+    const user = center.user || state.boot.user;
+    const stats = center.statistics || {};
+    const ticketStats = center.tickets || {};
+    const walletCard = (label, amount, icon) =>
+      '<div class="stat"><small>' + icon + ' ' + label + '</small><b>' + money(amount) + '</b></div>';
+    const metric = (label, value) =>
+      '<div class="stat"><small>' + label + '</small><b>' + Number(value || 0) + '</b></div>';
     return '<section class="balance-card"><div class="card-row"><div class="avatar" style="width:48px;height:48px;font-size:17px">' +
-      escapeHtml((user.name || 'H').slice(0,1).toUpperCase()) + '</div><div style="flex:1"><b>' + escapeHtml(user.name) + '</b><div class="small muted">Telegram ID: ' + escapeHtml(user.id) + '</div></div><span class="vip-pill">👑 VIP ' + user.vipLevel + '</span></div>' +
-      '<div class="section-head"><h3>Số dư tài khoản</h3><b class="price">' + money(wallet.balance) + '</b></div></section>' +
-      '<div class="stat-grid"><div class="stat"><small>Đơn hàng</small><b>' + orders.orders.length + '</b></div><div class="stat"><small>Yêu cầu CSKH</small><b>' + tickets.tickets.length + '</b></div><div class="stat"><small>Bạn bè giới thiệu</small><b>' + referrals.totalInvited + '</b></div><div class="stat"><small>Thưởng giới thiệu</small><b>' + money(referrals.totalReward) + '</b></div></div>' +
-      '<div class="section-head"><h3>Tiện ích tài khoản</h3><span>Quản lý cá nhân</span></div>' +
-      '<div class="card"><div class="list-row"><div><b>🔗 Quản lý tài khoản</b><small>Liên kết và xóa tài khoản Mini Game Live</small></div><button class="tiny-btn" data-page="accounts">Mở</button></div>' +
-      '<div class="list-row"><div><b>👛 Ví điện tử</b><small>Nạp tiền và lịch sử giao dịch</small></div><button class="tiny-btn" data-page="wallet">Mở</button></div>' +
-      '<div class="list-row"><div><b>🧾 Đơn hàng của tôi</b><small>Theo dõi tiến độ xử lý và bàn giao</small></div><button class="tiny-btn" data-page="orders">Mở</button></div>' +
-      '<div class="list-row"><div><b>👥 Giới thiệu bạn bè</b><small>Liên kết giới thiệu và thống kê</small></div><button class="tiny-btn" data-page="referrals">Mở</button></div>' +
+      escapeHtml((user.name || 'H').slice(0,1).toUpperCase()) + '</div><div style="flex:1"><b>' + escapeHtml(user.name) +
+      '</b><div class="small muted">Telegram ID: ' + escapeHtml(user.id) + (user.username ? ' · @' + escapeHtml(user.username) : '') +
+      '</div></div><span class="vip-pill">👑 VIP ' + Number(user.vipLevel || 0) + '</span></div>' +
+      '<div class="section-head"><h3>Tổng nạp tích lũy</h3><b class="price">' + money(user.totalDeposited) + '</b></div></section>' +
+      '<div class="section-head"><h3>Thông tin các loại ví</h3><span>Số dư tài khoản</span></div>' +
+      '<div class="stat-grid">' +
+      walletCard('Ví chính',user.mainWallet,'💰') +
+      walletCard('Ví NYC',user.nycWallet,'🪙') +
+      walletCard('Ví Voucher',user.voucherWallet,'🎟️') +
+      metric('Điểm cũ',user.pointOld) +
+      '</div>' +
+      '<div class="section-head"><h3>Thống kê đơn hàng</h3><span>Theo dữ liệu hệ thống</span></div>' +
+      '<div class="stat-grid">' +
+      metric('Tổng đơn',stats.totalOrders) +
+      metric('Đang xử lý',stats.processingOrders) +
+      metric('Hoàn tất',stats.completedOrders) +
+      metric('Đã hủy',stats.cancelledOrders) +
+      metric('Đã hoàn tiền',stats.refundedOrders) +
+      metric('Ticket CSKH',ticketStats.total) +
+      '</div>' +
+      '<div class="section-head"><h3>Khu vực hỗ trợ & tính năng</h3><span>Tiện ích tài khoản</span></div>' +
+      '<div class="card">' +
+      '<div class="list-row"><div><b>🚀 Quản lý tài khoản Mini Game</b><small>Liên kết hoặc xóa username</small></div><button class="tiny-btn" data-page="accounts">Mở</button></div>' +
+      '<div class="list-row"><div><b>👛 Ví điện tử</b><small>Nạp tiền, lịch sử giao dịch và yêu cầu nạp</small></div><button class="tiny-btn" data-page="wallet">Mở</button></div>' +
+      '<div class="list-row"><div><b>🧾 Đơn hàng của tôi</b><small>Theo dõi xử lý, hoàn tất và hoàn tiền</small></div><button class="tiny-btn" data-page="orders">Mở</button></div>' +
+      '<div class="list-row"><div><b>🆘 Hỗ trợ dính lạm dụng (60%)</b><small>Gửi yêu cầu theo dõi riêng</small></div><button class="tiny-btn" data-page="support">Mở</button></div>' +
+      '<div class="list-row"><div><b>🎧 Ticket hỗ trợ</b><small>' + Number(ticketStats.support || 0) + ' yêu cầu hỗ trợ đã gửi</small></div><button class="tiny-btn" data-page="support">Mở</button></div>' +
+      '<div class="list-row"><div><b>🎟️ Voucher 72H</b><small>' + Number(vouchers.requests?.length || 0) + ' yêu cầu · đơn đủ điều kiện được hiển thị bên dưới</small></div><button class="tiny-btn" data-page="vouchers">Mở</button></div>' +
+      '<div class="list-row"><div><b>🎊 Giới thiệu REF</b><small>' + Number(referrals.totalInvited || 0) + ' thành viên · thưởng ' + money(referrals.totalReward) + '</small></div><button class="tiny-btn" data-page="referrals">Mở</button></div>' +
       '<div class="list-row"><div><b>🎁 Giftcode</b><small>Nhập mã quà tặng</small></div><button class="tiny-btn" data-page="giftcode">Mở</button></div>' +
-      '<div class="list-row"><div><b>🎧 Chăm sóc khách hàng</b><small>Gửi câu hỏi và xem phản hồi</small></div><button class="tiny-btn" data-page="support">Mở</button></div></div>';
+      '</div>' +
+      '<div class="section-head"><h3>Đơn hàng gần đây</h3><span>' + (center.recentOrders || []).length + ' đơn</span></div>' +
+      ((center.recentOrders || []).length ? center.recentOrders.map(order =>
+        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(order.product_name) + '</b><small class="muted">' + escapeHtml(order.order_code) +
+        ' · ' + new Date(order.created_at).toLocaleString('vi-VN') + '</small></div><span class="status ' + escapeHtml(order.status) + '">' + statusLabel(order.status) + '</span></div>' +
+        '<p>Giá trị: <b class="price">' + money(order.amount) + '</b></p></article>'
+      ).join('') : empty('Chưa có đơn hàng','Các đơn hàng của bạn sẽ hiển thị tại đây.'));
   }
 
   async function renderSupport() {
     const data = await api('/api/support/tickets');
     state.tickets = data.tickets;
     const settings = state.boot.settings || {};
-    return '<div class="notice">' + escapeHtml(settings.support_message || 'Gửi câu hỏi hoặc báo lỗi. Đội ngũ CSKH sẽ phản hồi qua Trung tâm khách hàng và Telegram.') + '</div>' +
-      '<form class="card form" id="support-form"><div class="field"><label>Tiêu đề yêu cầu</label><input name="subject" minlength="3" maxlength="120" placeholder="Ví dụ: Hỗ trợ đơn hàng HD..." required></div>' +
+    return '<div class="notice">Chọn đúng nhóm yêu cầu để CSKH tiếp nhận. Không gửi mật khẩu, mã OTP hoặc thông tin đăng nhập.</div>' +
+      '<form class="card form" id="support-form"><div class="field"><label>Loại yêu cầu</label><select name="ticketType">' +
+      '<option value="dinh_lam">Hỗ trợ dính lạm dụng (60%)</option><option value="support">Ticket hỗ trợ chung</option></select></div>' +
+      '<div class="field"><label>Tiêu đề yêu cầu</label><input name="subject" minlength="3" maxlength="120" placeholder="Ví dụ: Hỗ trợ đơn hàng HD..." required></div>' +
       '<div class="field"><label>Nội dung cần hỗ trợ</label><textarea name="message" minlength="5" maxlength="3000" placeholder="Mô tả chi tiết vấn đề bạn gặp phải…" required></textarea></div>' +
       '<button class="primary">Gửi yêu cầu hỗ trợ</button></form>' +
       '<div class="section-head"><h3>Lịch sử hỗ trợ</h3><span>' + data.tickets.length + ' yêu cầu</span></div>' +
       (data.tickets.length ? data.tickets.map(ticket =>
-        '<article class="record"><div class="record-top"><b>#' + ticket.id + ' · ' + escapeHtml(ticket.subject) + '</b><span class="status ' + escapeHtml(ticket.status) + '">' + statusLabel(ticket.status) + '</span></div>' +
+        '<article class="record"><div class="record-top"><div><b>#' + ticket.id + ' · ' + escapeHtml(ticket.subject) + '</b><small class="muted">' +
+        (ticket.ticket_type === 'dinh_lam' ? 'Hỗ trợ dính lạm dụng (60%)' : 'Ticket hỗ trợ chung') + '</small></div><span class="status ' + escapeHtml(ticket.status) + '">' + statusLabel(ticket.status) + '</span></div>' +
         '<p>' + escapeHtml(ticket.message) + '</p>' +
         (ticket.admin_reply ? '<div class="notice good"><b>Phản hồi CSKH</b><br>' + escapeHtml(ticket.admin_reply) + '</div>' : '') +
         '<small class="muted">' + new Date(ticket.created_at).toLocaleString('vi-VN') + '</small></article>'
       ).join('') : empty('Chưa có yêu cầu hỗ trợ','Khi bạn gửi yêu cầu, lịch sử sẽ hiển thị tại đây.'));
+  }
+
+  async function renderVouchers() {
+    const data = await api('/api/vouchers');
+    const eligible = data.eligibleOrders || [];
+    const requests = data.requests || [];
+    return '<div class="notice warn">Voucher 72H chỉ áp dụng cho đơn đang chờ/đang xử lý đã quá 72 giờ và chưa có yêu cầu trước đó. Gửi yêu cầu không tự cộng tiền; Admin phải kiểm tra và duyệt.</div>' +
+      (eligible.length
+        ? '<form class="card form" id="voucher-form"><div class="field"><label>Chọn đơn hàng đủ điều kiện</label><select name="orderId" required>' +
+          eligible.map(order => '<option value="' + escapeHtml(order.id) + '">' + escapeHtml(order.order_code) + ' · ' + escapeHtml(order.product_name) + ' · ' + money(order.amount) + '</option>').join('') +
+          '</select></div><div class="field"><label>Lý do yêu cầu</label><textarea name="reason" minlength="5" maxlength="1000" required placeholder="Mô tả tình trạng đơn hàng và thông tin liên quan…"></textarea></div>' +
+          '<button class="primary">Gửi yêu cầu Voucher 72H</button></form>'
+        : empty('Chưa có đơn đủ điều kiện','Đơn phải ở trạng thái chờ/đang xử lý ít nhất 72 giờ và chưa có yêu cầu voucher.')) +
+      '<div class="section-head"><h3>Lịch sử yêu cầu Voucher</h3><span>' + requests.length + ' yêu cầu</span></div>' +
+      (requests.length ? requests.map(item =>
+        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(item.order_code) + ' · ' + escapeHtml(item.product_name || '') +
+        '</b><small class="muted">Gửi lúc ' + new Date(item.created_at).toLocaleString('vi-VN') + '</small></div><span class="status ' + escapeHtml(item.status) + '">' +
+        (item.status === 'approved' ? 'Đã duyệt' : item.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt') + '</span></div>' +
+        '<p>Lý do: ' + escapeHtml(item.reason) + '</p>' +
+        (Number(item.reward_amount) > 0 ? '<p>Voucher được duyệt: <b class="price">' + money(item.reward_amount) + '</b></p>' : '') +
+        (item.admin_note ? '<div class="notice">' + escapeHtml(item.admin_note) + '</div>' : '') + '</article>'
+      ).join('') : empty('Chưa gửi yêu cầu Voucher','Các yêu cầu đã gửi sẽ hiển thị tại đây.'));
   }
 
   async function renderReferrals() {
@@ -548,6 +607,7 @@
     if (tab === 'users') state.adminData.users = (await api('/api/admin/users')).users;
     if (tab === 'matchmaking') state.adminData.matchDisputes = (await api('/api/admin/matchmaking/disputes')).disputes || [];
     if (tab === 'payments') state.adminData.payments = (await api('/api/admin/payments')).payments || [];
+    if (tab === 'vouchers') state.adminData.vouchers = (await api('/api/admin/vouchers')).requests || [];
     if (tab === 'video-jobs') {
       const result = await api('/api/admin/video-jobs');
       state.adminData.videoJobs = result.jobs || [];
@@ -556,7 +616,7 @@
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
@@ -635,6 +695,20 @@
       '<div class="field"><label>Phản hồi (sẽ gửi tin nhắn Telegram)</label><textarea name="reply">' + escapeHtml(ticket.admin_reply || '') + '</textarea></div>' +
       '<div class="two-col"><div class="field"><label>Trạng thái</label><select name="status">' + ['open','processing','resolved','closed'].map(s => '<option value="' + s + '" ' + (ticket.status === s ? 'selected' : '') + '>' + statusLabel(s) + '</option>').join('') + '</select></div><button class="tiny-btn" style="align-self:end">Gửi phản hồi</button></div></form></article>'
     ).join('') : empty('Chưa có ticket','Yêu cầu hỗ trợ của khách hàng sẽ được lưu tại đây.');
+  }
+
+  function adminVouchers() {
+    const requests = state.adminData.vouchers || [];
+    return '<div class="notice warn">Kiểm tra lịch sử đơn hàng trước khi duyệt. Khi duyệt, Admin phải nhập số tiền voucher; hệ thống cộng vào ví Voucher riêng, không cộng vào ví chính.</div>' +
+      (requests.length ? requests.map(item =>
+        '<article class="record"><div class="record-top"><div><b>Yêu cầu #' + escapeHtml(item.id) + ' · ' + escapeHtml(item.order_code) + '</b><small class="muted">Telegram ' +
+        escapeHtml(item.user_id) + ' · ' + escapeHtml(item.name || item.username || '') + '</small></div><span class="status pending">Chờ duyệt</span></div>' +
+        '<p>' + escapeHtml(item.product_name) + ' · Đơn hàng ' + money(item.order_amount) + '<br>Lý do: ' + escapeHtml(item.reason) +
+        '<br>Gửi lúc: ' + new Date(item.created_at).toLocaleString('vi-VN') + '</p>' +
+        '<form class="form" data-voucher-form="' + escapeHtml(item.id) + '"><div class="field"><label>Thao tác</label><select name="action"><option value="approve">Duyệt voucher</option><option value="reject">Từ chối</option></select></div>' +
+        '<div class="field"><label>Số tiền Voucher (VNĐ, bắt buộc khi duyệt)</label><input name="rewardAmount" type="number" min="1" max="500000000" step="1" required></div>' +
+        '<div class="field"><label>Ghi chú Admin</label><textarea name="adminNote" maxlength="1000"></textarea></div><button class="primary">Xác nhận xử lý</button></form></article>'
+      ).join('') : empty('Không có yêu cầu Voucher chờ duyệt','Yêu cầu hợp lệ của khách hàng sẽ xuất hiện tại đây.'));
   }
 
   function adminSettings() {
@@ -755,6 +829,7 @@
     if (state.adminTab === 'users') body = adminUsers();
     if (state.adminTab === 'matchmaking') body = adminMatchmaking();
     if (state.adminTab === 'payments') body = adminPayments();
+    if (state.adminTab === 'vouchers') body = adminVouchers();
     if (state.adminTab === 'video-jobs') body = adminVideoJobs();
     return '<div class="notice good">Đã xác thực quyền quản trị cho Telegram ID ' + escapeHtml(state.boot.user.id) + '.</div>' +
       adminTabs() + body;
@@ -774,6 +849,7 @@
       else if (page === 'customer') html = await renderCustomer();
       else if (page === 'accounts') html = await renderAccounts();
       else if (page === 'support') html = await renderSupport();
+      else if (page === 'vouchers') html = await renderVouchers();
       else if (page === 'referrals') html = await renderReferrals();
       else if (page === 'giftcode') html = renderGiftcode();
       else if (page === 'vip') html = await renderVip();
@@ -1050,6 +1126,11 @@
         await api('/api/support/tickets','POST',data);
         toast('Đã gửi yêu cầu hỗ trợ.');
         await renderPage();
+      } else if (form.id === 'voucher-form') {
+        data.orderId = Number(data.orderId);
+        await api('/api/vouchers','POST',data);
+        toast('Đã gửi yêu cầu Voucher 72H.');
+        await renderPage();
       } else if (form.id === 'giftcode-form') {
         const result = await api('/api/giftcodes/redeem','POST',data);
         toast(result.message + ' +' + money(result.reward));
@@ -1122,6 +1203,11 @@
         await api('/api/admin/tickets/' + form.dataset.ticketForm,'PATCH',data);
         toast('Đã cập nhật ticket CSKH.');
         await renderPage();
+      } else if (form.dataset.voucherForm) {
+        data.rewardAmount = Number(data.rewardAmount || 0);
+        const result = await api('/api/admin/vouchers/' + encodeURIComponent(form.dataset.voucherForm) + '/' + data.action,'POST',data);
+        toast(result.message);
+        await renderPage();
       } else if (form.dataset.adjustForm) {
         data.amount = Number(data.amount);
         await api('/api/admin/users/' + form.dataset.adjustForm + '/adjust-balance','POST',data);
@@ -1173,7 +1259,7 @@
       $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Bot';
       $('profile-chip').querySelector('.avatar').textContent = (state.boot.user.name || 'H').slice(0,1).toUpperCase();
       const requested = new URLSearchParams(location.search).get('section');
-      const valid = ['home','minigame','tools','codes','otp','proxy','vip','wallet','orders','customer','accounts','support','referrals','giftcode','matchmaking','admin'];
+      const valid = ['home','minigame','tools','codes','otp','proxy','vip','wallet','orders','customer','accounts','support','vouchers','referrals','giftcode','matchmaking','admin'];
       state.page = valid.includes(requested) ? requested : 'home';
       if (state.page === 'admin' && !state.boot.isAdmin) state.page = 'home';
       renderPage();
