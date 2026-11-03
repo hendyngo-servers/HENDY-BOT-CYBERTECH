@@ -122,8 +122,9 @@ $completedJob = VideoJobService::updateFromCallback(['jobId' => $videoJob['id'],
 $assert($completedJob['status'] === 'completed' && $completedJob['output_url'] === 'https://cdn.example.com/subtitles/job.vtt', 'completed video job requires an HTTPS output URL');
 $failedJob = VideoJobService::create($userId, 'https://youtu.be/abcDEF12345', 'secondary');
 VideoJobService::markFailed((string) $failedJob['id'], 'Provider error');
+Database::run('UPDATE video_jobs SET attempts = 3 WHERE id = ?', [$failedJob['id']]);
 $retriedJob = VideoJobService::retry((string) $failedJob['id']);
-$assert($retriedJob['status'] === 'queued' && (int) $retriedJob['progress'] === 0, 'admin retry returns failed video job to queue');
+$assert($retriedJob['status'] === 'queued' && (int) $retriedJob['progress'] === 0 && (int) $retriedJob['attempts'] === 0, 'admin retry starts a fresh dispatch attempt cycle');
 
 $staleRequeueJob = VideoJobService::create($userId, 'https://youtu.be/staleAAA123', 'primary');
 Database::run(
