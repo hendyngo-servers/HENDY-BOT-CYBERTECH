@@ -1943,7 +1943,7 @@ final class BotService
                 $this->clearPending($userId);
                 $ticketId = (string) ($ticket['id'] ?? '');
                 $this->telegram->sendMessage($chatId, '✅ Đã tạo ticket <b>#' . self::escape($ticketId) . '</b>. CSKH sẽ kiểm tra đơn và phản hồi. Yêu cầu chưa tự động tạo đơn mới hoặc cộng thưởng.');
-                $this->notifyAdmins('🆘 <b>TICKET MINI GAME MỚI</b>' . "\nMã ticket: <code>" . self::escape($ticketId) . '</code>' . "\nUser: <code>" . self::escape($userId) . '</code>' . "\nĐơn: <code>" . self::escape($orderCode) . '</code>' . "\nLoại: ' . self::escape($title) . "\nNội dung: " . self::escape(self::truncate($text, 500)));
+                $this->notifyAdmins('🆘 <b>TICKET MINI GAME MỚI</b>' . "\nMã ticket: <code>" . self::escape($ticketId) . '</code>' . "\nUser: <code>" . self::escape($userId) . '</code>' . "\nĐơn: <code>" . self::escape($orderCode) . '</code>' . "\nLoại: " . self::escape($title) . "\nNội dung: " . self::escape(self::truncate($text, 500)));
                 return true;
 
             case 'voucher_order':
