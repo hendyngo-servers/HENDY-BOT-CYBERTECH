@@ -5,8 +5,11 @@ require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/MatchmakingService.php';
+require dirname(__DIR__) . '/app/PaymentService.php';
+require dirname(__DIR__) . '/app/VideoJobService.php';
 
 use Hendy\MatchmakingService;
+use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
 
 $checks = 0;
@@ -34,6 +37,12 @@ try {
     $invalidEloRejected = true;
 }
 $assert($invalidEloRejected, 'hệ số Elo ngoài giới hạn bị từ chối');
+
+$assert(VideoJobService::isAllowedMediaUrl('https://youtu.be/dQw4w9WgXcQ'), 'chấp nhận URL YouTube HTTPS');
+$assert(VideoJobService::isAllowedMediaUrl('https://www.tiktok.com/@creator/video/123'), 'chấp nhận URL TikTok HTTPS');
+$assert(!VideoJobService::isAllowedMediaUrl('http://youtube.com/watch?v=abc'), 'từ chối URL video HTTP');
+$assert(!VideoJobService::isAllowedMediaUrl('https://youtube.com.evil.example/watch?v=abc'), 'từ chối domain giả mạo');
+$assert(!VideoJobService::isAllowedMediaUrl('https://127.0.0.1/admin'), 'từ chối IP nội bộ thay vì domain video');
 
 $token = '123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi';
 $authDate = time();
