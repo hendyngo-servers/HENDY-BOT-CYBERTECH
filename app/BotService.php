@@ -290,7 +290,7 @@ final class BotService
                 ...$item,
                 'label' => self::truncate((string) ($labels[$action] ?? $item['label']), 60),
                 'description' => self::truncate((string) ($descriptions[$action] ?? $item['description']), 160),
-                'style' => in_array($styles[$action] ?? '', ['primary', 'success', 'danger'], true) ? $styles[$action] : $item['style'],
+                'style' => in_array($styles[$action] ?? '', ['primary', 'success', 'danger'], true) ? $styles[$action] : ($item['style'] ?? 'primary'),
             ];
         }
 
