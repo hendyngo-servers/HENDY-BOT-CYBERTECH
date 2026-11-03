@@ -597,7 +597,7 @@ final class ApiController
                 throw new HttpException(409, $error->getMessage());
             }
             $this->audit('video_job.retry', $jobMatch[1], []);
-            $this->notify((string) $job['user_id'], 'Video job ' . substr((string) $job['id'], 0, 8) . ' đã được đưa lại vào hàng chờ.');
+            $this->notify((string) $job['user_id'], 'Video job ' . substr((string) $job['id'], 0, 8) . ' đã được đưa lại vào hàng chờ.', (string) ($job['bot_key'] ?? $this->botKey));
             return self::response(['job' => $job, 'message' => 'Đã đưa video job vào hàng chờ.']);
         }
 
