@@ -823,13 +823,31 @@
     }
     const refreshMatch = event.target.closest('[data-match-refresh]');
     if (refreshMatch) { await renderPage(); return; }
-    const finishMatch = event.target.closest('[data-match-finish]');
-    if (finishMatch) {
+    const reportMatch = event.target.closest('[data-match-report]');
+    if (reportMatch) {
+      const scoreOne = Number($('#match-score-one').value);
+      const scoreTwo = Number($('#match-score-two').value);
+      if (!Number.isInteger(scoreOne) || !Number.isInteger(scoreTwo) || scoreOne < 0 || scoreOne > 999 || scoreTwo < 0 || scoreTwo > 999) {
+        toast('Tỷ số phải là số nguyên từ 0 đến 999.');
+        return;
+      }
+      reportMatch.disabled = true;
       try {
-        await api('/api/matchmaking/finish','POST',{matchId:finishMatch.dataset.matchFinish});
-        toast('Đã kết thúc lượt ghép.');
+        await api('/api/matchmaking/report','POST',{matchId:reportMatch.dataset.matchReport,scoreOne,scoreTwo});
+        toast('Đã gửi tỷ số. Đang chờ đối thủ xác nhận.');
         await renderPage();
-      } catch (error) { toast(error.message); }
+      } catch (error) { toast(error.message); reportMatch.disabled = false; }
+      return;
+    }
+    const confirmMatch = event.target.closest('[data-match-confirm]');
+    if (confirmMatch) {
+      const approved = confirmMatch.dataset.approved === 'true';
+      confirmMatch.disabled = true;
+      try {
+        const result = await api('/api/matchmaking/confirm','POST',{matchId:confirmMatch.dataset.matchConfirm,approved});
+        toast(result.status === 'disputed' ? 'Đã báo tranh chấp. Elo chưa thay đổi.' : 'Đã xác nhận và cập nhật Elo, điểm xếp hạng.');
+        await renderPage();
+      } catch (error) { toast(error.message); confirmMatch.disabled = false; }
       return;
     }
     const deleteLinked = event.target.closest('[data-delete-linked-account]');
