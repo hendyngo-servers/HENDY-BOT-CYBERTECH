@@ -401,3 +401,10 @@ CREATE TABLE IF NOT EXISTS store_integrations (
     enabled BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+
+-- Bank account/QR details are private runtime settings. Keep them available
+-- to BotService/admin, but never include them in public bootstrap settings.
+UPDATE app_settings
+SET is_public = FALSE, updated_at = NOW()
+WHERE key IN ('VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME');
