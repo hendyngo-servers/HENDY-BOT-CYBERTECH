@@ -21,8 +21,9 @@ deploy_list="$(curl --fail-with-body --silent --show-error \
 # duplicate deployment when Render Auto-Deploy already reacted to the commit.
 deploy_id="$(jq -r --arg sha "$GITHUB_SHA" '
   [.[] | (.deploy // .) | select(.commit.id == $sha)] |
-  (map(select(.status == "live")) | last // map(select(.status == "created" or .status == "queued" or .status == "build_in_progress" or .status == "update_in_progress" or .status == "pre_deploy_in_progress")) | last // {}) |
-  .id // empty
+  (map(select(.status == "live")) | last) as $live |
+  (map(select(.status == "created" or .status == "queued" or .status == "build_in_progress" or .status == "update_in_progress" or .status == "pre_deploy_in_progress")) | last) as $pending |
+  ($live // $pending // {}) | .id // empty
 ' <<<"$deploy_list")"
 
 if [[ -z "$deploy_id" ]]; then
