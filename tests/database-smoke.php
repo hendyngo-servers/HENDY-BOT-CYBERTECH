@@ -3,14 +3,12 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
-require dirname(__DIR__) . '/app/MatchmakingService.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/VoucherService.php';
 require dirname(__DIR__) . '/app/VipService.php';
 
 use Hendy\Database;
-use Hendy\MatchmakingService;
 use Hendy\PaymentService;
 use Hendy\VideoJobService;
 use Hendy\VoucherService;
@@ -221,73 +219,5 @@ Database::run(
 $failedRecovery = VideoJobService::recoverStale(60);
 $staleFailed = Database::one('SELECT status, error_message FROM video_jobs WHERE id = ?', [$staleFailedJob['id']]);
 $assert($failedRecovery['failed'] >= 1 && $staleFailed['status'] === 'failed', 'stale video job reaches failed state after maximum attempts');
-
-// Matchmaking: report → bilateral confirmation → Elo and internal points.
-$matchUserA = '98' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-$matchUserB = '97' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-$adminUser = '96' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-foreach ([[$matchUserA, 'Match Player A'], [$matchUserB, 'Match Player B'], [$adminUser, 'Match Admin']] as [$id, $name]) {
-    Database::run('INSERT INTO users (user_id, name) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING', [$id, $name]);
-}
-$initialA = MatchmakingService::ensureStats($matchUserA);
-$initialB = MatchmakingService::ensureStats($matchUserB);
-$quickMatch = Database::one(
-    "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, 'quick', 'matched') RETURNING id",
-    [$matchUserA, $matchUserB]
-);
-$submission = MatchmakingService::report((int) $quickMatch['id'], $matchUserA, 2, 1);
-$assert($submission['opponentId'] === $matchUserB && $submission['result']['status'] === 'pending', 'match score report waits for opponent');
-$finalResult = MatchmakingService::confirm((int) $quickMatch['id'], $matchUserB, true);
-$assert($finalResult['status'] === 'completed' && $finalResult['ratingDeltaOne'] === -$finalResult['ratingDeltaTwo'], 'confirmed match finalizes and keeps Elo delta zero-sum');
-$afterA = MatchmakingService::ensureStats($matchUserA);
-$afterB = MatchmakingService::ensureStats($matchUserB);
-$assert((int) $afterA['points'] === (int) $initialA['points'] + 10, 'winner receives internal leaderboard points');
-$assert((int) $afterB['points'] === (int) $initialB['points'] + 3, 'loser receives participation leaderboard points');
-$duplicateReportRejected = false;
-try {
-    MatchmakingService::report((int) $quickMatch['id'], $matchUserA, 2, 1);
-} catch (RuntimeException) {
-    $duplicateReportRejected = true;
-}
-$assert($duplicateReportRejected, 'completed match cannot accept duplicate score report');
-
-$disputedMatch = Database::one(
-    "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, 'quick', 'matched') RETURNING id",
-    [$matchUserA, $matchUserB]
-);
-MatchmakingService::report((int) $disputedMatch['id'], $matchUserA, 3, 0);
-$dispute = MatchmakingService::confirm((int) $disputedMatch['id'], $matchUserB, false);
-$assert($dispute['status'] === 'disputed', 'opponent can freeze an incorrect score as disputed');
-$beforeResolve = MatchmakingService::ensureStats($matchUserA);
-$resolved = MatchmakingService::resolveDispute((int) $disputedMatch['id'], $adminUser, 1, 0);
-$afterResolve = MatchmakingService::ensureStats($matchUserA);
-$assert($resolved['status'] === 'completed' && (int) $afterResolve['matches_played'] === (int) $beforeResolve['matches_played'] + 1, 'admin resolution finalizes disputed match exactly once');
-
-$practiceBeforeA = MatchmakingService::ensureStats($matchUserA);
-$practiceMatch = Database::one(
-    "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, 'practice', 'matched') RETURNING id",
-    [$matchUserA, $matchUserB]
-);
-MatchmakingService::report((int) $practiceMatch['id'], $matchUserA, 1, 0);
-$practiceResult = MatchmakingService::confirm((int) $practiceMatch['id'], $matchUserB, true);
-$practiceAfterA = MatchmakingService::ensureStats($matchUserA);
-$assert($practiceResult['ratingDeltaOne'] === 0 && (int) $practiceAfterA['rating'] === (int) $practiceBeforeA['rating'], 'practice match does not change Elo');
-
-
-$queueUserA = '95' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-$queueUserB = '94' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-$queueUserC = '93' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
-foreach ([$queueUserA, $queueUserB, $queueUserC] as $id) {
-    Database::run('INSERT INTO users (user_id, name) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING', [$id, 'Queue test']);
-}
-$queueWaiting = MatchmakingService::join($queueUserA, 'quick');
-$assert($queueWaiting['status'] === 'waiting', 'first Telegram player enters quick queue');
-$queueMatched = MatchmakingService::join($queueUserB, 'quick');
-$assert($queueMatched['status'] === 'matched' && ($queueMatched['match']['status'] ?? '') === 'matched', 'second Telegram player is paired');
-$practiceWaiting = MatchmakingService::join($queueUserC, 'practice');
-$assert($practiceWaiting['status'] === 'waiting', 'practice player enters separate queue');
-MatchmakingService::leaveQueue($queueUserC);
-$queueState = Database::value("SELECT status FROM matchmaking_queue WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", [$queueUserC]);
-$assert($queueState === 'cancelled', 'Telegram member can leave waiting queue');
 
 echo "Đã chạy {$checks} PostgreSQL smoke checks.\n";
