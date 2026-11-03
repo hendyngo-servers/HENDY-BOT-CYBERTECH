@@ -39,6 +39,7 @@ jobs:
       TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
       TELEGRAM_SECOND_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_SECOND_WEBHOOK_SECRET }}
       BANK_WEBHOOK_SECRET: ${{ secrets.BANK_WEBHOOK_SECRET }}
+      VIDEO_PROCESSOR_SECRET: ${{ secrets.VIDEO_PROCESSOR_SECRET }}
       LEGACY_SESSION_SECRET: ${{ secrets.LEGACY_SESSION_SECRET }}
       VIETQR_ACCOUNT_NO: ${{ secrets.VIETQR_ACCOUNT_NO }}
       VIETQR_ACCOUNT_NAME: ${{ secrets.VIETQR_ACCOUNT_NAME }}
@@ -51,6 +52,7 @@ jobs:
       WEBAPP_URL: ${{ vars.WEBAPP_URL }}
       ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
       ADMIN_ID: ${{ vars.ADMIN_ID }}
+      ADMIN_IDS: ${{ vars.ADMIN_IDS }}
       BOT_USERNAME: ${{ vars.BOT_USERNAME }}
       DATABASE_SSL: ${{ vars.DATABASE_SSL || 'false' }}
       DB_STARTUP_WAIT_SECONDS: ${{ vars.DB_STARTUP_WAIT_SECONDS || '120' }}
@@ -64,6 +66,9 @@ jobs:
       WEBSOCKET_URL: ${{ vars.WEBSOCKET_URL }}
       WEBSOCKET_BIND: ${{ vars.WEBSOCKET_BIND || '0.0.0.0' }}
       WEBSOCKET_PORT: ${{ vars.WEBSOCKET_PORT || '10000' }}
+      MEDIA_ALLOWED_HOSTS: ${{ vars.MEDIA_ALLOWED_HOSTS || 'youtube.com,youtu.be,tiktok.com,facebook.com,fb.watch' }}
+      VIDEO_PROCESSOR_URL: ${{ vars.VIDEO_PROCESSOR_URL }}
+      VIDEO_WORKER_POLL_SECONDS: ${{ vars.VIDEO_WORKER_POLL_SECONDS || '5' }}
 
     steps:
       - name: Checkout
