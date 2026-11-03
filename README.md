@@ -183,6 +183,18 @@ Thiết lập `website_url` tại **Quản trị → Cấu hình**. Giá trị m
 
 Ứng dụng hiện dùng PostgreSQL; không chạy `CREATE DATABASE ... CHARACTER SET utf8mb4` trên PostgreSQL. Chưa nhập dữ liệu MySQL cho đến khi có file export `telegram_bot_db.sql(.gz)` và full PostgreSQL backup trước migration. Xem [runbook nhập MySQL sang PostgreSQL](docs/IMPORT-MYSQL-TO-POSTGRES.md) để export, backup, staging, dry-run và đối soát. Không tự cộng transactions vào số dư đã chuyển từ `main_wallet`.
 
+## Trung tâm quản lý tài khoản ngay trong menu Telegram
+
+Nút **🔐 QUẢN LÝ TÀI KHOẢN** trên Reply Keyboard/Inline Keyboard Telegram chỉ hiển thị hai cách truy cập:
+1. **Mini App (khuyến nghị):** mở Mini App bằng Telegram Web App URL.
+2. **Đăng nhập truyền thống:** bot tạo ticket ngẫu nhiên 256-bit, chỉ lưu SHA-256 trong PostgreSQL, hết hạn sau 5 phút và chỉ exchange được một lần. Ticket được đổi qua `POST /api/legacy/session/exchange` thành JWT HS256 có audience `hendy-legacy-account`, thời hạn 5 phút. Secret ký JWT phải cấu hình `LEGACY_SESSION_SECRET` (tối thiểu 32 ký tự). Trang `/legacy-login` không lưu ticket/token vào URL dài hạn hoặc localStorage; token chỉ nằm trong sessionStorage của tab hiện tại.
+
+Bảng `legacy_login_tickets` đã có trong schema PostgreSQL. Link đăng nhập yêu cầu `APP_URL` HTTPS hoặc `RENDER_EXTERNAL_URL` HTTPS. Không dùng Telegram ID mẫu và không gửi mật khẩu/OTP qua bot.
+
+### Kho tài khoản ABCVIP
+
+Menu có nút **🏦 KHO TÀI KHOẢN ABCVIP**. Admin có thể khai báo `ABCVIP_CONNECT_URL` trong **Quản trị → Cấu hình**; URL phải là HTTPS và phải do nhà cung cấp ABCVIP chính thức cấp, có hỗ trợ OAuth/SSO hoặc callback xác thực. Nếu chưa cấu hình, bot hiển thị trạng thái tạm khóa và không thu thập mật khẩu/OTP/PIN trong chat. Chỉ có URL trang đăng nhập thông thường không đủ để xác minh tài khoản đã liên kết; cần tài liệu API/OAuth và callback chính thức của nhà cung cấp trước khi bật luồng xác thực thực tế.
+
 ## Tích hợp Telegram Bot với Dashboard Admin
 
 Telegram BOT1 và BOT2 sử dụng cùng backend PHP/PostgreSQL và cùng dữ liệu của Mini App. Mỗi bot có cấu hình menu riêng trong `bot_menu_configs`; dashboard tab **Menu & Bot** có thể đổi Reply Keyboard/Inline Keyboard, số cột, nội dung giới thiệu, nhãn và mô tả. Telegram Bot API không hỗ trợ màu tùy chỉnh cho từng nút; các giá trị style trong Dashboard chỉ là metadata giao diện, không được gửi như thuộc tính không hợp lệ tới Telegram.
