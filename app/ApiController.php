@@ -1085,6 +1085,7 @@ final class ApiController
             'INSERT INTO admin_audit (admin_user_id, action, target, details) VALUES (?, ?, ?, ?::jsonb)',
             [(string) $this->user['id'], $action, $target, json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]
         );
+        Realtime::publish('user.data.changed', ['resource' => $action], 'users');
     }
 
     private function notify(string $userId, string $message, ?string $botKey = null): void
