@@ -236,7 +236,7 @@ final class AdminRealtimeServer implements MessageComponentInterface
 // Take the durable cursor before LISTEN, then replay once immediately after
 // subscribing. This closes the startup window in which a NOTIFY could be missed.
 $host = (string) Env::get('WEBSOCKET_BIND', '0.0.0.0');
-$port = max(1, min(65535, Env::int('WEBSOCKET_PORT', (int) Env::get('PORT', 10000))));
+$port = max(1, min(65535, Env::int('WEBSOCKET_PORT', Env::int('PORT', 10000))));
 $server = new AdminRealtimeServer();
 Realtime::listen();
 $server->publish();
