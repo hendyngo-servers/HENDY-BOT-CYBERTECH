@@ -1346,22 +1346,26 @@
 
   async function start() {
     if (!initData) {
-      $('page-title').textContent='Mở Hendy Bot trong Telegram';
-      $('page-subtitle').textContent='Ứng dụng cần dữ liệu xác thực Telegram để bảo vệ tài khoản.';
-      $('app').innerHTML='<div class="hero"><h2>Hendy Bot</h2><p>Hãy mở Mini App bằng nút chức năng trong cuộc trò chuyện với bot. Không đăng nhập bằng Telegram ID nhập tay.</p></div><div class="notice warn">Không thể xác thực trình duyệt bên ngoài Telegram.</div>';
+      $('page-title').textContent='HENDY · DASHBOARD ADMIN';
+      $('page-subtitle').textContent='Mở Dashboard bằng nút quản trị trong cuộc trò chuyện Telegram.';
+      $('app').innerHTML='<div class="hero"><h2>HENDY BOT</h2><p>Giao diện thành viên đã chuyển hoàn toàn sang menu Telegram. Dashboard web chỉ dành cho Admin.</p></div><div class="notice warn">Không có dữ liệu xác thực Telegram Web App. Hãy mở lại bằng nút BẢNG ĐIỀU KHIỂN ADMIN trong bot.</div>';
       $('profile-name').textContent='Chưa đăng nhập';
       return;
     }
     try {
       state.boot = await api('/api/bootstrap');
-      if (state.boot.isAdmin) connectAdminRealtime();
-      $('profile-name').textContent = state.boot.user.name || 'Thành viên';
+      if (!state.boot.isAdmin) {
+        $('page-title').textContent='Không có quyền truy cập';
+        $('page-subtitle').textContent='Khu vực này chỉ dành cho Admin HENDY.';
+        $('app').innerHTML='<div class="notice warn">⛔ Tài khoản Telegram hiện tại không nằm trong ADMIN_ID / ADMIN_IDS. Các chức năng thành viên được sử dụng trực tiếp trong bot.</div>';
+        $('profile-name').textContent='Không có quyền';
+        return;
+      }
+      connectAdminRealtime();
+      $('profile-name').textContent = state.boot.user.name || 'Admin';
       $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Bot';
       $('profile-chip').querySelector('.avatar').textContent = (state.boot.user.name || 'H').slice(0,1).toUpperCase();
-      const requested = new URLSearchParams(location.search).get('section');
-      const valid = ['home','minigame','tools','codes','otp','proxy','vip','wallet','orders','customer','accounts','support','vouchers','referrals','giftcode','matchmaking','admin'];
-      state.page = valid.includes(requested) ? requested : 'home';
-      if (state.page === 'admin' && !state.boot.isAdmin) state.page = 'home';
+      state.page = 'admin';
       renderPage();
     } catch (error) {
       $('page-title').textContent='Không thể xác thực';
