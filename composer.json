@@ -21,7 +21,8 @@
     "test": "php tests/run.php",
     "migrate": "php bin/migrate.php",
     "validate-config": "php bin/validate-config.php",
-    "websocket": "php bin/websocket.php"
+    "websocket": "php bin/websocket.php",
+    "video-worker": "php bin/video-worker.php"
   },
   "config": {
     "sort-packages": true
