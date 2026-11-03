@@ -186,6 +186,12 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Default official website URL shown in the supplied Telegram welcome-screen reference.
+-- Admin can change it from the application settings page; preserve later edits.
+INSERT INTO app_settings (key, value, is_public)
+VALUES ('website_url', 'https://lethituanem.com', TRUE)
+ON CONFLICT (key) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
     menu_mode TEXT NOT NULL DEFAULT 'reply_keyboard' CHECK (menu_mode IN ('reply_keyboard','inline_keyboard')),
