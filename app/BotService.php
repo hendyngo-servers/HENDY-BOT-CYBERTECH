@@ -459,6 +459,10 @@ final class BotService
             case 'wallet':
                 $this->showWalletMenu($chatId, $userId);
                 return;
+            case 'deposit:custom':
+                $this->setPending($userId, 'wallet');
+                $this->telegram->sendMessage($chatId, '✏️ Nhập số tiền cần nạp từ 10.000 đến 500.000.000 VNĐ. Ví dụ: <code>50000</code>.');
+                return;
             case 'vietsub':
                 $this->startVideoRequest($chatId, $userId);
                 return;
@@ -962,18 +966,36 @@ final class BotService
 
     private function showDepositHistory(string $chatId, string $userId): void
     {
+        $requests = PaymentService::forUser($userId, 10);
         $transactions = Database::all(
             "SELECT amount, reference_code, created_at FROM transactions WHERE user_id = ? AND type = 'DEPOSIT' ORDER BY created_at DESC LIMIT 10",
             [$userId]
         );
-        $lines = ['💳 <b>LỊCH SỬ NẠP TIỀN</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        $lines = ['💳 <b>LỊCH SỬ NẠP TIỀN</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>Yêu cầu nạp</b>'];
+        foreach ($requests as $request) {
+            $lines[] = '• <code>' . self::escape((string) $request['payment_id']) . '</code> · ' .
+                self::money($request['amount']) . ' · ' . self::escape(self::statusLabel((string) $request['status']));
+            if ($request['status'] === 'pending') {
+                $lines[] = '  Nội dung CK: <code>' . self::escape((string) $request['transfer_content']) . '</code>';
+            }
+        }
+        if ($requests === []) {
+            $lines[] = 'Chưa tạo yêu cầu nạp.';
+        }
+        $lines[] = '';
+        $lines[] = '<b>Giao dịch đã được ghi có</b>';
         foreach ($transactions as $transaction) {
-            $lines[] = '• +' . self::money($transaction['amount']) . ' · ' . self::escape($transaction['reference_code'] ?? '—');
+            $lines[] = '• +' . self::money($transaction['amount']) . ' · ' . self::escape((string) ($transaction['reference_code'] ?? '—'));
         }
         if ($transactions === []) {
-            $lines[] = 'Chưa ghi nhận giao dịch nạp tiền.';
+            $lines[] = 'Chưa có giao dịch nạp được duyệt.';
         }
-        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '＋ TẠO YÊU CẦU NẠP', 'callback_data' => 'member:wallet']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
     }
 
     private function showReferral(string $chatId, string $userId): void
@@ -1075,33 +1097,58 @@ final class BotService
             throw new RuntimeException('Số tiền nạp phải từ 10.000 đến 500.000.000 VNĐ.');
         }
         $settings = $this->settings(['VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME']);
-        $bank = $settings['VIETQR_BANK_ID'] ?: (string) Env::get('VIETQR_BANK_ID', '');
-        $account = $settings['VIETQR_ACCOUNT_NO'] ?: (string) Env::get('VIETQR_ACCOUNT_NO', '');
-        $holder = $settings['VIETQR_ACCOUNT_NAME'] ?: (string) Env::get('VIETQR_ACCOUNT_NAME', '');
+        $bank = trim((string) ($settings['VIETQR_BANK_ID'] ?? '')) ?: (string) Env::get('VIETQR_BANK_ID', '');
+        $account = trim((string) ($settings['VIETQR_ACCOUNT_NO'] ?? '')) ?: (string) Env::get('VIETQR_ACCOUNT_NO', '');
+        $holder = trim((string) ($settings['VIETQR_ACCOUNT_NAME'] ?? '')) ?: (string) Env::get('VIETQR_ACCOUNT_NAME', '');
         if ($bank === '' || $account === '' || $holder === '') {
             throw new RuntimeException('Admin chưa cấu hình tài khoản VietQR.');
         }
+
+        // Create a pending request with a unique transfer reference. It does
+        // not credit the wallet; admins must verify the incoming bank transfer.
+        $request = PaymentService::create($userId, $amount, $this->botKey, $bank, $account, $holder);
         $path = rawurlencode($bank) . '-' . rawurlencode($account) . '-compact2.png';
-        $query = http_build_query(['amount' => $amount, 'addInfo' => 'NAP ' . $userId, 'accountName' => $holder]);
+        $query = http_build_query([
+            'amount' => $amount,
+            'addInfo' => $request['transfer_content'],
+            'accountName' => $holder,
+        ]);
         $url = 'https://img.vietqr.io/image/' . $path . '?' . $query;
 
         $caption = implode("\n", [
-            '💳 <b>THÔNG TIN NẠP TIỀN</b>',
+            '💳 <b>YÊU CẦU NẠP ĐÃ ĐƯỢC TẠO</b>',
+            'Mã yêu cầu: <code>' . self::escape((string) $request['payment_id']) . '</code>',
             'Số tiền: <b>' . self::money($amount) . '</b>',
             'Ngân hàng: <b>' . self::escape($bank) . '</b>',
             'Số tài khoản: <code>' . self::escape($account) . '</code>',
             'Chủ tài khoản: <b>' . self::escape($holder) . '</b>',
-            'Nội dung chuyển khoản: <code>NAP ' . $userId . '</code>',
+            'Nội dung chuyển khoản: <code>' . self::escape((string) $request['transfer_content']) . '</code>',
             '',
-            'Ví được cộng khi webhook ngân hàng hợp lệ xác nhận giao dịch.',
+            '⏳ Trạng thái: <b>Chờ Admin đối soát</b>.',
+            'Ví chỉ được cộng sau khi Admin kiểm tra sao kê và bấm Duyệt. Tạo yêu cầu không đồng nghĩa tiền đã được nhận.',
         ]);
+
+        $markup = ['reply_markup' => $this->inlineMenu([
+            [['text' => '📜 KIỂM TRA LỊCH SỬ NẠP', 'callback_data' => 'member:deposit-history']],
+            [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+        ])];
         try {
-            $this->telegram->sendPhoto($chatId, $url, $caption, [
-                'reply_markup' => $this->inlineMenu([[['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']]]),
-            ]);
-        } catch (Throwable) {
-            $this->telegram->sendMessage($chatId, $caption . "\n\nKhông tải được ảnh QR. Vui lòng dùng thông tin chuyển khoản ở trên.");
+            $this->telegram->sendPhoto($chatId, $url, $caption, $markup);
+        } catch (Throwable $error) {
+            $this->telegram->sendMessage($chatId, $caption . "\n\nKhông tải được ảnh QR. Vui lòng dùng đúng thông tin chuyển khoản phía trên.", $markup);
         }
+
+        $this->notifyAdmins(
+            '🔔 <b>YÊU CẦU NẠP MỚI</b>' . "\n" .
+            'Mã: <code>' . self::escape((string) $request['payment_id']) . '</code> · ' .
+            self::money($amount) . "\n" .
+            'User: <code>' . self::escape($userId) . '</code>' . "\n" .
+            'Nội dung CK: <code>' . self::escape((string) $request['transfer_content']) . '</code>' . "\n" .
+            'Chỉ duyệt sau khi đối chiếu sao kê.',
+            ['inline_keyboard' => [[
+                ['text' => '✅ MỞ DANH SÁCH DUYỆT', 'callback_data' => 'member:admin-payments'],
+            ]]]
+        );
     }
 
     private function processPending(string $chatId, string $userId, string $text, array $pending): bool
@@ -1126,6 +1173,27 @@ final class BotService
                 }
                 return true;
 
+            case 'video_url':
+                try {
+                    $job = VideoJobService::create($userId, $text, $this->botKey);
+                    $this->clearPending($userId);
+                    $shortId = substr((string) $job['id'], 0, 8);
+                    $this->telegram->sendMessage($chatId, '✅ <b>ĐÃ TIẾP NHẬN VIDEO JOB</b>' . "\n" .
+                        'Mã job: <code>' . self::escape($shortId) . '</code>' . "\n" .
+                        'Trạng thái: <b>Chờ xử lý</b>.' . "\n" .
+                        'Job đã vào hàng chờ PostgreSQL. Việc tạo phụ đề tự động cần worker và VIDEO_PROCESSOR_URL/VIDEO_PROCESSOR_SECRET được cấu hình.');
+                    $this->notifyAdmins(
+                        '🎬 <b>VIDEO JOB MỚI</b>' . "\n" .
+                        'Job: <code>' . self::escape($shortId) . '</code>' . "\n" .
+                        'User: <code>' . self::escape($userId) . '</code>' . "\n" .
+                        'Nguồn: ' . self::escape(self::truncate($text, 180)),
+                        ['inline_keyboard' => [[['text' => '🎬 XEM VIDEO JOBS', 'callback_data' => 'member:admin-jobs']]]]
+                    );
+                } catch (Throwable $error) {
+                    $this->telegram->sendMessage($chatId, '❌ Không thể tạo video job: ' . self::escape($error->getMessage()));
+                }
+                return true;
+
             case 'giftcode':
                 try {
                     $reward = $this->redeemGiftcode($userId, $text);
@@ -1146,13 +1214,7 @@ final class BotService
                     "INSERT INTO support_tickets (user_id, subject, message) VALUES (?, 'Yêu cầu hỗ trợ Telegram', ?) RETURNING id",
                     [$userId, mb_substr($text, 0, 3000)]
                 );
-                if ($this->adminId !== '') {
-                    try {
-                        $this->telegram->sendMessage($this->adminId, '🆕 YÊU CẦU CSKH #' . $ticket['id'] . "\nTelegram ID: " . $userId . "\nNội dung:\n" . self::escape(mb_substr($text, 0, 2500)));
-                    } catch (Throwable $error) {
-                        error_log('Không gửi được thông báo CSKH: ' . $error->getMessage());
-                    }
-                }
+                $this->notifyAdmins('🆕 YÊU CẦU CSKH #' . $ticket['id'] . "\nTelegram ID: " . $userId . "\nNội dung:\n" . self::escape(mb_substr($text, 0, 2500)));
                 $this->telegram->sendMessage($chatId, '✅ Đã tạo yêu cầu hỗ trợ #' . $ticket['id'] . '. CSKH sẽ phản hồi qua Telegram.');
                 return true;
 
@@ -1219,7 +1281,7 @@ final class BotService
 
     private function addMoney(string $chatId, string $senderId, string $targetId, int $amount): void
     {
-        if ($this->adminId === '' || $senderId !== $this->adminId) {
+        if (!TelegramAuth::isAdmin($senderId)) {
             $this->telegram->sendMessage($chatId, 'Bạn không có quyền sử dụng lệnh này.');
             return;
         }
@@ -1250,18 +1312,11 @@ final class BotService
 
     private function openAdmin(string $chatId, string $userId): void
     {
-        if ($this->adminId === '' || $userId !== $this->adminId) {
+        if (!TelegramAuth::isAdmin($userId)) {
             $this->telegram->sendMessage($chatId, '⛔ Bạn không có quyền quản trị.');
             return;
         }
-        $url = $this->webAppUrl('admin');
-        if ($url === '') {
-            $this->telegram->sendMessage($chatId, 'Hãy cấu hình APP_URL trong môi trường chạy để mở Dashboard.');
-            return;
-        }
-        $this->telegram->sendMessage($chatId, '🛡️ <b>BẢNG ĐIỀU KHIỂN ADMIN</b>', [
-            'reply_markup' => $this->inlineMenu([[['text' => 'MỞ BẢNG QUẢN TRỊ', 'web_app' => ['url' => $url]]]]),
-        ]);
+        $this->showAdminStats($chatId, $userId);
     }
 
     private function webAppUrl(string $section): string
