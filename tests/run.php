@@ -4,7 +4,9 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
+require dirname(__DIR__) . '/app/MatchmakingService.php';
 
+use Hendy\MatchmakingService;
 use Hendy\TelegramAuth;
 
 $checks = 0;
@@ -18,6 +20,20 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 $assert(TelegramAuth::safeEquals('same-secret', 'same-secret'), 'so sánh chuỗi đúng');
 $assert(!TelegramAuth::safeEquals('different', 'same-secret'), 'so sánh chuỗi khác');
 $assert(!TelegramAuth::safeEquals('', ''), 'secret rỗng bị từ chối');
+
+[$eloWinner, $eloLoser] = MatchmakingService::calculateElo(1000, 1000, 2, 1);
+$assert($eloWinner === 16 && $eloLoser === -16, 'Elo K=32 thay đổi đúng khi hai bên ngang rating');
+[$eloDrawOne, $eloDrawTwo] = MatchmakingService::calculateElo(1000, 1000, 1, 1);
+$assert($eloDrawOne === 0 && $eloDrawTwo === 0, 'Elo trận hòa cân bằng');
+[$eloUnderdog, $eloFavorite] = MatchmakingService::calculateElo(900, 1300, 1, 0);
+$assert($eloUnderdog > 0 && $eloFavorite === -$eloUnderdog, 'Elo thưởng người có rating thấp hơn khi thắng');
+$invalidEloRejected = false;
+try {
+    MatchmakingService::calculateElo(1000, 1000, 1, 0, 0);
+} catch (RuntimeException) {
+    $invalidEloRejected = true;
+}
+$assert($invalidEloRejected, 'hệ số Elo ngoài giới hạn bị từ chối');
 
 $token = '123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi';
 $authDate = time();
