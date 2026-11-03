@@ -26,7 +26,7 @@ final class ApiController
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
-        'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin',
+        'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin', 'vietsub', 'history', 'jobs',
     ];
 
     private array $query;
@@ -201,6 +201,39 @@ final class ApiController
                 [$userId]
             );
             return self::response(['balance' => $user['balance'], 'history' => $history]);
+        }
+
+        if ($path === '/api/wallet/payment-requests' && $method === 'GET') {
+            return self::response(['requests' => PaymentService::forUser($userId, 20)]);
+        }
+        if ($path === '/api/wallet/payment-requests' && $method === 'POST') {
+            $amount = $this->parseMoney($this->body['amount'] ?? null, false);
+            if ($amount < 10000 || $amount > 500000000) {
+                throw new HttpException(400, 'Số tiền nạp phải từ 10.000 đến 500.000.000 VNĐ.');
+            }
+            $settings = $this->settings(['VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'], true);
+            $bank = $settings['VIETQR_BANK_ID'] ?: (string) Env::get('VIETQR_BANK_ID', '');
+            $account = $settings['VIETQR_ACCOUNT_NO'] ?: (string) Env::get('VIETQR_ACCOUNT_NO', '');
+            $holder = $settings['VIETQR_ACCOUNT_NAME'] ?: (string) Env::get('VIETQR_ACCOUNT_NAME', '');
+            if ($bank === '' || $account === '' || $holder === '') {
+                throw new HttpException(409, 'Quản trị viên chưa cấu hình tài khoản VietQR.');
+            }
+            try {
+                $request = PaymentService::create($userId, $amount, $this->botKey, $bank, $account, $holder);
+            } catch (RuntimeException $error) {
+                throw new HttpException(400, $error->getMessage());
+            }
+            $params = http_build_query([
+                'amount' => $amount,
+                'addInfo' => $request['transfer_content'],
+                'accountName' => $holder,
+            ]);
+            $qrUrl = 'https://img.vietqr.io/image/' . rawurlencode($bank) . '-' . rawurlencode($account) . '-compact2.png?' . $params;
+            $this->notifyAdmins(
+                '🔔 YÊU CẦU NẠP MỚI ' . $request['payment_id'] . ' · ' . number_format($amount, 0, ',', '.') .
+                ' VNĐ · User ' . $userId . ' · Nội dung CK: ' . $request['transfer_content'] . '. Cần đối soát sao kê trước khi duyệt.'
+            );
+            return self::response(['request' => $request, 'qrUrl' => $qrUrl, 'message' => 'Yêu cầu đã tạo và đang chờ Admin đối soát.'], 201);
         }
         if ($path === '/api/wallet/payment-info' && $method === 'GET') {
             $amount = $this->parseMoney($this->query['amount'] ?? 50000, false);
@@ -531,6 +564,42 @@ final class ApiController
             }
             return self::response(['result' => $resolved, 'message' => 'Đã xử lý tranh chấp và cập nhật bảng xếp hạng.']);
         }
+        if ($method === 'GET' && $path === '/api/admin/payments') {
+            return self::response(['payments' => PaymentService::pending(100), 'stats' => PaymentService::stats()]);
+        }
+        if (preg_match('#^/api/admin/payments/([A-Z0-9]{6,24})/(approve|reject)$#', $path, $paymentMatch) && $method === 'POST') {
+            $paymentId = $paymentMatch[1];
+            try {
+                if ($paymentMatch[2] === 'approve') {
+                    $result = PaymentService::approve($paymentId, (string) $this->user['id']);
+                    $this->notify((string) $result['telegramId'],
+                        '🎉 Yêu cầu nạp ' . $paymentId . ' đã được Admin duyệt. Cộng +' .
+                        number_format($result['amountVnd'], 0, ',', '.') . ' VNĐ. Số dư mới: ' .
+                        number_format($result['newBalance'], 0, ',', '.') . ' VNĐ.');
+                } else {
+                    $result = PaymentService::reject($paymentId, (string) $this->user['id'], $this->text($this->body['note'] ?? 'Admin từ chối sau khi đối soát.', 500));
+                    $this->notify((string) $result['telegramId'], 'Yêu cầu nạp ' . $paymentId . ' chưa được duyệt. Vui lòng liên hệ CSKH nếu cần hỗ trợ.');
+                }
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            $this->audit('payment.' . $paymentMatch[2], $paymentId, ['amount' => $result['amountVnd']]);
+            return self::response(['payment' => $result, 'message' => $paymentMatch[2] === 'approve' ? 'Đã duyệt và cập nhật ví.' : 'Đã từ chối; ví không thay đổi.']);
+        }
+        if ($method === 'GET' && $path === '/api/admin/video-jobs') {
+            return self::response(['jobs' => VideoJobService::recent(100), 'stats' => VideoJobService::stats()]);
+        }
+        if (preg_match('#^/api/admin/video-jobs/([0-9a-f-]{36})/retry$#i', $path, $jobMatch) && $method === 'POST') {
+            try {
+                $job = VideoJobService::retry($jobMatch[1]);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            $this->audit('video_job.retry', $jobMatch[1], []);
+            $this->notify((string) $job['user_id'], 'Video job ' . substr((string) $job['id'], 0, 8) . ' đã được đưa lại vào hàng chờ.');
+            return self::response(['job' => $job, 'message' => 'Đã đưa video job vào hàng chờ.']);
+        }
+
         if ($method === 'GET' && $path === '/api/admin/modules') {
             return self::response(['artifacts' => Database::all('SELECT id, module_key, original_name, mime_type, sha256, status, created_at FROM module_artifacts ORDER BY created_at DESC LIMIT 100')]);
         }
@@ -541,12 +610,17 @@ final class ApiController
             return self::response(['ticket' => $ticket, 'url' => $url, 'expiresInSeconds' => 60]);
         }
         if ($method === 'GET' && $path === '/api/admin/overview') {
+            $paymentStats = PaymentService::stats();
+            $videoStats = VideoJobService::stats();
             return self::response([
                 'users' => (int) Database::value('SELECT COUNT(*) FROM users'),
                 'activeProducts' => (int) Database::value('SELECT COUNT(*) FROM products WHERE is_active = TRUE'),
                 'ordersLast30Days' => (int) Database::value("SELECT COUNT(*) FROM orders WHERE created_at >= NOW() - INTERVAL '30 days'"),
                 'completedOrderValue' => (int) Database::value("SELECT COALESCE(SUM(amount), 0) FROM orders WHERE status = 'completed'"),
                 'openTickets' => (int) Database::value("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open', 'processing')"),
+                'pendingPayments' => $paymentStats['pending'],
+                'queuedVideoJobs' => $videoStats['queued'],
+                'activeVideoJobs' => $videoStats['processing'],
             ]);
         }
         if ($method === 'GET' && $path === '/api/admin/runtime') {
@@ -1022,6 +1096,13 @@ final class ApiController
             (new TelegramApi($token))->sendMessage($userId, $message);
         } catch (Throwable $error) {
             error_log('Không gửi được thông báo Telegram: ' . $error->getMessage());
+        }
+    }
+
+    private function notifyAdmins(string $message): void
+    {
+        foreach (TelegramAuth::adminIds() as $adminId) {
+            $this->notify($adminId, $message);
         }
     }
 
