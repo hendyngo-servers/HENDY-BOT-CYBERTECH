@@ -17,6 +17,23 @@ Env::load(dirname(__DIR__) . '/.env');
 
 $once = in_array('--once', $argv, true);
 $pollSeconds = max(3, min(60, Env::int('VIDEO_WORKER_POLL_SECONDS', 5)));
+$processorUrl = trim((string) Env::get('VIDEO_PROCESSOR_URL', ''));
+$processorSecret = (string) Env::get('VIDEO_PROCESSOR_SECRET', '');
+$appUrl = trim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')));
+$processorParts = $processorUrl !== '' ? parse_url($processorUrl) : false;
+$appParts = $appUrl !== '' ? parse_url($appUrl) : false;
+if (
+    !is_array($processorParts) ||
+    strtolower((string) ($processorParts['scheme'] ?? '')) !== 'https' ||
+    empty($processorParts['host']) ||
+    strlen($processorSecret) < 32 ||
+    !is_array($appParts) ||
+    strtolower((string) ($appParts['scheme'] ?? '')) !== 'https' ||
+    empty($appParts['host'])
+) {
+    fwrite(STDERR, "VIDEO WORKER chưa khởi chạy: cần VIDEO_PROCESSOR_URL HTTPS, VIDEO_PROCESSOR_SECRET tối thiểu 32 ký tự và APP_URL HTTPS. Jobs vẫn nằm trong hàng chờ.\n");
+    exit(2);
+}
 $tokenCache = [];
 
 $notifyUser = static function (array $job, string $message) use (&$tokenCache): void {
