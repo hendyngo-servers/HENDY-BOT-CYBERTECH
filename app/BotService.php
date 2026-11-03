@@ -565,11 +565,13 @@ final class BotService
 
         if (preg_match('/^select-brand:([A-Z0-9]+)$/', $action, $matches)) {
             $brand = strtoupper($matches[1]);
-            if (!in_array($brand, self::BRANDS, true)) {
-                throw new RuntimeException('Thương hiệu không hợp lệ.');
+            if (!in_array($brand, self::BRANDS, true)) throw new RuntimeException('Thương hiệu không hợp lệ.');
+            if ($brand === 'ABCVIP') {
+                $this->showAbcvipConnect($chatId);
+                return;
             }
             $this->setPending($userId, 'link_username', ['brand' => $brand]);
-            $this->telegram->sendMessage($chatId, 'Bạn đã chọn <b>' . self::escape($brand) . '</b>. Hãy nhập tên đăng nhập. Không gửi mật khẩu hoặc OTP.');
+            $this->telegram->sendMessage($chatId, 'Bạn đã chọn <b>' . self::escape($brand) . '</b>. Hãy nhập username. Không gửi mật khẩu, PIN hoặc OTP.');
             return;
         }
 
@@ -1751,6 +1753,100 @@ final class BotService
                 );
                 $this->notifyAdmins('🆕 YÊU CẦU CSKH #' . $ticket['id'] . "\nTelegram ID: " . $userId . "\nNội dung:\n" . self::escape(mb_substr($text, 0, 2500)));
                 $this->telegram->sendMessage($chatId, '✅ Đã tạo yêu cầu hỗ trợ #' . $ticket['id'] . '. CSKH sẽ phản hồi qua Telegram.');
+                return true;
+
+            case 'live_order_issue':
+                if (!preg_match('/^[A-Za-z0-9_-]{4,40}$/', $text)) {
+                    $this->telegram->sendMessage($chatId, 'Mã đơn không đúng định dạng. Hãy nhập lại mã trong mục Đơn hàng.');
+                    return true;
+                }
+                $order = Database::one(
+                    "SELECT id, order_code, product_name FROM orders WHERE order_code = ? AND user_id = ? AND category = 'minigame'",
+                    [$text, $userId]
+                );
+                if ($order === null) {
+                    $this->telegram->sendMessage($chatId, 'Không tìm thấy đơn Mini Game thuộc tài khoản Telegram của bạn. Hãy kiểm tra lại mã đơn.');
+                    return true;
+                }
+                $payload['order_id'] = (int) $order['id'];
+                $payload['order_code'] = (string) $order['order_code'];
+                $payload['product_name'] = (string) $order['product_name'];
+                $this->setPending($userId, 'live_issue_message', $payload);
+                $this->telegram->sendMessage($chatId, '✅ Đã nhận diện đơn <b>' . self::escape($order['order_code']) . '</b>. Hãy mô tả tình trạng bạn gặp phải (ít nhất 5 ký tự).');
+                return true;
+
+            case 'live_issue_message':
+                if (mb_strlen($text) < 5) {
+                    $this->telegram->sendMessage($chatId, 'Vui lòng mô tả ít nhất 5 ký tự để CSKH có thể kiểm tra.');
+                    return true;
+                }
+                $issueType = (string) ($payload['ticket_type'] ?? 'live_win_no_reward');
+                $title = $issueType === 'live_auto_reorder' ? 'Yêu cầu Auto đặt lại' : 'Trúng nhưng chưa phát thưởng';
+                $orderCode = (string) ($payload['order_code'] ?? '');
+                $ticket = Database::one(
+                    'INSERT INTO support_tickets (user_id, subject, message, status, priority, ticket_type) VALUES (?, ?, ?, \'open\', \'normal\', ?) RETURNING id',
+                    [$userId, $title . ' · Đơn ' . $orderCode, 'Đơn: ' . $orderCode . "\\nSản phẩm: " . (string) ($payload['product_name'] ?? '') . "\\nMô tả: " . $text, $issueType]
+                );
+                $this->clearPending($userId);
+                $ticketId = (string) ($ticket['id'] ?? '');
+                $this->telegram->sendMessage($chatId, '✅ Đã tạo ticket <b>#' . self::escape($ticketId) . '</b>. CSKH sẽ kiểm tra đơn và phản hồi. Yêu cầu chưa tự động tạo đơn mới hoặc cộng thưởng.');
+                $this->notifyAdmins('🆘 <b>TICKET MINI GAME MỚI</b>' . "\\nMã ticket: <code>" . self::escape($ticketId) . '</code>' . "\\nUser: <code>" . self::escape($userId) . '</code>' . "\\nĐơn: <code>" . self::escape($orderCode) . '</code>' . "\\nLoại: ' . self::escape($title) . "\\nNội dung: " . self::escape(self::truncate($text, 500)));
+                return true;
+
+            case 'voucher_order':
+                if (!preg_match('/^[A-Za-z0-9_-]{4,40}$/', $text)) {
+                    $this->telegram->sendMessage($chatId, 'Mã đơn không đúng định dạng. Hãy nhập lại.');
+                    return true;
+                }
+                $eligible = VoucherService::eligibleOrders($userId, 100);
+                $selected = null;
+                foreach ($eligible as $candidate) {
+                    if (strcasecmp((string) $candidate['order_code'], $text) === 0) { $selected = $candidate; break; }
+                }
+                if ($selected === null) {
+                    $this->telegram->sendMessage($chatId, 'Mã đơn chưa đủ điều kiện 72 giờ, đã xử lý, hoặc không thuộc tài khoản của bạn.');
+                    return true;
+                }
+                try {
+                    $request = VoucherService::create($userId, (int) $selected['id'], 'Đề nghị Voucher 72H qua menu Telegram.');
+                    $this->clearPending($userId);
+                    $this->telegram->sendMessage($chatId, '✅ Đã gửi yêu cầu Voucher 72H cho đơn <code>' . self::escape($text) . '</code>. Chờ Admin xét duyệt.');
+                    $this->notifyAdmins('🎟️ <b>YÊU CẦU VOUCHER 72H</b>' . "\\nTicket: <code>" . self::escape((string) $request['id']) . '</code>' . "\\nUser: <code>" . self::escape($userId) . '</code>' . "\\nĐơn: <code>" . self::escape($text) . '</code>');
+                } catch (Throwable $error) {
+                    $this->telegram->sendMessage($chatId, '❌ Không thể tạo yêu cầu Voucher: ' . self::escape($error->getMessage()));
+                }
+                return true;
+
+            case 'duel_score_me':
+                if (!preg_match('/^\\d{1,3}$/', $text) || (int) $text > 999) {
+                    $this->telegram->sendMessage($chatId, 'Điểm phải là số nguyên từ 0 đến 999. Hãy nhập lại điểm của bạn.');
+                    return true;
+                }
+                $payload['my_score'] = (int) $text;
+                $this->setPending($userId, 'duel_score_opponent', $payload);
+                $this->telegram->sendMessage($chatId, 'Nhập điểm của đối thủ (0–999). Thứ tự A-B sẽ được bot tự xác định.');
+                return true;
+
+            case 'duel_score_opponent':
+                if (!preg_match('/^\\d{1,3}$/', $text) || (int) $text > 999) {
+                    $this->telegram->sendMessage($chatId, 'Điểm phải là số nguyên từ 0 đến 999. Hãy nhập lại điểm của đối thủ.');
+                    return true;
+                }
+                $matchId = (int) ($payload['match_id'] ?? 0);
+                $playerOne = (string) ($payload['player_one'] ?? '');
+                $playerTwo = (string) ($payload['player_two'] ?? '');
+                $myScore = (int) ($payload['my_score'] ?? 0);
+                $opponentScore = (int) $text;
+                $scoreOne = $userId === $playerOne ? $myScore : $opponentScore;
+                $scoreTwo = $userId === $playerTwo ? $myScore : $opponentScore;
+                try {
+                    $reported = MatchmakingService::report($matchId, $userId, $scoreOne, $scoreTwo);
+                    $this->clearPending($userId);
+                    $this->telegram->sendMessage($chatId, '✅ Đã gửi tỷ số ' . $scoreOne . '-' . $scoreTwo . ' (thứ tự A-B). Đang chờ đối thủ xác nhận.');
+                    $this->notifyUserOnBot($this->botKey, (string) $reported['opponentId'], '🧾 Đối thủ đã gửi tỷ số trận #' . $matchId . ': ' . $scoreOne . '-' . $scoreTwo . '. Mở mục GHÉP ĐÔI trong bot để xác nhận hoặc báo sai.');
+                } catch (Throwable $error) {
+                    $this->telegram->sendMessage($chatId, '❌ Không gửi được tỷ số: ' . self::escape($error->getMessage()));
+                }
                 return true;
 
             case 'link_username':
