@@ -9,7 +9,7 @@ use Throwable;
 final class BotService
 {
     private const TTL_MINUTES = 10;
-    private const BRANDS = ['RR88', 'MM88', 'GG88', 'AD88', 'QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'];
+    private const BRANDS = ['QQ88', 'HI88', '78WIN', 'RR88', 'MM88', 'GG88', 'ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB', 'AD88', 'SC88', 'C168', 'CM88', 'F8BET'];
 
     private const MENU = [
         ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Liên kết và quản lý tài khoản trò chơi.', 'style' => 'primary'],
@@ -522,6 +522,25 @@ final class BotService
 
     private function dispatchAction(string $chatId, string $userId, string $action): void
     {
+        if (preg_match('/^duel-join-(quick|practice)$/', $action, $matches)) {
+            $this->joinMatchmaking($chatId, $userId, $matches[1]);
+            return;
+        }
+        if ($action === 'duel-leave') {
+            try { MatchmakingService::leaveQueue($userId); }
+            catch (Throwable $error) { $this->telegram->sendMessage($chatId, '⚠️ ' . self::escape($error->getMessage())); }
+            $this->showMatchmaking($chatId, $userId);
+            return;
+        }
+        if (preg_match('/^duel-report:(\\d{1,18})$/', $action, $matches)) {
+            $this->startMatchReport($chatId, $userId, (int) $matches[1]);
+            return;
+        }
+        if (preg_match('/^duel-confirm:(\\d{1,18}):(yes|no)$/', $action, $matches)) {
+            $this->confirmMatchResult($chatId, $userId, (int) $matches[1], $matches[2] === 'yes');
+            return;
+        }
+
         if (preg_match('/^deposit:(\d{4,12})$/', $action, $matches)) {
             $this->showDeposit($chatId, $userId, (int) $matches[1]);
             return;
@@ -554,7 +573,7 @@ final class BotService
             return;
         }
 
-        if (str_starts_with($action, 'duel-finish:') || str_starts_with($action, 'duel-join') || $action === 'duel-leave') {
+        if (str_starts_with($action, 'duel-finish:')) {
             $this->showMatchmaking($chatId, $userId);
             return;
         }
@@ -574,26 +593,40 @@ final class BotService
                 return;
             case 'link-new':
                 $rows = [];
-                foreach (array_chunk(self::BRANDS, 2) as $chunk) {
+                foreach (array_chunk(self::BRANDS, 3) as $chunk) {
                     $row = [];
                     foreach ($chunk as $brand) {
                         $row[] = ['text' => $brand, 'callback_data' => 'member:select-brand:' . $brand];
                     }
                     $rows[] = $row;
                 }
-                $this->telegram->sendMessage($chatId, '👉 <b>CHỌN HỆ THỐNG TÀI KHOẢN</b>' . "\nChỉ lưu username; không gửi mật khẩu, OTP hoặc mã xác minh.", [
+                $this->telegram->sendMessage($chatId, '👉 <b>CHỌN HỆ THỐNG TÀI KHOẢN</b>' . "\nChỉ lưu username. ABCVIP sẽ mở cổng SSO chính thức nếu được cấu hình; không gửi mật khẩu, OTP hoặc mã xác minh.", [
                     'reply_markup' => $this->inlineMenu($rows),
                 ]);
                 return;
             case 'minigame-products':
-                $this->showProducts($chatId, ['minigame'], '🎮 KHO SẢN PHẨM MINI GAME');
+                $this->showProducts($chatId, ['minigame'], '🎮 KHO SẢN PHẨM MINI GAME', $userId);
                 return;
             case 'otp-products':
                 $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS');
                 return;
             case 'proxy-products':
             case 'proxy':
-                $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY');
+            case 'proxy-center':
+                $this->showProxyCenter($chatId, $userId);
+                return;
+            case 'proxy-products':
+                $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY', $userId);
+                return;
+            case 'proxy-free':
+                $this->showFreeProxyProducts($chatId, $userId);
+                return;
+            case 'proxy-rentals':
+                $this->showProxyRentals($chatId, $userId);
+                return;
+            case 'otp-history':
+            case 'otp-rentals':
+                $this->showOtpHistory($chatId, $userId);
                 return;
             case 'tools':
                 $this->showProducts($chatId, ['tools'], '🧰 THUÊ TOOL');
@@ -602,7 +635,10 @@ final class BotService
                 $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE');
                 return;
             case 'otp':
-                $this->showProducts($chatId, ['otp', 'proxy'], '⚙️ OTP & PROXY');
+                $this->showOtpCenter($chatId);
+                return;
+            case 'otp-catalog':
+                $this->showProducts($chatId, ['otp'], '📱 KHO DỊCH VỤ OTP', $userId);
                 return;
             case 'viptools':
                 $this->showProducts($chatId, ['vip'], '🏆 KHO VIP');
@@ -631,6 +667,18 @@ final class BotService
                 return;
             case 'customer':
                 $this->showCustomer($chatId, $userId);
+                return;
+            case 'linked-accounts':
+                $this->showLiveAccounts($chatId, $userId);
+                return;
+            case 'voucher72':
+                $this->startVoucherRequest($chatId, $userId);
+                return;
+            case 'live-auto-reorder':
+                $this->startLiveIssue($chatId, $userId, 'live_auto_reorder');
+                return;
+            case 'live-no-reward':
+                $this->startLiveIssue($chatId, $userId, 'live_win_no_reward');
                 return;
             case 'legacy-login':
                 $this->sendLegacyLoginLink($chatId, $userId);
@@ -688,85 +736,71 @@ final class BotService
 
     private function showLiveAccounts(string $chatId, string $userId): void
     {
-        $accounts = Database::all(
-            'SELECT id, brand, username, created_at FROM linked_accounts WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
-            [$userId]
-        );
-        $counts = Database::all(
-            'SELECT brand, COUNT(*) AS account_count FROM linked_accounts WHERE user_id = ? GROUP BY brand ORDER BY brand',
-            [$userId]
-        );
+        $accounts = Database::all('SELECT id, brand, username, created_at FROM linked_accounts WHERE user_id = ? ORDER BY created_at DESC LIMIT 30', [$userId]);
+        $counts = Database::all('SELECT brand, COUNT(*) AS account_count FROM linked_accounts WHERE user_id = ? GROUP BY brand ORDER BY brand', [$userId]);
         $countByBrand = array_fill_keys(self::BRANDS, 0);
         foreach ($counts as $count) {
-            $brand = (string) $count['brand'];
-            if (array_key_exists($brand, $countByBrand)) {
-                $countByBrand[$brand] = (int) $count['account_count'];
-            }
+            $brand = strtoupper((string) $count['brand']);
+            if (array_key_exists($brand, $countByBrand)) $countByBrand[$brand] = (int) $count['account_count'];
         }
-        $lines = ['🚀 <b>MINIGAME LIVE</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>THỐNG KÊ KHO TÀI KHOẢN</b>'];
-        foreach (self::BRANDS as $brand) {
-            $lines[] = '• Kho ' . self::escape($brand) . ': <b>' . $countByBrand[$brand] . '</b>';
-        }
-        $lines[] = '━━━━━━━━━━━━━━━━━━━━';
-        $lines[] = '<b>TÀI KHOẢN ĐÃ LIÊN KẾT</b>';
-        foreach ($accounts as $account) {
-            $lines[] = '• <b>' . self::escape($account['brand']) . '</b> — <code>' . self::escape($account['username']) . '</code>';
-        }
-        if ($accounts === []) {
-            $lines[] = 'Bạn chưa liên kết tài khoản nào.';
-        }
-        $rows = [[['text' => '＋ LIÊN KẾT TÀI KHOẢN', 'callback_data' => 'member:link-new']]];
-        foreach (array_chunk($accounts, 2) as $chunk) {
+        $lines = [
+            '🚀 <b>MINIGAME LIVE · KHO TÀI KHOẢN</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Chọn thương hiệu cần sử dụng hoặc liên kết. HENDY chỉ lưu username gắn với Telegram ID; không lưu mật khẩu/OTP.',
+            '',
+            '<b>THỐNG KÊ TÀI KHOẢN ĐÃ LIÊN KẾT</b>',
+        ];
+        foreach (self::BRANDS as $brand) if (($countByBrand[$brand] ?? 0) > 0) $lines[] = '• ' . self::escape($brand) . ': <b>' . $countByBrand[$brand] . '</b>';
+        $lines[] = 'Tổng tài khoản: <b>' . count($accounts) . '</b>';
+        foreach ($accounts as $account) $lines[] = '• <b>' . self::escape($account['brand']) . '</b> — <code>' . self::escape($account['username']) . '</code>';
+        if ($accounts === []) $lines[] = 'Bạn chưa liên kết tài khoản Mini Game nào.';
+
+        $rows = [];
+        foreach (array_chunk(self::BRANDS, 3) as $chunk) {
             $row = [];
-            foreach ($chunk as $account) {
-                $row[] = [
-                    'text' => 'Xóa #' . $account['id'],
-                    'callback_data' => 'member:link-delete:' . $account['id'],
-                ];
-            }
+            foreach ($chunk as $brand) $row[] = ['text' => $brand, 'callback_data' => 'member:select-brand:' . $brand];
             $rows[] = $row;
         }
-        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
-        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
-            'reply_markup' => $this->inlineMenu($rows),
-        ]);
+        $rows[] = [
+            ['text' => '⭐ AUTO ĐẶT LẠI', 'callback_data' => 'member:live-auto-reorder'],
+            ['text' => '🔥 TRÚNG KHÔNG PHÁT', 'callback_data' => 'member:live-no-reward'],
+        ];
+        foreach (array_chunk($accounts, 2) as $chunk) {
+            $row = [];
+            foreach ($chunk as $account) $row[] = ['text' => 'Xóa ' . $account['brand'] . ' #' . $account['id'], 'callback_data' => 'member:link-delete:' . $account['id']];
+            $rows[] = $row;
+        }
+        $rows[] = [['text' => '＋ LIÊN KẾT TÀI KHOẢN', 'callback_data' => 'member:link-new']];
+        $rows[] = [['text' => '🏠 TRỞ VỀ MENU CHÍNH', 'callback_data' => 'member:home']];
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
     }
 
-    private function showProducts(string $chatId, array $categories, string $title): void
+    private function showProducts(string $chatId, array $categories, string $title, ?string $userId = null): void
     {
         $placeholders = implode(',', array_fill(0, count($categories), '?'));
+        $memberVip = $userId !== null ? (int) (Database::value('SELECT vip_level FROM users WHERE user_id = ?', [$userId]) ?? 0) : 0;
         $products = Database::all(
-            "SELECT id, name, price, description, stock, duration_days FROM products " .
+            "SELECT id, name, price, description, stock, duration_days, vip_level FROM products " .
             "WHERE category IN ($placeholders) AND is_active = TRUE AND (stock IS NULL OR stock > 0) " .
-            'ORDER BY created_at DESC LIMIT 15',
+            'ORDER BY created_at DESC LIMIT 30',
             $categories
         );
-
-        $lines = [$title, '━━━━━━━━━━━━━━━━━━━━', 'Chọn sản phẩm để tạo đơn hàng:'];
+        $lines = [$title, '━━━━━━━━━━━━━━━━━━━━', 'Danh mục và giá được lấy từ kho sản phẩm PostgreSQL:'];
         $rows = [];
         foreach ($products as $product) {
+            if ((int) ($product['vip_level'] ?? 0) > $memberVip) continue;
             $stock = $product['stock'] === null ? 'Còn hàng' : 'Còn ' . number_format((int) $product['stock'], 0, ',', '.') . ' sản phẩm';
-            $label = self::truncate($product['name'] . ' · ' . self::money($product['price']) . ' · ' . $stock, 55);
-            $rows[] = [[
-                'text' => $label,
-                'callback_data' => 'member:order:' . $product['id'],
-            ]];
+            $rows[] = [['text' => self::truncate($product['name'] . ' · ' . self::money($product['price']) . ' · ' . $stock, 55), 'callback_data' => 'member:order:' . $product['id']]];
             $lines[] = '• <b>' . self::escape($product['name']) . '</b> — ' . self::money($product['price']);
             $lines[] = '  Kho: <b>' . self::escape($stock) . '</b>' .
-                ((int) ($product['duration_days'] ?? 0) > 0 ? ' · Thời hạn: ' . (int) $product['duration_days'] . ' ngày' : '');
-            if (trim((string) $product['description']) !== '') {
-                $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 140));
-            }
+                ((int) ($product['duration_days'] ?? 0) > 0 ? ' · Thời hạn: ' . (int) $product['duration_days'] . ' ngày' : '') .
+                ((int) ($product['vip_level'] ?? 0) > 0 ? ' · Yêu cầu VIP ' . (int) $product['vip_level'] : '');
+            if (trim((string) $product['description']) !== '') $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 140));
         }
-
-        if ($products === []) {
-            $lines[] = 'Hiện chưa có sản phẩm được Admin đăng bán.';
-        }
+        if ($rows === []) $lines[] = 'Hiện chưa có sản phẩm phù hợp hoặc tài khoản chưa đủ cấp VIP. Admin có thể quản lý kho sản phẩm.';
         $rows[] = [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']];
         $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
-        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
-            'reply_markup' => $this->inlineMenu($rows),
-        ]);
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
     }
 
     private function createOrder(string $chatId, string $userId, string $productId): void
@@ -779,12 +813,15 @@ final class BotService
             if ($product['stock'] !== null && (int) $product['stock'] <= 0) {
                 throw new RuntimeException('Sản phẩm đã hết hàng.');
             }
-            $user = Database::one('SELECT balance FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+            $user = Database::one('SELECT balance, vip_level FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
             if ($user === null) {
                 throw new RuntimeException('Không tìm thấy hồ sơ thành viên. Hãy gửi /start trước.');
             }
+            if ((int) ($product['vip_level'] ?? 0) > (int) ($user['vip_level'] ?? 0)) {
+                throw new RuntimeException('Sản phẩm yêu cầu VIP ' . (int) $product['vip_level'] . '. Hãy nâng cấp hạng thành viên trước.');
+            }
             $price = (int) $product['price'];
-            if ((int) $user['balance'] < $price) {
+            if ((int) $user['balance'] < $price)
                 throw new RuntimeException('Số dư không đủ. Hãy chọn NẠP TIỀN trước khi mua.');
             }
 
@@ -850,33 +887,41 @@ final class BotService
     private function showCustomer(string $chatId, string $userId): void
     {
         $user = $this->getUser($userId);
-        $miniAppUrl = $this->webAppUrl('customer');
-        if ($miniAppUrl === '') {
-            $miniAppUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/') . '/';
-        }
-        $rows = [];
-        if (self::isHttpsUrl($miniAppUrl)) {
-            $rows[] = [['text' => '📱 MỞ MINI APP (KHUYẾN NGHỊ)', 'web_app' => ['url' => $miniAppUrl]]];
-        } else {
-            $rows[] = [['text' => '📱 MỞ MINI APP (KHUYẾN NGHỊ)', 'url' => 'https://hendy-bot-tele.onrender.com/']];
-        }
-        $rows[] = [['text' => '🔑 ĐĂNG NHẬP TRUYỀN THỐNG', 'callback_data' => 'member:legacy-login']];
-        $this->telegram->sendMessage($chatId, implode("\n", [
-            '🔐 <b>TRUNG TÂM QUẢN LÝ TÀI KHOẢN</b>',
+        $stats = Database::one(
+            "SELECT COUNT(*) AS total_orders,
+                    COUNT(*) FILTER (WHERE status = 'processing') AS processing_orders,
+                    COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
+                    COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_orders
+             FROM orders WHERE user_id = ?",
+            [$userId]
+        ) ?? [];
+        $ticketCount = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
+        $linkedCount = (int) Database::value('SELECT COUNT(*) FROM linked_accounts WHERE user_id = ?', [$userId]);
+        $this->telegram->sendMessage($chatId, implode("\\n", [
+            '💎 <b>TRUNG TÂM KHÁCH HÀNG HENDY</b>',
             '━━━━━━━━━━━━━━━━━━━━',
-            '👤 Thành viên: <b>' . self::escape((string) ($user['name'] ?: 'Thành viên')) . '</b>',
+            '👤 Thành viên: <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
             '💰 Ví chính: <b>' . self::money($user['balance'] ?? 0) . '</b>',
-            '👑 Cấp thành viên: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '<b>Chọn một trong hai cách truy cập bên dưới:</b>',
-            '📱 <b>Mini App:</b> Trải nghiệm mới, mượt mà hơn (khuyến nghị).',
-            '🔑 <b>Đăng nhập truyền thống:</b> Link dùng một lần, có hiệu lực 5 phút.',
+            '🪙 Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>',
+            '🎟 Ví Voucher: <b>' . self::money($user['voucher_wallet'] ?? 0) . '</b>',
+            '💳 Tổng nạp: <b>' . self::money($user['total_deposited'] ?? 0) . '</b>',
+            '👑 Trạng thái: <b>' . ((int) ($user['vip_level'] ?? 0) > 0 ? 'VIP ' . (int) $user['vip_level'] : 'Bình thường') . '</b>',
+            '🔗 Tài khoản Mini Game đã liên kết: <b>' . $linkedCount . '</b>',
+            '🧾 Đơn hàng: <b>' . (int) ($stats['total_orders'] ?? 0) . '</b> · Đang xử lý: <b>' . (int) ($stats['processing_orders'] ?? 0) . '</b>',
+            '✅ Hoàn tất: <b>' . (int) ($stats['completed_orders'] ?? 0) . '</b> · Đã hủy: <b>' . (int) ($stats['cancelled_orders'] ?? 0) . '</b>',
+            '🎧 Ticket CSKH: <b>' . $ticketCount . '</b>',
             '',
-            'Không chia sẻ link đăng nhập cho người khác. Link sẽ hết hạn hoặc bị vô hiệu ngay sau lần sử dụng đầu tiên.',
+            'Toàn bộ thao tác khách hàng được thực hiện trực tiếp bằng menu Telegram; không cần Mini App.',
         ]), [
-            'reply_markup' => $this->inlineMenu($rows),
-            'disable_web_page_preview' => true,
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '💳 LỊCH SỬ GIAO DỊCH / NẠP TIỀN', 'callback_data' => 'member:history']],
+                [['text' => '🚀 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT', 'callback_data' => 'member:linked-accounts']],
+                [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']],
+                [['text' => '🎟️ YÊU CẦU VOUCHER 72H', 'callback_data' => 'member:voucher72']],
+                [['text' => '🎧 TICKET HỖ TRỢ CSKH', 'callback_data' => 'member:support']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
         ]);
     }
 
@@ -937,41 +982,144 @@ final class BotService
         ]);
     }
 
-    private function showBalance(string $chatId, string $userId): void
+    private function startLiveIssue(string $chatId, string $userId, string $issueType): void
     {
-        $user = $this->getUser($userId);
-        $this->telegram->sendMessage($chatId, '💰 <b>SỐ DƯ VÍ HENDY</b>' . "\n" .
-            'Số dư hiện tại: <b>' . self::money($user['balance'] ?? 0) . '</b>', [
-            'reply_markup' => $this->inlineMenu([
-                [['text' => '＋ NẠP TIỀN', 'callback_data' => 'member:wallet']],
-                [['text' => '📜 LỊCH SỬ', 'callback_data' => 'member:history']],
-            ]),
-        ]);
+        $title = $issueType === 'live_auto_reorder' ? 'AUTO ĐẶT LẠI' : 'TRÚNG KHÔNG PHÁT';
+        $this->setPending($userId, 'live_order_issue', ['ticket_type' => $issueType]);
+        $this->telegram->sendMessage($chatId, '🆘 <b>YÊU CẦU ' . self::escape($title) . '</b>' . "\\n" .
+            'Gửi mã đơn Mini Game để CSKH kiểm tra. Yêu cầu sẽ được Admin xem xét; bot không tự tạo đơn mới hoặc tự cộng tiền.');
     }
 
-    private function showWalletMenu(string $chatId, string $userId): void
+    private function startVoucherRequest(string $chatId, string $userId): void
     {
-        $user = $this->getUser($userId);
-        $this->telegram->sendMessage($chatId, '💳 <b>NẠP TIỀN VÀO VÍ</b>' . "\n" .
-            'Số dư hiện tại: <b>' . self::money($user['balance'] ?? 0) . '</b>' . "\n" .
-            'Chọn nhanh số tiền hoặc nhập số tiền khác. Sau khi chuyển khoản, Admin sẽ kiểm tra sao kê và duyệt thủ công.', [
+        $orders = VoucherService::eligibleOrders($userId, 20);
+        if ($orders === []) {
+            $this->telegram->sendMessage($chatId, '🎟️ Hiện chưa có đơn nào đủ điều kiện Voucher 72H. Điều kiện: đơn đang chờ/đang xử lý và đã quá 72 giờ.');
+            return;
+        }
+        $lines = ['🎟️ <b>YÊU CẦU VOUCHER 72H</b>', 'Gửi mã đơn đủ điều kiện trong danh sách dưới đây:', ''];
+        foreach ($orders as $order) $lines[] = '• <code>' . self::escape($order['order_code']) . '</code> · ' . self::escape($order['product_name']) . ' · ' . self::money($order['amount']);
+        $this->setPending($userId, 'voucher_order');
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines) . "\\n\\nYêu cầu cần Admin duyệt; chỉ cộng Ví Voucher sau khi được chấp thuận.");
+    }
+
+    private function showOtpCenter(string $chatId): void
+    {
+        $this->telegram->sendMessage($chatId, '⚙️ <b>OTP & PROXY CENTER</b>' . "\\nChọn dịch vụ. Sản phẩm/giá lấy từ kho PostgreSQL; kết nối nhà cung cấp OTP cần cấu hình riêng.", [
             'reply_markup' => $this->inlineMenu([
-                [
-                    ['text' => '10.000đ', 'callback_data' => 'member:deposit:10000'],
-                    ['text' => '20.000đ', 'callback_data' => 'member:deposit:20000'],
-                ],
-                [
-                    ['text' => '50.000đ', 'callback_data' => 'member:deposit:50000'],
-                    ['text' => '100.000đ', 'callback_data' => 'member:deposit:100000'],
-                ],
-                [['text' => '✏️ NHẬP SỐ TIỀN KHÁC', 'callback_data' => 'member:deposit:custom']],
-                [['text' => '📜 LỊCH SỬ NẠP', 'callback_data' => 'member:deposit-history']],
+                [['text' => '📱 THUÊ OTP SMS', 'callback_data' => 'member:otp-catalog']],
+                [['text' => '🌐 PROXY CENTER', 'callback_data' => 'member:proxy-center']],
+                [['text' => '📜 LỊCH SỬ OTP', 'callback_data' => 'member:otp-history']],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
     }
 
-    private function startVideoRequest(string $chatId, string $userId): void
+    private function showProxyCenter(string $chatId, string $userId): void
+    {
+        $stats = Database::one(
+            "SELECT COUNT(*) FILTER (WHERE o.status = 'completed' AND (COALESCE(p.duration_days, 0) = 0 OR o.created_at + (COALESCE(p.duration_days, 0) * INTERVAL '1 day') > NOW())) AS active_count,
+                    COUNT(*) FILTER (WHERE o.status = 'completed' AND p.duration_days > 0 AND o.created_at + (p.duration_days * INTERVAL '1 day') <= NOW()) AS expired_count,
+                    COUNT(*) AS total_count
+             FROM orders o LEFT JOIN products p ON p.id = o.product_id
+             WHERE o.user_id = ? AND o.category = 'proxy'",
+            [$userId]
+        ) ?? [];
+        $user = $this->getUser($userId);
+        $this->telegram->sendMessage($chatId, implode("\\n", [
+            '🌐 <b>PROXY CENTER HENDY</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '👤 Thành viên: <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>',
+            '🪙 Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>',
+            '📦 Tổng đơn Proxy: <b>' . (int) ($stats['total_count'] ?? 0) . '</b>',
+            '🟢 Proxy còn hạn/không kỳ hạn: <b>' . (int) ($stats['active_count'] ?? 0) . '</b>',
+            '🔴 Proxy hết hạn: <b>' . (int) ($stats['expired_count'] ?? 0) . '</b>',
+            '',
+            'Proxy Free chỉ hiển thị khi kho có sản phẩm miễn phí và tài khoản đạt cấp VIP yêu cầu.',
+        ]), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '🎁 PROXY FREE (VIP 1+)', 'callback_data' => 'member:proxy-free']],
+                [['text' => '🔄 THUÊ PROXY XOAY / TĨNH', 'callback_data' => 'member:proxy-products']],
+                [['text' => '📦 KHO PROXY ĐÃ THUÊ', 'callback_data' => 'member:proxy-rentals']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function showFreeProxyProducts(string $chatId, string $userId): void
+    {
+        $vip = (int) ($this->getUser($userId)['vip_level'] ?? 0);
+        if ($vip < 1) {
+            $this->telegram->sendMessage($chatId, '🔒 Proxy Free yêu cầu từ VIP 1. Hãy xem Trung tâm VIP để biết mốc nâng hạng.');
+            return;
+        }
+        $products = Database::all(
+            "SELECT id, name, description, stock, duration_days, vip_level FROM products
+             WHERE category = 'proxy' AND price = 0 AND vip_level BETWEEN 1 AND ?
+               AND is_active = TRUE AND (stock IS NULL OR stock > 0)
+             ORDER BY created_at DESC LIMIT 20",
+            [$vip]
+        );
+        $rows = [];
+        $lines = ['🎁 <b>KHO PROXY FREE · VIP 1+</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        foreach ($products as $product) {
+            $rows[] = [['text' => self::truncate($product['name'] . ' · NHẬN MIỄN PHÍ', 55), 'callback_data' => 'member:order:' . $product['id']]];
+            $lines[] = '• <b>' . self::escape($product['name']) . '</b> · VIP ' . (int) $product['vip_level'];
+            if (trim((string) $product['description']) !== '') $lines[] = '  ' . self::escape($product['description']);
+        }
+        if ($products === []) $lines[] = 'Kho chưa có sản phẩm Proxy Free đang mở bán. Vui lòng quay lại sau.';
+        $rows[] = [['text' => '🔙 PROXY CENTER', 'callback_data' => 'member:proxy-center']];
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
+    }
+
+    private function showProxyRentals(string $chatId, string $userId): void
+    {
+        $orders = Database::all(
+            "SELECT o.order_code, o.product_name, o.amount, o.status, o.delivery_text, o.created_at,
+                    COALESCE(p.duration_days, 0) AS duration_days
+             FROM orders o LEFT JOIN products p ON p.id = o.product_id
+             WHERE o.user_id = ? AND o.category = 'proxy' ORDER BY o.created_at DESC LIMIT 20",
+            [$userId]
+        );
+        $lines = ['📦 <b>KHO PROXY ĐÃ THUÊ</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        foreach ($orders as $order) {
+            $lines[] = '• <b>' . self::escape($order['product_name']) . '</b> · <code>' . self::escape($order['order_code']) . '</code>';
+            $lines[] = '  ' . self::money($order['amount']) . ' · ' . self::escape(self::statusLabel((string) $order['status']));
+            if ((int) $order['duration_days'] > 0) {
+                $expires = (new \\DateTimeImmutable((string) $order['created_at']))->modify('+' . (int) $order['duration_days'] . ' days');
+                $lines[] = '  Hạn dự kiến: ' . $expires->setTimezone(new \\DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y H:i');
+            }
+            if ($order['status'] === 'completed' && trim((string) $order['delivery_text']) !== '') {
+                $lines[] = '  Thông tin bàn giao: <code>' . self::escape(self::truncate((string) $order['delivery_text'], 240)) . '</code>';
+            }
+        }
+        if ($orders === []) $lines[] = 'Bạn chưa có đơn Proxy.';
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), ['reply_markup' => $this->inlineMenu([
+            [['text' => '🌐 THUÊ THÊM PROXY', 'callback_data' => 'member:proxy-products']],
+            [['text' => '🔙 PROXY CENTER', 'callback_data' => 'member:proxy-center']],
+        ])]);
+    }
+
+    private function showOtpHistory(string $chatId, string $userId): void
+    {
+        $orders = Database::all(
+            "SELECT order_code, product_name, amount, status, created_at FROM orders
+             WHERE user_id = ? AND category = 'otp' ORDER BY created_at DESC LIMIT 20",
+            [$userId]
+        );
+        $lines = ['📱 <b>LỊCH SỬ DỊCH VỤ OTP</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        foreach ($orders as $order) {
+            $lines[] = '• <code>' . self::escape($order['order_code']) . '</code> · ' . self::escape($order['product_name']);
+            $lines[] = '  ' . self::money($order['amount']) . ' · ' . self::escape(self::statusLabel((string) $order['status']));
+        }
+        if ($orders === []) $lines[] = 'Bạn chưa có yêu cầu OTP.';
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), ['reply_markup' => $this->inlineMenu([
+            [['text' => '📱 MỞ KHO OTP', 'callback_data' => 'member:otp-catalog']],
+            [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+        ])]);
+    }
+
+    private function showBalance(    private function startVideoRequest(string $chatId, string $userId): void
     {
         $this->setPending($userId, 'video_url');
         $this->telegram->sendMessage($chatId,
