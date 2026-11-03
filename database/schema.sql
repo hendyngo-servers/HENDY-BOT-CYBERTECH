@@ -388,10 +388,13 @@ CREATE INDEX IF NOT EXISTS idx_realtime_events_created ON realtime_events(create
 CREATE TABLE IF NOT EXISTS realtime_tickets (
     ticket_hash CHAR(64) PRIMARY KEY,
     admin_user_id TEXT NOT NULL,
+    audience TEXT NOT NULL DEFAULT 'admin' CHECK (audience IN ('admin','users')),
     expires_at TIMESTAMPTZ NOT NULL,
     consumed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE realtime_tickets ADD COLUMN IF NOT EXISTS audience TEXT NOT NULL DEFAULT 'admin'
+    CHECK (audience IN ('admin','users'));
 CREATE INDEX IF NOT EXISTS idx_realtime_tickets_expiry ON realtime_tickets(expires_at);
 CREATE TABLE IF NOT EXISTS module_artifacts (
     id BIGSERIAL PRIMARY KEY,
