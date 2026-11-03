@@ -927,7 +927,7 @@ final class BotService
             '✅ Hoàn tất: <b>' . (int) ($stats['completed_orders'] ?? 0) . '</b> · Đã hủy: <b>' . (int) ($stats['cancelled_orders'] ?? 0) . '</b>',
             '🎧 Ticket CSKH: <b>' . $ticketCount . '</b>',
             '',
-            'Toàn bộ thao tác khách hàng được thực hiện trực tiếp bằng menu Telegram; không cần Mini App.',
+            'Bạn có thể thao tác ngay trong Telegram hoặc mở Website HENDY để xem hồ sơ, lịch sử đơn hàng, giao dịch, ticket và Voucher 72H.',
         ]), [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '💳 LỊCH SỬ GIAO DỊCH / NẠP TIỀN', 'callback_data' => 'member:deposit-history']],
