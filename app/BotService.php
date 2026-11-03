@@ -126,6 +126,10 @@ final class BotService
 
         if (preg_match('/^\/start(?:@\w+)?(?:\s+(.+))?$/u', $text, $matches)) {
             $payload = trim((string) ($matches[1] ?? ''));
+            if ($payload === 'web_login') {
+                $this->sendLegacyLoginLink($chatId, $userId);
+                return;
+            }
             $referrer = preg_match('/^ref_(\d{5,20})$/', $payload, $refMatch) ? $refMatch[1] : null;
             if ($referrer === $userId) {
                 $referrer = null;
@@ -1992,7 +1996,7 @@ final class BotService
     {
         $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         if (!str_starts_with($base, 'https://')) return '';
-        return $base . '/mini-app?bot=' . rawurlencode($this->botKey);
+        return $base . '/?bot=' . rawurlencode($this->botKey);
     }
 
     private function webAppUrl(string $section): string
