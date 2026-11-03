@@ -327,6 +327,70 @@ final class BotService
             && !empty($parts['host']);
     }
 
+    private function sendHome(string $chatId, array $from): void
+    {
+        $userId = (string) ($from['id'] ?? '');
+        $firstName = trim((string) ($from['first_name'] ?? ''));
+        $lastName = trim((string) ($from['last_name'] ?? ''));
+        $username = trim((string) ($from['username'] ?? ''));
+        $displayName = trim($firstName . ' ' . $lastName);
+        $user = $this->getUser($userId, $displayName, $username);
+        $config = $this->menuConfig();
+        $items = $this->menuItems($config, $userId);
+
+        $settings = $this->settings(['website_url', 'GROUP_URL']);
+        $websiteUrl = trim((string) ($settings['website_url'] ?? 'https://hendy-bot-tele.onrender.com'));
+        if (!self::isHttpsUrl($websiteUrl)) $websiteUrl = 'https://hendy-bot-tele.onrender.com';
+        $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/Hendy_Support_Group')));
+        if (!self::isHttpsUrl($groupUrl)) $groupUrl = 'https://t.me/Hendy_Support_Group';
+
+        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
+        $greeting = match (true) {
+            $hour >= 5 && $hour < 11 => 'buổi sáng',
+            $hour >= 11 && $hour < 13 => 'buổi trưa',
+            $hour >= 13 && $hour < 18 => 'buổi chiều',
+            $hour >= 18 && $hour < 22 => 'buổi tối',
+            default => 'buổi đêm',
+        };
+        $name = $firstName !== '' ? $firstName : ($username !== '' ? '@' . $username : 'bạn');
+        $botLabel = $this->botKey === 'secondary' ? 'HENDY BOT 2' : 'HENDY BOT 1';
+        $vipLevel = (int) ($user['vip_level'] ?? 0);
+        $intro = trim((string) ($config['intro_text'] ?? ''));
+
+        $lines = [
+            '💠 <b>⩤ HENDY DIGITAL ECOSYSTEM ⩥</b>',
+            '✨ <i>Công nghệ kết nối giá trị thật</i>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '👋 Chúc ' . $greeting . ' vui vẻ, <b>' . self::escape($name) . '</b>!',
+            '🤖 <b>' . $botLabel . '</b> · Luồng dịch vụ riêng',
+            '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '💰 Ví Chính: <b>' . self::money($user['balance'] ?? 0) . '</b>',
+            '🪙 Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>',
+            '🎟️ Ví Voucher: <b>' . self::money($user['voucher_wallet'] ?? 0) . '</b>',
+            '📈 Tổng nạp: <b>' . self::money($user['total_deposited'] ?? 0) . '</b>',
+            '👑 Thành viên: <b>' . ($vipLevel > 0 ? 'VIP ' . $vipLevel : 'HENDY MEMBER') . '</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '🚀 <b>CHỌN DỊCH VỤ CỦA BẠN</b>',
+            'Mini Game Live · Tool · Code · OTP · Proxy · Vietsub · VIP · CSKH.',
+        ];
+        if ($intro !== '') $lines[] = self::escape($intro);
+        $links = ['<a href="' . self::escape($websiteUrl) . '">🌐 Website HENDY</a>'];
+        if (self::isHttpsUrl($groupUrl)) $links[] = '<a href="' . self::escape($groupUrl) . '">💬 Nhóm hỗ trợ</a>';
+        $botUsername = trim(ltrim((string) Env::get(
+            $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME',
+            $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot'
+        ), '@'));
+        if (preg_match('/^[A-Za-z0-9_]{5,32}$/', $botUsername)) {
+            $links[] = '<a href="https://t.me/' . self::escape($botUsername) . '">🤖 @' . self::escape($botUsername) . '</a>';
+        }
+        $lines[] = implode(' · ', $links);
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->menuMarkup($items, $config),
+        ]);
+    }
+
     private function menuConfig(): array
     {
         $row = Database::one('SELECT * FROM bot_menu_configs WHERE bot_key = ?', [$this->botKey]);
