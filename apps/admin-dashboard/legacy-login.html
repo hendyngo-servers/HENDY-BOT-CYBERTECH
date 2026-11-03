@@ -44,7 +44,7 @@
     profile.textContent='Xin chào '+(result.user?.name||result.user?.username||'thành viên')+' · Telegram ID: '+(result.user?.id||'');
     state.appendChild(profile);
     const bot = result.botKey === 'secondary' ? 'secondary' : 'primary';
-    window.setTimeout(()=>{ window.location.replace('/?bot='+bot); },700);
+    window.setTimeout(()=>{ window.location.replace('/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot='+bot+'&view=customer'); },700);
   }catch(error){
     state.textContent=error.message||'Không thể xác minh phiên đăng nhập. Hãy tạo link mới từ bot.';
   }
