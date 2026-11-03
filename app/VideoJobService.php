@@ -172,8 +172,30 @@ final class VideoJobService
         });
     }
 
+    /**
+     * Recover jobs left in processing after a worker/container restart.
+     * The provider must treat jobId as an idempotency key: a retry reuses
+     * the same UUID. Attempts are bounded to prevent infinite redispatch.
+     */
+    public static function recoverStale(?int $staleMinutes = null): array
+    {
+        $minutes = max(15, min(360, $staleMinutes ?? Env::int('VIDEO_PROCESSING_STALE_MINUTES', 90)));
+        $failed = Database::run(
+            "UPDATE video_jobs SET status = 'failed', error_message = 'Worker timeout after maximum dispatch attempts.', completed_at = NOW(), updated_at = NOW() " .
+            "WHERE status = 'processing' AND claimed_at < NOW() - (INTERVAL '1 minute' * ?) AND attempts >= 3 RETURNING id",
+            [$minutes]
+        );
+        $requeued = Database::run(
+            "UPDATE video_jobs SET status = 'queued', progress = 0, claimed_at = NULL, updated_at = NOW() " .
+            "WHERE status = 'processing' AND claimed_at < NOW() - (INTERVAL '1 minute' * ?) AND attempts < 3 RETURNING id",
+            [$minutes]
+        );
+        return ['failed' => $failed->rowCount(), 'requeued' => $requeued->rowCount(), 'staleMinutes' => $minutes];
+    }
+
     public static function dispatchOne(): ?array
     {
+        self::recoverStale();
         $processorUrl = trim((string) Env::get('VIDEO_PROCESSOR_URL', ''));
         $processorSecret = (string) Env::get('VIDEO_PROCESSOR_SECRET', '');
         if ($processorUrl === '' || $processorSecret === '') {
