@@ -786,8 +786,9 @@
           '<div class="two-col"><label class="small"><input type="checkbox" name="persistentKeyboard" ' + (menu.persistentKeyboard ? 'checked' : '') + '> Giữ Reply Keyboard luôn hiển thị</label>' +
           '<label class="small"><input type="checkbox" name="resizeKeyboard" ' + (menu.resizeKeyboard ? 'checked' : '') + '> Tự co chiều cao bàn phím</label></div>' +
           '<div class="field"><label>JSON tên nút theo action</label><textarea name="buttonLabels" rows="5" spellcheck="false">' + json(menu.buttonLabels) + '</textarea><div class="json-help">Ví dụ: {"live":"🚀 MINI GAME","wallet":"💳 NẠP TIỀN"}.</div></div>' +
-          '<div class="field"><label>JSON mô tả chức năng từng nút</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Các mô tả xuất hiện trong phần giới thiệu menu. Action hợp lệ: live, tools, codes, wallet, vietsub, history, jobs, otp, viptools, customer, abcvip, duel, ref, vip, group, news, gift, support, admin.</div></div>' +
+          '<div class="field"><label>JSON mô tả chức năng từng nút</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Các mô tả xuất hiện trong phần giới thiệu menu. Action hợp lệ: live, tools, codes, wallet, otp, viptools, customer, miniapp, vietsub, history, jobs, ref, vip, group, news, gift, support, admin.</div></div>' +
           '<div class="field"><label>JSON màu cho từng nút</label><textarea name="buttonStyles" rows="5" spellcheck="false">' + json(menu.buttonStyles) + '</textarea><div class="json-help">Chỉ dùng primary (xanh dương), success (xanh lá), danger (đỏ). Ví dụ: {"live":"primary","wallet":"success","gift":"success","support":"danger"}.</div></div>' +
+          '<div class="field"><label>JSON Custom Emoji ID (tùy chọn)</label><textarea name="buttonIcons" rows="4" spellcheck="false">' + json(menu.buttonIcons) + '</textarea><div class="json-help">Nhập ID custom emoji dạng số theo action (ví dụ {"live":"5368324170671202286"}). ID phải thuộc emoji mà bot được phép dùng. Telegram keyboard hỗ trợ custom emoji, nhưng hiệu ứng CSS/7 màu đầy đủ chỉ hiển thị trong Mini App.</div></div>' +
           '<button class="primary">Lưu cấu hình ' + (menu.botKey === 'primary' ? 'Bot chính' : 'Bot thứ hai') + '</button>' +
           '</form>';
       }).join('') +
@@ -1167,7 +1168,8 @@
           resizeKeyboard:form.elements.resizeKeyboard.checked,
           buttonLabels:parseJson(data.buttonLabels,'Tên nút'),
           buttonDescriptions:parseJson(data.buttonDescriptions,'Mô tả nút'),
-          buttonStyles:parseJson(data.buttonStyles,'Màu nút')
+          buttonStyles:parseJson(data.buttonStyles,'Màu nút'),
+          buttonIcons:parseJson(data.buttonIcons,'Custom Emoji ID')
         };
         await api('/api/admin/bot-menus/' + form.dataset.botKey,'PATCH',payload);
         toast('Đã lưu cấu hình menu cho ' + form.dataset.botKey + '.');
