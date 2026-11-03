@@ -1148,7 +1148,7 @@ final class ApiController
         ], JSON_UNESCAPED_UNICODE));
         $unsigned = $header . '.' . $payload;
         $signature = self::base64Url(hash_hmac('sha256', $unsigned, $secret, true));
-        return self::response(['token' => $unsigned . '.' . $signature, 'tokenType' => 'Bearer', 'expiresInSeconds' => 300]);
+        return self::response(['token' => $unsigned . '.' . $signature, 'tokenType' => 'Bearer', 'expiresInSeconds' => 300, 'user' => ['id' => (string) $identity['user']['user_id'], 'name' => (string) $identity['user']['name'], 'username' => (string) $identity['user']['username'], 'vipLevel' => (int) $identity['user']['vip_level'], 'balance' => (int) $identity['user']['balance']]]);
     }
 
     private function userRow(): array
