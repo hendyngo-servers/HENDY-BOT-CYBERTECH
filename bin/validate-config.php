@@ -94,6 +94,26 @@ if ($autoWebhook) {
     }
 }
 
+$videoProcessorUrl = trim((string) Hendy\Env::get('VIDEO_PROCESSOR_URL', ''));
+$videoProcessorSecret = (string) Hendy\Env::get('VIDEO_PROCESSOR_SECRET', '');
+if (($videoProcessorUrl === '') !== ($videoProcessorSecret === '')) {
+    $errors[] = 'VIDEO_PROCESSOR_URL và VIDEO_PROCESSOR_SECRET phải được cấu hình cùng nhau hoặc để trống cả hai.';
+}
+if ($videoProcessorUrl !== '') {
+    $processorParts = parse_url($videoProcessorUrl);
+    if (!is_array($processorParts) || strtolower((string) ($processorParts['scheme'] ?? '')) !== 'https' || empty($processorParts['host'])) {
+        $errors[] = 'VIDEO_PROCESSOR_URL phải là URL HTTPS hợp lệ.';
+    }
+    if (strlen($videoProcessorSecret) < 32) {
+        $errors[] = 'VIDEO_PROCESSOR_SECRET phải có ít nhất 32 ký tự.';
+    }
+    $callbackBase = trim((string) (Hendy\Env::get('APP_URL') ?: Hendy\Env::get('RENDER_EXTERNAL_URL', '')));
+    $callbackParts = $callbackBase !== '' ? parse_url($callbackBase) : false;
+    if (!is_array($callbackParts) || strtolower((string) ($callbackParts['scheme'] ?? '')) !== 'https' || empty($callbackParts['host'])) {
+        $errors[] = 'Cần APP_URL HTTPS hợp lệ để nhận callback video.';
+    }
+}
+
 // The bank callback remains disabled until a provider-specific signature
 // adapter is installed and verified. A shared secret by itself is not enough
 // to enable real-money deposits.
