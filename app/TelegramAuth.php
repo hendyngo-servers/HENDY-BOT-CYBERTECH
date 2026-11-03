@@ -85,25 +85,85 @@ final class TelegramAuth
         return $user;
     }
 
+    private static function decodeWebsiteSession(string $token, string $requestedBotKey): array
+    {
+        $secret = (string) Env::get('LEGACY_SESSION_SECRET', '');
+        if (strlen($secret) < 32 || strlen($token) > 4096) {
+            throw new RuntimeException('Phiên website chưa được cấu hình hoặc không hợp lệ.');
+        }
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            throw new RuntimeException('Phiên website không hợp lệ.');
+        }
+        [$headerPart, $payloadPart, $signaturePart] = $parts;
+        $decode = static function (string $value): string|false {
+            if (!preg_match('/^[A-Za-z0-9_-]+$/', $value)) return false;
+            return base64_decode(strtr($value, '-_', '+/') . str_repeat('=', (4 - strlen($value) % 4) % 4), true);
+        };
+        $headerJson = $decode($headerPart);
+        $payloadJson = $decode($payloadPart);
+        $signature = $decode($signaturePart);
+        if ($headerJson === false || $payloadJson === false || $signature === false) {
+            throw new RuntimeException('Chữ ký phiên website không hợp lệ.');
+        }
+        $header = json_decode($headerJson, true);
+        $payload = json_decode($payloadJson, true);
+        if (!is_array($header) || !is_array($payload) || ($header['alg'] ?? '') !== 'HS256'
+            || ($payload['aud'] ?? '') !== 'hendy-legacy-account') {
+            throw new RuntimeException('Định dạng phiên website không hợp lệ.');
+        }
+        $expected = hash_hmac('sha256', $headerPart . '.' . $payloadPart, $secret, true);
+        if (!hash_equals($expected, $signature)) {
+            throw new RuntimeException('Chữ ký phiên website không hợp lệ.');
+        }
+        $userId = (string) ($payload['sub'] ?? '');
+        $botKey = (string) ($payload['bot'] ?? '');
+        $expires = (int) ($payload['exp'] ?? 0);
+        if (!preg_match('/^[0-9]{5,20}$/', $userId) || !in_array($botKey, ['primary', 'secondary'], true)
+            || $expires <= time() || $expires > time() + 43260 || $botKey !== $requestedBotKey) {
+            throw new RuntimeException('Phiên website đã hết hạn hoặc không đúng bot.');
+        }
+        $member = Database::one('SELECT user_id, name, username FROM users WHERE user_id = ?', [$userId]);
+        if ($member === null) {
+            throw new RuntimeException('Không tìm thấy hồ sơ thành viên.');
+        }
+        return [
+            'id' => (string) $member['user_id'],
+            'first_name' => (string) ($member['name'] ?? ''),
+            'username' => (string) ($member['username'] ?? ''),
+            '_bot_key' => $botKey,
+            '_is_admin' => self::isAdmin($userId),
+        ];
+    }
+
     public static function authenticateRequest(): array
     {
+        $authorization = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+        $cookieSession = trim((string) ($_COOKIE['hendy_web_session'] ?? ''));
+
+        if ($cookieSession !== '' && !str_starts_with($authorization, 'tma ')) {
+            $requestedBotKey = trim((string) ($_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] ?? 'primary'));
+            if (!in_array($requestedBotKey, ['primary', 'secondary'], true)) {
+                throw new RuntimeException('Bot Key không hợp lệ.');
+            }
+            return self::decodeWebsiteSession($cookieSession, $requestedBotKey);
+        }
+
         $requestedBotKey = trim((string) ($_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] ?? 'primary'));
         if (!in_array($requestedBotKey, ['primary', 'secondary'], true)) {
             throw new RuntimeException('Bot Key không hợp lệ.');
         }
-        $botKey = $requestedBotKey;
-        $authorization = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
         $initData = str_starts_with($authorization, 'tma ')
             ? substr($authorization, 4)
             : (string) ($_SERVER['HTTP_X_TELEGRAM_INIT_DATA'] ?? '');
 
-        $token = self::token($botKey);
+        $token = self::token($requestedBotKey);
         if ($token === '') {
             throw new RuntimeException('Bot được yêu cầu chưa được cấu hình.');
         }
 
         $user = self::validateInitData($initData, $token);
-        $user['_bot_key'] = $botKey;
+        $user['_bot_key'] = $requestedBotKey;
         $user['_is_admin'] = self::isAdmin((string) ($user['id'] ?? ''));
         return $user;
     }
