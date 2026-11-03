@@ -5,7 +5,7 @@ FROM php:8.3-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq-dev libonig-dev libcurl4-openssl-dev unzip \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql mbstring curl \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers proxy proxy_http proxy_wstunnel \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/app
