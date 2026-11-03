@@ -515,11 +515,18 @@ final class ApiController
         if ($method === 'GET' && $path === '/api/admin/modules') {
             return self::response(['artifacts' => Database::all('SELECT id, module_key, original_name, mime_type, sha256, status, created_at FROM module_artifacts ORDER BY created_at DESC LIMIT 100')]);
         }
-        if ($method === 'POST' && $path === '/api/admin/realtime-ticket') {
-            $ticket = Realtime::issueAdminTicket((string) $this->user['id']);
+        if ($method === 'POST' && $path === '/api/realtime-ticket') {
+            $audience = $this->isAdmin() ? 'admin' : 'users';
+            $ticket = Realtime::issueTicket($userId, $audience);
             $url = trim((string) Env::get('WEBSOCKET_URL', ''));
             if ($url === '' || !preg_match('#^wss://#i', $url)) throw new HttpException(503, 'WebSocket WSS chưa được cấu hình.');
-            return self::response(['ticket' => $ticket, 'url' => $url, 'expiresInSeconds' => 60]);
+            return self::response(['ticket' => $ticket, 'url' => $url, 'audience' => $audience, 'expiresInSeconds' => 60]);
+        }
+        if ($method === 'POST' && $path === '/api/admin/realtime-ticket') {
+            $ticket = Realtime::issueAdminTicket($userId);
+            $url = trim((string) Env::get('WEBSOCKET_URL', ''));
+            if ($url === '' || !preg_match('#^wss://#i', $url)) throw new HttpException(503, 'WebSocket WSS chưa được cấu hình.');
+            return self::response(['ticket' => $ticket, 'url' => $url, 'audience' => 'admin', 'expiresInSeconds' => 60]);
         }
         if ($method === 'GET' && $path === '/api/admin/overview') {
             $paymentStats = PaymentService::stats();
