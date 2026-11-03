@@ -379,26 +379,137 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     showToast('Đã liên kết tài khoản.');await loadAccounts();
   }
   async function deleteAccount(id){await api('/api/linked-accounts/'+encodeURIComponent(id),{method:'DELETE'});showToast('Đã xóa liên kết.');await loadAccounts();}
-  async function loadCustomer(){
-    state.section='customer';setNav('customer');
-    const [data,accounts]=await Promise.all([api('/api/customer-center'),api('/api/linked-accounts')]);
-    state.center=data;state.accounts=accounts.accounts||[];
-    const u=data.user,s=data.statistics||{};
-    pageFrame('👤 TRUNG TÂM KHÁCH HÀNG','Hồ sơ và quản lý thành viên',`
-      <div class="panel"><h3>HỒ SƠ THÀNH VIÊN</h3>
-        <div class="row-card"><span class="muted small">Họ tên</span><b>${escapeHtml(u.name||memberName())}</b></div>
-        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(u.id)}</b></div>
-        <div class="row-card"><span class="muted small">VIP</span><span class="status">${Number(u.vipLevel||0)>0?'VIP '+u.vipLevel:'MEMBER'}</span></div>
-        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(u.totalDeposited)}</b></div>
-      </div>
-      <div class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div></div>
-      <div class="panel"><h3>📊 THỐNG KÊ ĐƠN</h3><div class="grid-2">
-        <div class="row-card"><span class="muted small">Tổng đơn</span><b>${s.totalOrders||0}</b></div><div class="row-card"><span class="muted small">Đang xử lý</span><b>${s.processingOrders||0}</b></div>
-        <div class="row-card"><span class="muted small">Hoàn tất</span><b>${s.completedOrders||0}</b></div><div class="row-card"><span class="muted small">Đã hủy</span><b>${s.cancelledOrders||0}</b></div>
-      </div></div>
-      <div class="panel"><h3>🔗 TÀI KHOẢN LIÊN KẾT (${state.accounts.length})</h3>${state.accounts.map(x=>'<div class="row-card"><b>'+escapeHtml(x.brand)+'</b><span class="muted small">'+escapeHtml(x.username)+'</span></div>').join('')||'<p class="muted small">Chưa có tài khoản liên kết.</p>'}<button class="btn" data-open="minigame">QUẢN LÝ TÀI KHOẢN</button></div>
-      <div class="panel"><h3>📜 GIAO DỊCH GẦN ĐÂY</h3>${(data.recentTransactions||[]).slice(0,10).map(x=>`<div class="row-card"><div><b>${escapeHtml(x.type)}</b><small class="muted small" style="display:block">${escapeHtml(x.reference_code||'')}</small></div><b>${money(x.amount)}</b></div>`).join('')||'<p class="muted small">Chưa có giao dịch.</p>'}</div>`);
+  async function loadCustomer(tab='active', refresh=true){
+    state.section='customer';
+    state.customerTab=tab;
+    setNav('customer');
+    if(refresh || !state.customerData){
+      const [center,accounts,orders,payments,tickets,vouchers]=await Promise.all([
+        api('/api/customer-center'),
+        api('/api/linked-accounts'),
+        api('/api/orders'),
+        api('/api/wallet/payment-requests'),
+        api('/api/support/tickets'),
+        api('/api/vouchers')
+      ]);
+      state.customerData={center,accounts:accounts.accounts||[],orders:orders.orders||[],payments:payments.requests||[],tickets:tickets.tickets||[],vouchers};
+      state.center=center;
+      state.accounts=accounts.accounts||[];
+    }
+    renderCustomer();
   }
+
+  function customerStatus(status){
+    const labels={pending:'Chờ xác nhận',processing:'Đang xử lý',completed:'Hoàn tất',cancelled:'Đã hủy',refunded:'Đã hoàn tiền',rejected:'Từ chối',approved:'Đã duyệt'};
+    return labels[status]||status||'Đang cập nhật';
+  }
+
+  function renderCustomer(){
+    const data=state.customerData;
+    if(!data){return;}
+    const center=data.center||{};
+    const u=center.user||state.boot.user||{};
+    const s=center.statistics||{};
+    const counts=center.tickets||{};
+    const selected=state.customerTab||'active';
+    const orders=data.orders||[];
+    const activeOrders=orders.filter(x=>['pending','processing'].includes(String(x.status)));
+    const showOrders=selected==='active'?activeOrders:orders;
+    const orderRows=showOrders.length?showOrders.map(order=>`
+      <article class="customer-record">
+        <div class="record-top"><div><b>${escapeHtml(order.product_name||'Đơn hàng HENDY')}</b><small>${escapeHtml(order.order_code||'')} · ${new Date(order.created_at).toLocaleString('vi-VN')}</small></div><span class="status ${escapeHtml(order.status)}">${customerStatus(order.status)}</span></div>
+        <div class="customer-record-foot"><span>Giá trị đơn</span><b>${money(order.amount)}</b></div>
+        ${order.admin_note?'<p class="muted small">'+escapeHtml(order.admin_note)+'</p>':''}
+      </article>`).join(''):'<div class="customer-empty"><span>📭</span><b>'+ (selected==='active'?'Không có đơn hàng đang chạy':'Chưa có lịch sử đơn hàng') +'</b><small>Các đơn phát sinh từ hệ thống sẽ được cập nhật tại đây.</small></div>';
+
+    let tabContent='';
+    if(selected==='active'||selected==='orders'){
+      tabContent='<div class="customer-list-head"><h3>'+(selected==='active'?'🚀 ĐANG CHẠY & CHỜ XÁC NHẬN':'📜 LỊCH SỬ ĐƠN HÀNG')+'</h3><span>'+(selected==='active'?activeOrders.length:orders.length)+' đơn</span></div>'+orderRows;
+    }else if(selected==='deposit'){
+      const payments=data.payments||[];
+      tabContent='<div class="customer-list-head"><h3>💳 NẠP TIỀN</h3><span>'+payments.length+' yêu cầu</span></div>'+
+        '<div class="customer-form-card"><label class="form-label" for="deposit-amount">Số tiền muốn nạp (VNĐ)</label><input id="deposit-amount" class="field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO QR VIETQR</button><p class="muted small">Số dư chỉ được cộng sau khi Admin xác minh giao dịch ngân hàng.</p><div id="payment-result"></div></div>'+
+        (payments.length?payments.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+money(item.amount)+'</b><small>'+escapeHtml(item.payment_id)+' · '+escapeHtml(item.transfer_content||'')+'</small></div><span class="status">'+customerStatus(item.status)+'</span></div><div class="customer-record-foot"><span>Ngân hàng '+escapeHtml(item.bank_id||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="customer-empty"><span>💳</span><b>Chưa có yêu cầu nạp</b><small>Tạo yêu cầu để nhận mã VietQR riêng của bạn.</small></div>');
+    }else{
+      const ledger=center.walletHistory||[];
+      const transactions=center.recentTransactions||[];
+      tabContent='<div class="customer-list-head"><h3>📒 GIAO DỊCH VÀ BIẾN ĐỘNG VÍ</h3><span>'+ledger.length+' biến động</span></div>'+
+        (ledger.length?ledger.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+escapeHtml(item.description||item.transaction_type||'Giao dịch')+'</b><small>'+escapeHtml(item.reference_code||'')+' · '+escapeHtml(item.wallet_type||'MAIN')+'</small></div><b class="'+(Number(item.amount)>=0?'positive':'negative')+'">'+(Number(item.amount)>0?'+':'')+money(item.amount)+'</b></div><div class="customer-record-foot"><span>'+escapeHtml(item.transaction_type||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="customer-empty"><span>📒</span><b>Chưa có biến động ví</b><small>Lịch sử giao dịch sẽ xuất hiện khi tài khoản phát sinh hoạt động.</small></div>')+
+        (transactions.length?'<div class="customer-list-head"><h3>GIAO DỊCH GẦN ĐÂY</h3></div>'+transactions.map(item=>'<div class="row-card"><div><b>'+escapeHtml(item.type)+'</b><small class="muted small" style="display:block">'+escapeHtml(item.reference_code||'')+'</small></div><b>'+money(item.amount)+'</b></div>').join(''):'');
+    }
+
+    const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
+    const replayValid=/^https:\/\//i.test(replayUrl);
+    const status=Number(u.vipLevel||0)>0?'VIP '+Number(u.vipLevel):'Bình thường';
+    $('#app').innerHTML=`
+      <section class="customer-profile">
+        <div class="customer-profile-top">
+          <div class="customer-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
+          <div class="customer-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span>🟢 ID: ${escapeHtml(u.id||'')}</span><small>${u.username?'@'+escapeHtml(u.username):'HENDY MEMBER'}</small></div>
+          <span class="customer-vip">💎 ${escapeHtml(status)}</span>
+        </div>
+        <div class="customer-progress"><div><span>TỔNG NẠP TÍCH LŨY</span><b>${money(u.totalDeposited)}</b></div><div class="progress-track"><span style="width:${Math.min(100,Number(u.vipProgressPercent||0))}%"></span></div><small>${Number(u.pointOld||0).toLocaleString('vi-VN')} POINT · ${botKey==='secondary'?'BOT 2':'BOT 1'}</small></div>
+        <div class="customer-wallets">
+          <div><small>💰 VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
+          <div><small>🪙 VÍ NYC</small><b>${money(u.nycWallet)}</b></div>
+          <div><small>🎟️ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
+        </div>
+      </section>
+      <div class="customer-section-title">📊 THỐNG KÊ ĐƠN HÀNG</div>
+      <section class="customer-stats">
+        <div><small>TỔNG ĐƠN</small><b>${Number(s.totalOrders||0)}</b></div>
+        <div><small>ĐANG XỬ LÝ</small><b class="cyan">${Number(s.processingOrders||0)}</b></div>
+        <div><small>HOÀN TẤT</small><b class="green">${Number(s.completedOrders||0)}</b></div>
+        <div><small>ĐÃ HỦY</small><b>${Number(s.cancelledOrders||0)}</b></div>
+        <div><small>HOÀN TIỀN</small><b class="yellow">${Number(s.refundedOrders||0)}</b></div>
+        <div><small>TICKET CSKH</small><b>${Number(counts.total||0)}</b></div>
+      </section>
+      <div class="customer-section-title">⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</div>
+      <section class="customer-actions">
+        <button class="customer-action abuse" data-action="support-abuse"><span>1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Đơn hoàn thành nhưng tài khoản bị dính lạm dụng, không nhận được điểm.</small></button>
+        <button class="customer-action support" data-action="support-general"><span>2</span><b>TICKET HỖ TRỢ</b><small>Khiếu nại, thắc mắc và yêu cầu CSKH xử lý.</small></button>
+        <button class="customer-action voucher" data-action="open-vouchers"><span>3</span><b>VOUCHER 72H</b><small>Yêu cầu voucher đền bù cho đơn đã quá 72 giờ chưa hoàn tất.</small></button>
+      </section>
+      <a class="customer-replay ${replayValid?'available':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener"':'aria-disabled="true"'}><span>▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Mở kho Replay Live đã cấu hình.':'Chưa kết nối nguồn Replay Live; liên hệ CSKH để yêu cầu kiểm tra.'}</small></div></a>
+      <div class="customer-section-title">🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</div>
+      <section class="customer-linked">
+        <div><b>🔗 TÀI KHOẢN ĐÃ LIÊN KẾT</b><span>${data.accounts.length} tài khoản Mini Game</span></div>
+        <button class="btn" data-open="minigame">QUẢN LÝ</button>
+      </section>
+      <div class="customer-tabs" role="tablist" aria-label="Lịch sử khách hàng">
+        <button class="${selected==='active'?'active':''}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
+        <button class="${selected==='orders'?'active':''}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
+        <button class="${selected==='deposit'?'active':''}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
+        <button class="${selected==='transactions'?'active':''}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
+      </div>
+      <section class="customer-tab-content">${tabContent}</section>
+      <div class="customer-footer">💠 HENDY DIGITAL ECOSYSTEM · Công nghệ kết nối giá trị thật</div>`;
+  }
+
+  async function openCustomerSupport(type){
+    state.supportTicketType=type;
+    state.section='support';
+    const result=await api('/api/support/tickets');
+    const tickets=result.tickets||[];
+    const title=type==='dinh_lam'?'HỖ TRỢ DÍNH LẠM (60%)':'TICKET HỖ TRỢ CSKH';
+    pageFrame('🎧 '+title,'Tạo yêu cầu và theo dõi phản hồi',`
+      <div class="notice">Không gửi mật khẩu, mã OTP hoặc PIN. Chỉ mô tả mã đơn, thời điểm phát sinh và vấn đề cần hỗ trợ.</div>
+      <div class="customer-form-card"><label class="form-label">Tiêu đề yêu cầu</label><input id="support-title" class="field" maxlength="120" placeholder="Nhập tiêu đề"><label class="form-label">Nội dung chi tiết</label><textarea id="support-message" class="field" rows="4" maxlength="3000" placeholder="Mô tả tình trạng đơn hàng hoặc vấn đề..."></textarea><button class="btn primary" data-action="send-support">GỬI YÊU CẦU CSKH</button></div>
+      <div class="customer-list-head"><h3>LỊCH SỬ YÊU CẦU</h3><span>${tickets.length} ticket</span></div>
+      ${tickets.length?tickets.map(ticket=>'<article class="customer-record"><div class="record-top"><div><b>#'+ticket.id+' · '+escapeHtml(ticket.subject)+'</b><small>'+ (ticket.ticket_type==='dinh_lam'?'Hỗ trợ dính lạm dụng (60%)':'Ticket hỗ trợ')+'</small></div><span class="status">'+customerStatus(ticket.status)+'</span></div><p>'+escapeHtml(ticket.message)+'</p>'+(ticket.admin_reply?'<div class="notice success"><b>Phản hồi CSKH</b><br>'+escapeHtml(ticket.admin_reply)+'</div>':'')+'</article>').join(''):'<div class="customer-empty"><b>Chưa có ticket</b></div>'}`);
+  }
+
+  async function openCustomerVouchers(){
+    state.section='customer';
+    const data=state.customerData?.vouchers || await api('/api/vouchers');
+    const eligible=data.eligibleOrders||[], requests=data.requests||[];
+    pageFrame('🎟️ VOUCHER 72H','Đền bù cho đơn chậm xử lý',`
+      <div class="notice">Chỉ đơn đủ điều kiện (đang chờ/đang xử lý ít nhất 72 giờ) mới xuất hiện. Gửi yêu cầu không tự cộng tiền; Admin phải kiểm tra và duyệt.</div>
+      ${eligible.length?'<div class="customer-form-card"><label class="form-label">Chọn đơn hàng</label><select id="voucher-order" class="field">'+eligible.map(order=>'<option value="'+escapeHtml(order.id)+'">'+escapeHtml(order.order_code)+' · '+escapeHtml(order.product_name)+' · '+money(order.amount)+'</option>').join('')+'</select><label class="form-label">Lý do yêu cầu</label><textarea id="voucher-reason" class="field" rows="3" maxlength="1000" placeholder="Mô tả lý do yêu cầu voucher..."></textarea><button class="btn primary" data-action="submit-voucher">GỬI YÊU CẦU VOUCHER</button></div>':'<div class="customer-empty"><span>🎟️</span><b>Chưa có đơn đủ điều kiện</b><small>Đơn cần quá 72 giờ ở trạng thái chờ hoặc đang xử lý.</small></div>'}
+      <div class="customer-list-head"><h3>LỊCH SỬ VOUCHER</h3><span>${requests.length} yêu cầu</span></div>
+      ${requests.length?requests.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+escapeHtml(item.order_code)+' · '+escapeHtml(item.product_name||'')+'</b><small>'+new Date(item.created_at).toLocaleString('vi-VN')+'</small></div><span class="status">'+customerStatus(item.status)+'</span></div><p>'+escapeHtml(item.reason)+'</p>'+(Number(item.reward_amount)>0?'<b>'+money(item.reward_amount)+'</b>':'')+(item.admin_note?'<p>'+escapeHtml(item.admin_note)+'</p>':'')+'</article>').join(''):'<div class="customer-empty"><b>Chưa có yêu cầu Voucher</b></div>'}`);
+  }
+
   async function loadHistory(){
     state.section='history';
     const data=await api('/api/customer-center');
