@@ -173,6 +173,8 @@
   const botKey = new URLSearchParams(window.location.search).get('bot') === 'secondary' ? 'secondary' : 'primary';
   let realtimeSocket = null;
   let realtimeRetry = null;
+  let realtimeHeartbeat = null;
+  let realtimeRetryCount = 0;
   let realtimeStopped = false;
   let welcomeSloganTimer = null;
   let welcomeSloganSwap = null;
@@ -905,25 +907,55 @@
     if (!state.boot || !state.boot.isAdmin || !initData || realtimeStopped || realtimeSocket) return;
     try {
       const auth = await api('/api/admin/realtime-ticket','POST',{});
-      realtimeSocket = new WebSocket(auth.url);
-      realtimeSocket.addEventListener('open', () => realtimeSocket.send(JSON.stringify({type:'auth',ticket:auth.ticket})));
-      realtimeSocket.addEventListener('message', event => {
+      const socket = new WebSocket(auth.url);
+      realtimeSocket = socket;
+      socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({type:'auth',ticket:auth.ticket}));
+      });
+      socket.addEventListener('message', event => {
         let message; try { message = JSON.parse(event.data); } catch { return; }
-        if (message.type === 'realtime.ready') { setRealtimeStatus('WebSocket · đang kết nối',true); return; }
-        if (message.type === 'auth.failed') { setRealtimeStatus('Xác thực realtime thất bại',false); return; }
+        if (message.type === 'realtime.ready') {
+          realtimeRetryCount = 0;
+          setRealtimeStatus('WebSocket · đang kết nối',true);
+          window.clearInterval(realtimeHeartbeat);
+          realtimeHeartbeat = window.setInterval(() => {
+            if (realtimeSocket === socket && socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({type:'ping',timestamp:Date.now()}));
+            }
+          }, 25000);
+          return;
+        }
+        if (message.type === 'pong') return;
+        if (message.type === 'auth.failed' || message.type === 'origin.rejected') {
+          setRealtimeStatus('Xác thực realtime thất bại',false);
+          return;
+        }
         if (message.type && message.type.startsWith('admin.')) {
           setRealtimeStatus('WebSocket · vừa cập nhật',true);
           if (state.page === 'admin') renderPage();
         }
       });
-      realtimeSocket.addEventListener('close', () => {
-        realtimeSocket = null;
-        if (!realtimeStopped) { setRealtimeStatus('Đang kết nối lại realtime…',false); realtimeRetry = window.setTimeout(connectAdminRealtime,3000); }
+      socket.addEventListener('close', () => {
+        if (realtimeSocket === socket) realtimeSocket = null;
+        window.clearInterval(realtimeHeartbeat);
+        realtimeHeartbeat = null;
+        if (!realtimeStopped) {
+          setRealtimeStatus('Đang kết nối lại realtime…',false);
+          realtimeRetryCount = Math.min(realtimeRetryCount + 1, 6);
+          const delay = Math.min(30000, 1000 * (2 ** realtimeRetryCount)) + Math.floor(Math.random() * 400);
+          window.clearTimeout(realtimeRetry);
+          realtimeRetry = window.setTimeout(connectAdminRealtime,delay);
+        }
       });
-      realtimeSocket.addEventListener('error', () => setRealtimeStatus('Realtime tạm thời gián đoạn',false));
+      socket.addEventListener('error', () => setRealtimeStatus('Realtime tạm thời gián đoạn',false));
     } catch (error) {
       setRealtimeStatus('WebSocket chưa sẵn sàng',false);
-      if (!realtimeStopped) realtimeRetry = window.setTimeout(connectAdminRealtime,5000);
+      if (!realtimeStopped) {
+        realtimeRetryCount = Math.min(realtimeRetryCount + 1, 6);
+        const delay = Math.min(30000, 1000 * (2 ** realtimeRetryCount)) + Math.floor(Math.random() * 400);
+        window.clearTimeout(realtimeRetry);
+        realtimeRetry = window.setTimeout(connectAdminRealtime,delay);
+      }
     }
   }
 
@@ -1266,6 +1298,8 @@
   window.addEventListener('beforeunload',() => {
     realtimeStopped = true;
     window.clearTimeout(realtimeRetry);
+    window.clearInterval(realtimeHeartbeat);
+    realtimeHeartbeat = null;
     if (realtimeSocket) realtimeSocket.close();
   });
   installVisualEffects();
