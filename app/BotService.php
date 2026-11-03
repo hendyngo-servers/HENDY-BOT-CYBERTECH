@@ -12,23 +12,36 @@ final class BotService
     private const BRANDS = ['QQ88', 'HI88', '78WIN', 'RR88', 'MM88', 'GG88', 'ABCVIP', 'XX8', 'U888', 'J88', 'ABC8', '88CLB', 'AD88', 'SC88', 'C168', 'CM88', 'F8BET'];
 
     private const MENU = [
-        ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Liên kết và quản lý tài khoản trò chơi.', 'style' => 'primary'],
-        ['action' => 'tools', 'label' => '🧰 THUÊ TOOL', 'description' => 'Xem công cụ và thời hạn thuê.', 'style' => 'primary'],
-        ['action' => 'codes', 'label' => '🎁 MUA CODE', 'description' => 'Mua code và theo dõi đơn hàng.', 'style' => 'success'],
-        ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo yêu cầu chuyển khoản và theo dõi trạng thái duyệt.', 'style' => 'success'],
-        ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi link video hợp lệ để tạo công việc phụ đề.', 'style' => 'primary'],
-        ['action' => 'history', 'label' => '📜 LỊCH SỬ HOẠT ĐỘNG', 'description' => 'Xem giao dịch ví, yêu cầu nạp và video jobs.', 'style' => 'primary'],
-        ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ và kết quả yêu cầu Vietsub.', 'style' => 'primary'],
-        ['action' => 'otp', 'label' => '⚙️ OTP & PROXY', 'description' => 'Xem các gói OTP và Proxy đang mở bán.', 'style' => 'primary'],
-        ['action' => 'viptools', 'label' => '🏆 KHO VIP', 'description' => 'Khám phá kho công cụ dành cho thành viên VIP.', 'style' => 'primary'],
-        ['action' => 'customer', 'label' => '🔐 QUẢN LÝ TÀI KHOẢN', 'description' => 'Hồ sơ, số dư, tài khoản liên kết và lịch sử giao dịch ngay trong Telegram.', 'style' => 'primary'],
-        ['action' => 'duel', 'label' => '⚔️ GHÉP ĐÔI', 'description' => 'Vào hàng chờ và ghép với thành viên khác.', 'style' => 'primary'],
-        ['action' => 'ref', 'label' => '🎊 GIỚI THIỆU REF', 'description' => 'Chia sẻ link và theo dõi hoa hồng giới thiệu.', 'style' => 'success'],
-        ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Xem cấp VIP và gói nâng cấp.', 'style' => 'primary'],
-        ['action' => 'group', 'label' => '🗣️ NHÓM CHAT', 'description' => 'Mở liên kết cộng đồng chính thức.', 'style' => 'primary'],
-        ['action' => 'news', 'label' => '📢 KÊNH THÔNG BÁO', 'description' => 'Theo dõi thông báo và cập nhật mới.', 'style' => 'primary'],
-        ['action' => 'gift', 'label' => '🎟️ GIFTCODE', 'description' => 'Nhập mã quà tặng vào tài khoản.', 'style' => 'success'],
-        ['action' => 'support', 'label' => '🧑‍💻 LIÊN HỆ CSKH', 'description' => 'Gửi yêu cầu hỗ trợ tới đội ngũ CSKH.', 'style' => 'primary'],
+        ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Kho tài khoản, dịch vụ Mini Game và hỗ trợ đơn.', 'style' => 'primary'],
+        ['action' => 'tools', 'label' => '🧰 THUÊ TOOL', 'description' => 'Thuê công cụ và theo dõi thời hạn.', 'style' => 'success'],
+        ['action' => 'codes', 'label' => '🎁 MUA CODE', 'description' => 'Mua mã và theo dõi đơn hàng.', 'style' => 'danger'],
+        ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo QR VietQR và xem trạng thái duyệt.', 'style' => 'success'],
+        ['action' => 'otp', 'label' => '📲 OTP & PROXY', 'description' => 'Thuê OTP, Proxy và quản lý kho đã thuê.', 'style' => 'primary'],
+        ['action' => 'viptools', 'label' => '💎 KHO VIP', 'description' => 'Công cụ và ưu đãi dành cho thành viên VIP.', 'style' => 'danger'],
+        ['action' => 'customer', 'label' => '👤 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Hồ sơ, ví, tài khoản liên kết và lịch sử.', 'style' => 'primary'],
+        ['action' => 'miniapp', 'label' => '🌈 MỞ MINI APP HENDY', 'description' => 'Mở giao diện dịch vụ HENDY dành riêng cho bot này.', 'style' => 'success'],
+        ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi video vào hàng đợi xử lý phụ đề.', 'style' => 'primary'],
+        ['action' => 'history', 'label' => '📜 LỊCH SỬ GIAO DỊCH', 'description' => 'Tra cứu yêu cầu nạp và biến động số dư.', 'style' => 'success'],
+        ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ xử lý video.', 'style' => 'primary'],
+        ['action' => 'ref', 'label' => '🎊 GIỚI THIỆU REF', 'description' => 'Chia sẻ mã giới thiệu và theo dõi hoa hồng.', 'style' => 'danger'],
+        ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Cấp VIP, quyền lợi và điểm danh.', 'style' => 'success'],
+        ['action' => 'group', 'label' => '💬 NHÓM CHAT', 'description' => 'Kết nối cộng đồng HENDY.', 'style' => 'primary'],
+        ['action' => 'news', 'label' => '📢 KÊNH THÔNG BÁO', 'description' => 'Nhận cập nhật dịch vụ và thông báo.', 'style' => 'danger'],
+        ['action' => 'gift', 'label' => '🎟️ GIFTCODE', 'description' => 'Kích hoạt mã quà tặng.', 'style' => 'success'],
+        ['action' => 'support', 'label' => '🧑‍💻 LIÊN HỆ CSKH', 'description' => 'Tạo ticket hỗ trợ với đội ngũ HENDY.', 'style' => 'primary'],
+    ];
+
+    private const MENU_LAYOUT = [
+        ['live', 'tools'],
+        ['codes'],
+        ['wallet', 'otp'],
+        ['viptools'],
+        ['customer'],
+        ['miniapp'],
+        ['vietsub', 'history'],
+        ['jobs', 'ref'],
+        ['vip', 'group', 'news'],
+        ['gift', 'support'],
     ];
 
     private TelegramApi $telegram;
@@ -125,7 +138,6 @@ final class BotService
             );
             $this->clearPending($userId);
             $this->sendHome($chatId, $from);
-            $this->showVipWelcome($chatId, $userId);
             return;
         }
 
@@ -283,7 +295,6 @@ final class BotService
                 'otp_sc88' => 'otp-products',
                 'menu_kho_cc' => 'viptools',
                 'menu_cskh' => 'customer',
-                'menu_ghep_doi' => 'duel',
                 'ref' => 'ref',
                 'vip' => 'vip',
                 'giftcode' => 'gift',
@@ -303,93 +314,6 @@ final class BotService
             error_log('[telegram:' . $this->botKey . '] ' . $error->getMessage());
             $this->telegram->sendMessage($chatId, '❌ ' . self::escape($error->getMessage()));
         }
-    }
-
-    private function sendHome(string $chatId, array $from): void
-    {
-        $userId = (string) ($from['id'] ?? '');
-        $firstName = trim((string) ($from['first_name'] ?? ''));
-        $lastName = trim((string) ($from['last_name'] ?? ''));
-        $name = trim($firstName . ' ' . $lastName);
-        $username = trim((string) ($from['username'] ?? ''));
-        $user = $this->getUser($userId, $name, $username);
-        $config = $this->menuConfig();
-        $items = $this->menuItems($config, $userId);
-        $settings = $this->settings(['website_url', 'GROUP_URL', 'CHANNEL_URL', 'bot_username', 'bot_display_name']);
-
-        $websiteUrl = trim((string) ($settings['website_url'] ?? 'https://hendy-bot-tele.onrender.com'));
-        if (!self::isHttpsUrl($websiteUrl)) {
-            $websiteUrl = 'https://hendy-bot-tele.onrender.com';
-        }
-
-        $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/Hendy_Support_Group')));
-        if (!self::isHttpsUrl($groupUrl)) {
-            $groupUrl = 'https://t.me/Hendy_Support_Group';
-        }
-
-        $botUsername = trim(ltrim((string) ($settings['bot_username'] ?? Env::get('BOT_USERNAME', 'tuanem2027_bot')), '@'));
-        if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $botUsername)) {
-            $botUsername = 'tuanem2027_bot';
-        }
-        $botUrl = 'https://t.me/' . rawurlencode($botUsername);
-        $botDisplayName = trim(ltrim((string) ($settings['bot_display_name'] ?? 'HendyBot_Bot'), '@'));
-        if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $botDisplayName)) {
-            $botDisplayName = $botUsername;
-        }
-
-        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
-        $timeGreeting = match (true) {
-            $hour >= 5 && $hour < 11 => 'buổi sáng',
-            $hour >= 11 && $hour < 13 => 'buổi trưa',
-            $hour >= 13 && $hour < 18 => 'buổi chiều',
-            $hour >= 18 && $hour < 22 => 'buổi tối',
-            default => 'buổi đêm',
-        };
-
-        $displayName = $firstName !== '' ? $firstName : ($name !== '' ? $name : ($username !== '' ? '@' . $username : 'bạn'));
-        $welcomePhrases = [
-            'Chọn một chức năng để bắt đầu trải nghiệm hệ sinh thái HENDY.',
-            'Công nghệ kết nối giá trị thật — cảm ơn bạn đã đồng hành cùng HENDY.',
-            'Chúc bạn có trải nghiệm nhanh chóng, thuận tiện và nhiều niềm vui.',
-        ];
-        $dynamicWelcome = $welcomePhrases[random_int(0, count($welcomePhrases) - 1)];
-        $vipLevel = (int) ($user['vip_level'] ?? 0);
-        $memberStatus = $vipLevel > 0 ? 'VIP ' . $vipLevel : 'Bình thường';
-        $descriptions = array_map(
-            static fn (array $item): string => '• ' . $item['label'] . ' — ' . $item['description'],
-            $items
-        );
-
-        $text = implode("\n", [
-            '💠 <b>⩤ BOT 💠 HENDY ⩥</b> 🤩',
-            '<b>LETHITUANEM TEAM</b> · BOT SERVICE LIVESTREAM',
-            '✨ <i>Công nghệ kết nối giá trị thật</i>',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '👋 Chúc ' . $timeGreeting . ' vui vẻ, <b>' . self::escape($displayName) . '</b>!',
-            '📱 Telegram ID: <code>' . self::escape($userId) . '</code>',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '🔢 <b>TỔNG NẠP: ' . self::money($user['total_deposited'] ?? 0) . '</b>',
-            '😄 <b>Ví Chính:</b> ' . self::money($user['balance'] ?? 0),
-            '😄 <b>Ví NYC:</b> ' . self::money($user['nyc_wallet'] ?? 0),
-            '━━━━━━━━━━━━━━━━━━━━',
-            '💠 <b>Trạng thái thành viên:</b> [' . self::escape($memberStatus) . ']',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '🌟 <b>Website:</b> <a href="' . self::escape($websiteUrl) . '">Mở website Hendy</a>',
-            '💥 <b>Nhóm:</b> <a href="' . self::escape($groupUrl) . '">HENDY · NHÓM PUBLIC</a>',
-            '🤖 <b>Bot:</b> <a href="' . self::escape($botUrl) . '">@' . self::escape($botDisplayName) . '</a>',
-            '',
-            self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT.')) . ' ' . self::escape($dynamicWelcome) . ' 🚀',
-            '',
-            '<b>HỆ SINH THÁI DỊCH VỤ</b>',
-            'Tool · Phần mềm · Dịch vụ công nghệ · Điểm thưởng game · Proxy · OTP · Livestream · Trí tuệ nhân tạo',
-            '',
-            '<b>HƯỚNG DẪN CHỨC NĂNG</b>',
-            ...array_map(self::escape(...), $descriptions),
-        ]);
-
-        $this->telegram->sendMessage($chatId, $text, [
-            'reply_markup' => $this->menuMarkup($items, $config),
-        ]);
     }
 
     private static function isHttpsUrl(string $url): bool
@@ -416,6 +340,7 @@ final class BotService
             'button_labels' => [],
             'button_descriptions' => [],
             'button_styles' => [],
+            'button_icons' => [],
         ];
     }
 
@@ -424,6 +349,7 @@ final class BotService
         $labels = self::jsonArray($config['button_labels'] ?? []);
         $descriptions = self::jsonArray($config['button_descriptions'] ?? []);
         $styles = self::jsonArray($config['button_styles'] ?? []);
+        $icons = self::jsonArray($config['button_icons'] ?? []);
         $items = [];
 
         foreach (self::MENU as $item) {
@@ -433,6 +359,7 @@ final class BotService
                 'label' => self::truncate((string) ($labels[$action] ?? $item['label']), 60),
                 'description' => self::truncate((string) ($descriptions[$action] ?? $item['description']), 160),
                 'style' => in_array($styles[$action] ?? '', ['primary', 'success', 'danger'], true) ? $styles[$action] : ($item['style'] ?? 'primary'),
+                'iconCustomEmojiId' => preg_match('/^[0-9]{5,32}$/', (string) ($icons[$action] ?? '')) ? (string) $icons[$action] : '',
             ];
         }
 
@@ -442,66 +369,90 @@ final class BotService
                 'label' => self::truncate((string) ($labels['admin'] ?? '🛡️ BẢNG ĐIỀU KHIỂN ADMIN'), 60),
                 'description' => self::truncate((string) ($descriptions['admin'] ?? 'Mở bảng quản trị dành riêng cho Admin.'), 160),
                 'style' => in_array($styles['admin'] ?? '', ['primary', 'success', 'danger'], true) ? $styles['admin'] : 'primary',
+                'iconCustomEmojiId' => preg_match('/^[0-9]{5,32}$/', (string) ($icons['admin'] ?? '')) ? (string) $icons['admin'] : '',
             ];
         }
         return $items;
     }
 
+    private function menuRows(array $items, int $columns): array
+    {
+        $byAction = [];
+        foreach ($items as $item) $byAction[(string) $item['action']] = $item;
+        $rows = [];
+        $used = [];
+        foreach (self::MENU_LAYOUT as $layout) {
+            $row = [];
+            foreach ($layout as $action) {
+                if (isset($byAction[$action])) {
+                    $row[] = $byAction[$action];
+                    $used[$action] = true;
+                }
+            }
+            if ($row !== []) $rows[] = $row;
+        }
+        $remaining = [];
+        foreach ($items as $item) {
+            $action = (string) $item['action'];
+            if (!isset($used[$action])) $remaining[] = $item;
+        }
+        foreach (array_chunk($remaining, max(1, min(3, $columns))) as $row) $rows[] = $row;
+        return $rows;
+    }
+
     private function menuMarkup(array $items, array $config): array
     {
         $columns = max(1, min(3, (int) ($config['menu_columns'] ?? 2)));
-        if (($config['menu_mode'] ?? 'reply_keyboard') === 'inline_keyboard') {
-            $rows = [];
-            foreach (array_chunk($items, $columns) as $chunk) {
-                $row = [];
-                foreach ($chunk as $item) {
-                    // Bot API 9.4 supports the predefined primary/success/danger styles.
-                    $button = ['text' => $item['label'], 'style' => $item['style']];
-                    if ($item['action'] === 'admin') {
-                        $url = $this->webAppUrl('admin');
-                        if ($url !== '') {
-                            $button['web_app'] = ['url' => $url];
-                        } else {
-                            $button['callback_data'] = 'member:admin';
-                        }
-                    } else {
-                        $button['callback_data'] = 'member:' . $item['action'];
-                    }
-                    $row[] = $button;
-                }
-                $rows[] = $row;
-            }
-            return ['inline_keyboard' => $rows];
-        }
-        return $this->replyMenu($items, $config);
-    }
-
-    private function replyMenu(array $items, array $config): array
-    {
-        $columns = max(1, min(3, (int) ($config['menu_columns'] ?? 2)));
         $rows = [];
-        foreach (array_chunk($items, $columns) as $chunk) {
+        foreach ($this->menuRows($items, $columns) as $group) {
             $row = [];
-            foreach ($chunk as $item) {
-                // Preserve each configured color in Reply Keyboard as well.
+            foreach ($group as $item) {
                 $button = ['text' => $item['label'], 'style' => $item['style']];
-                if ($item['action'] === 'admin') {
+                if (($item['iconCustomEmojiId'] ?? '') !== '') $button['icon_custom_emoji_id'] = $item['iconCustomEmojiId'];
+                if ($item['action'] === 'miniapp') {
+                    $url = $this->miniAppUrl();
+                    if ($url !== '') $button['web_app'] = ['url' => $url];
+                    else $button['callback_data'] = 'member:miniapp';
+                } elseif ($item['action'] === 'admin') {
                     $url = $this->webAppUrl('admin');
-                    if ($url !== '') {
-                        $button['web_app'] = ['url' => $url];
-                    }
+                    if ($url !== '') $button['web_app'] = ['url' => $url];
+                    else $button['callback_data'] = 'member:admin';
+                } else {
+                    $button['callback_data'] = 'member:' . $item['action'];
                 }
                 $row[] = $button;
             }
-            $rows[] = $row;
+            if ($row !== []) $rows[] = $row;
         }
-
+        if (($config['menu_mode'] ?? 'reply_keyboard') === 'inline_keyboard') return ['inline_keyboard' => $rows];
         return [
-            'keyboard' => $rows,
+            'keyboard' => $this->replyRows($items, $config),
             'resize_keyboard' => $this->toBool($config['resize_keyboard'] ?? true),
             'is_persistent' => $this->toBool($config['persistent_keyboard'] ?? true),
-            'input_field_placeholder' => 'Chọn chức năng Hendy Bot',
+            'input_field_placeholder' => 'Chọn tiện ích HENDY',
         ];
+    }
+
+    private function replyRows(array $items, array $config): array
+    {
+        $rows = [];
+        foreach ($this->menuRows($items, (int) ($config['menu_columns'] ?? 2)) as $group) {
+            $row = [];
+            foreach ($group as $item) {
+                $button = ['text' => $item['label'], 'style' => $item['style']];
+                if (($item['iconCustomEmojiId'] ?? '') !== '') $button['icon_custom_emoji_id'] = $item['iconCustomEmojiId'];
+                if ($item['action'] === 'miniapp') {
+                    $url = $this->miniAppUrl();
+                    if ($url !== '') $button['web_app'] = ['url' => $url];
+                } elseif ($item['action'] === 'admin') {
+                    $url = $this->webAppUrl('admin');
+                    if ($url !== '') $button['web_app'] = ['url' => $url];
+                }
+                $row[] = $button;
+            }
+            if ($row !== []) $rows[] = $row;
+        }
+        return $rows;
     }
 
     private function inlineMenu(array $rows): array
@@ -521,25 +472,6 @@ final class BotService
 
     private function dispatchAction(string $chatId, string $userId, string $action): void
     {
-        if (preg_match('/^duel-join-(quick|practice)$/', $action, $matches)) {
-            $this->joinMatchmaking($chatId, $userId, $matches[1]);
-            return;
-        }
-        if ($action === 'duel-leave') {
-            try { MatchmakingService::leaveQueue($userId); }
-            catch (Throwable $error) { $this->telegram->sendMessage($chatId, '⚠️ ' . self::escape($error->getMessage())); }
-            $this->showMatchmaking($chatId, $userId);
-            return;
-        }
-        if (preg_match('/^duel-report:(\\d{1,18})$/', $action, $matches)) {
-            $this->startMatchReport($chatId, $userId, (int) $matches[1]);
-            return;
-        }
-        if (preg_match('/^duel-confirm:(\\d{1,18}):(yes|no)$/', $action, $matches)) {
-            $this->confirmMatchResult($chatId, $userId, (int) $matches[1], $matches[2] === 'yes');
-            return;
-        }
-
         if (preg_match('/^deposit:(\d{4,12})$/', $action, $matches)) {
             $this->showDeposit($chatId, $userId, (int) $matches[1]);
             return;
@@ -571,11 +503,6 @@ final class BotService
             }
             $this->setPending($userId, 'link_username', ['brand' => $brand]);
             $this->telegram->sendMessage($chatId, 'Bạn đã chọn <b>' . self::escape($brand) . '</b>. Hãy nhập username. Không gửi mật khẩu, PIN hoặc OTP.');
-            return;
-        }
-
-        if (str_starts_with($action, 'duel-finish:')) {
-            $this->showMatchmaking($chatId, $userId);
             return;
         }
 
@@ -691,9 +618,6 @@ final class BotService
             case 'abcvip':
                 $this->showAbcvipConnect($chatId);
                 return;
-            case 'duel':
-                $this->showMatchmaking($chatId, $userId);
-                return;
             case 'ref':
                 $this->showReferral($chatId, $userId);
                 return;
@@ -721,6 +645,14 @@ final class BotService
             case 'support':
                 $this->setPending($userId, 'support');
                 $this->telegram->sendMessage($chatId, '🧑‍💻 Hãy mô tả vấn đề cần hỗ trợ. Bot sẽ tạo ticket và gửi thông tin cho Admin.');
+                return;
+            case 'miniapp':
+                $url = $this->miniAppUrl();
+                if ($url === '') {
+                    $this->telegram->sendMessage($chatId, 'Mini App chưa được cấu hình APP_URL HTTPS.');
+                    return;
+                }
+                $this->telegram->sendMessage($chatId, '🌈 <b>MINI APP HENDY</b> — Mở giao diện dịch vụ của bot này.', ['reply_markup' => $this->inlineMenu([[['text' => '🚀 MỞ MINI APP', 'web_app' => ['url' => $url]]]])]);
                 return;
             case 'admin':
                 $this->openAdmin($chatId, $userId);
@@ -1594,138 +1526,6 @@ final class BotService
     }
 
 
-    private function showMatchmaking(string $chatId, string $userId): void
-    {
-        $stats = MatchmakingService::ensureStats($userId);
-        $match = Database::one(
-            "SELECT id, player_one, player_two, mode, status, created_at
-             FROM matchmaking_matches
-             WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?)
-             ORDER BY created_at DESC LIMIT 1",
-            [$userId, $userId]
-        );
-        $lines = [
-            '⚔️ <b>HENDY MATCH · GHÉP ĐÔI TRỰC TIẾP TRÊN TELEGRAM</b>',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '🏅 Elo: <b>' . (int) $stats['rating'] . '</b> · Điểm: <b>' . number_format((int) $stats['points'], 0, ',', '.') . '</b>',
-            '🎮 Trận: <b>' . (int) $stats['matches_played'] . '</b> · Thắng: <b>' . (int) $stats['wins'] . '</b> · Thua: <b>' . (int) $stats['losses'] . '</b>',
-            '',
-        ];
-        $rows = [];
-        if ($match !== null) {
-            $opponentId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
-            $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]) ?? [];
-            $opponentName = (string) (($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên HENDY'));
-            $lines[] = '🆚 Đối thủ: <b>' . self::escape($opponentName) . '</b>';
-            $lines[] = 'Mã trận: <code>#' . (int) $match['id'] . '</code> · ' . ($match['mode'] === 'quick' ? 'Xếp hạng' : 'Luyện tập');
-            if ($match['status'] === 'disputed') {
-                $lines[] = '⚠️ Trận đang tranh chấp. Admin sẽ kiểm tra; Elo/điểm chưa cập nhật.';
-            } else {
-                $result = Database::one('SELECT score_one, score_two, status, reported_by FROM matchmaking_results WHERE match_id = ?', [$match['id']]);
-                if ($result === null) {
-                    $lines[] = 'Trạng thái: <b>Đã ghép đôi</b>. Gửi tỷ số sau khi trận đấu kết thúc.';
-                    $rows[] = [['text' => '🧾 GỬI KẾT QUẢ TRẬN', 'callback_data' => 'member:duel-report:' . $match['id']]];
-                } elseif ($result['status'] === 'pending' && (string) $result['reported_by'] !== $userId) {
-                    $lines[] = 'Tỷ số đối thủ báo: <b>' . (int) $result['score_one'] . ' - ' . (int) $result['score_two'] . '</b> (thứ tự A-B).';
-                    $rows[] = [
-                        ['text' => '✅ XÁC NHẬN ĐÚNG', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':yes'],
-                        ['text' => '⚠️ BÁO SAI', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':no'],
-                    ];
-                } elseif ($result['status'] === 'pending') {
-                    $lines[] = 'Bạn đã gửi tỷ số <b>' . (int) $result['score_one'] . ' - ' . (int) $result['score_two'] . '</b>. Đang chờ đối thủ xác nhận.';
-                }
-            }
-            $rows[] = [['text' => '🔄 CẬP NHẬT TRẠNG THÁI', 'callback_data' => 'member:duel']];
-        } else {
-            $waiting = Database::one(
-                "SELECT mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1",
-                [$userId]
-            );
-            if ($waiting !== null) {
-                $lines[] = '⏳ Bạn đang trong hàng chờ (' . ($waiting['mode'] === 'quick' ? 'Xếp hạng' : 'Luyện tập') . ').';
-                $rows[] = [['text' => '⛔ RỜI HÀNG CHỜ', 'callback_data' => 'member:duel-leave']];
-            } else {
-                $lines[] = 'Chọn chế độ ghép đôi để tìm đối thủ.';
-                $rows[] = [['text' => '🏆 GHÉP ĐÔI XẾP HẠNG', 'callback_data' => 'member:duel-join-quick']];
-                $rows[] = [['text' => '🎯 CHẾ ĐỘ LUYỆN TẬP', 'callback_data' => 'member:duel-join-practice']];
-            }
-        }
-
-        $leaders = MatchmakingService::leaderboard(5);
-        if ($leaders !== []) {
-            $lines[] = '';
-            $lines[] = '<b>🏆 TOP 5 HENDY MATCH</b>';
-            foreach ($leaders as $index => $leader) {
-                $name = (string) (($leader['display_name'] ?? '') ?: 'Thành viên');
-                $lines[] = ($index + 1) . '. ' . self::escape($name) . ' · Elo ' . (int) $leader['rating'] . ' · ' . (int) $leader['points'] . ' điểm';
-            }
-        }
-        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
-        $this->telegram->sendMessage($chatId, implode("\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
-    }
-
-    private function joinMatchmaking(string $chatId, string $userId, string $mode): void
-    {
-        try {
-            $result = MatchmakingService::join($userId, $mode);
-            if (($result['status'] ?? '') === 'matched' && isset($result['match'])) {
-                $match = $result['match'];
-                $opponentId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
-                $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]) ?? [];
-                $name = (string) (($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên HENDY'));
-                $this->telegram->sendMessage($chatId, '🎮 Đã ghép đôi với <b>' . self::escape($name) . '</b>. Mã trận <code>#' . (int) $match['id'] . '</code>.');
-                $this->notifyUserOnBot($this->botKey, $opponentId, '🎮 Bạn đã được ghép đôi trong HENDY MATCH. Mã trận #' . (int) $match['id'] . '. Mở nút GHÉP ĐÔI trong bot để xem chi tiết.');
-            } elseif (($result['status'] ?? '') === 'disputed') {
-                $this->telegram->sendMessage($chatId, '⚠️ Bạn đang có trận tranh chấp chờ Admin xử lý.');
-            } else {
-                $this->telegram->sendMessage($chatId, '⏳ Đã vào hàng chờ. Bot sẽ ghép với người chơi phù hợp khi có đối thủ.');
-            }
-        } catch (Throwable $error) {
-            $this->telegram->sendMessage($chatId, '❌ Không thể ghép đôi: ' . self::escape($error->getMessage()));
-        }
-        $this->showMatchmaking($chatId, $userId);
-    }
-
-    private function startMatchReport(string $chatId, string $userId, int $matchId): void
-    {
-        $match = Database::one(
-            "SELECT id, player_one, player_two FROM matchmaking_matches
-             WHERE id = ? AND status = 'matched' AND (player_one = ? OR player_two = ?)",
-            [$matchId, $userId, $userId]
-        );
-        if ($match === null) {
-            $this->telegram->sendMessage($chatId, 'Không tìm thấy trận đang hoạt động hoặc bạn không thuộc trận này.');
-            return;
-        }
-        $this->setPending($userId, 'duel_score_me', [
-            'match_id' => $matchId,
-            'player_one' => (string) $match['player_one'],
-            'player_two' => (string) $match['player_two'],
-        ]);
-        $this->telegram->sendMessage($chatId, '🧾 <b>BÁO CÁO KẾT QUẢ TRẬN #' . $matchId . '</b>' . "\nHãy nhập số điểm của bạn (0–999). Sau đó bot sẽ hỏi điểm đối thủ.");
-    }
-
-    private function confirmMatchResult(string $chatId, string $userId, int $matchId, bool $approved): void
-    {
-        $match = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$matchId]);
-        if ($match === null) {
-            $this->telegram->sendMessage($chatId, 'Không tìm thấy trận đấu.');
-            return;
-        }
-        try {
-            $result = MatchmakingService::confirm($matchId, $userId, $approved);
-            $otherId = (string) ($match['player_one'] === $userId ? $match['player_two'] : $match['player_one']);
-            $message = ($result['status'] ?? '') === 'disputed'
-                ? '⚠️ Trận #' . $matchId . ' đang tranh chấp. Elo và điểm chưa thay đổi; Admin sẽ kiểm tra.'
-                : '✅ Hai bên đã xác nhận kết quả trận #' . $matchId . '. Elo và điểm nội bộ đã cập nhật.';
-            $this->telegram->sendMessage($chatId, $message);
-            $this->notifyUserOnBot($this->botKey, $otherId, $message);
-        } catch (Throwable $error) {
-            $this->telegram->sendMessage($chatId, '❌ Không thể xác nhận: ' . self::escape($error->getMessage()));
-        }
-        $this->showMatchmaking($chatId, $userId);
-    }
-
     private function showDeposit(string $chatId, string $userId, int $amount): void
     {
         if ($amount < 10000 || $amount > 500000000) {
@@ -1969,38 +1769,6 @@ final class BotService
                 }
                 return true;
 
-            case 'duel_score_me':
-                if (!preg_match('/^\\d{1,3}$/', $text) || (int) $text > 999) {
-                    $this->telegram->sendMessage($chatId, 'Điểm phải là số nguyên từ 0 đến 999. Hãy nhập lại điểm của bạn.');
-                    return true;
-                }
-                $payload['my_score'] = (int) $text;
-                $this->setPending($userId, 'duel_score_opponent', $payload);
-                $this->telegram->sendMessage($chatId, 'Nhập điểm của đối thủ (0–999). Thứ tự A-B sẽ được bot tự xác định.');
-                return true;
-
-            case 'duel_score_opponent':
-                if (!preg_match('/^\\d{1,3}$/', $text) || (int) $text > 999) {
-                    $this->telegram->sendMessage($chatId, 'Điểm phải là số nguyên từ 0 đến 999. Hãy nhập lại điểm của đối thủ.');
-                    return true;
-                }
-                $matchId = (int) ($payload['match_id'] ?? 0);
-                $playerOne = (string) ($payload['player_one'] ?? '');
-                $playerTwo = (string) ($payload['player_two'] ?? '');
-                $myScore = (int) ($payload['my_score'] ?? 0);
-                $opponentScore = (int) $text;
-                $scoreOne = $userId === $playerOne ? $myScore : $opponentScore;
-                $scoreTwo = $userId === $playerTwo ? $myScore : $opponentScore;
-                try {
-                    $reported = MatchmakingService::report($matchId, $userId, $scoreOne, $scoreTwo);
-                    $this->clearPending($userId);
-                    $this->telegram->sendMessage($chatId, '✅ Đã gửi tỷ số ' . $scoreOne . '-' . $scoreTwo . ' (thứ tự A-B). Đang chờ đối thủ xác nhận.');
-                    $this->notifyUserOnBot($this->botKey, (string) $reported['opponentId'], '🧾 Đối thủ đã gửi tỷ số trận #' . $matchId . ': ' . $scoreOne . '-' . $scoreTwo . '. Mở mục GHÉP ĐÔI trong bot để xác nhận hoặc báo sai.');
-                } catch (Throwable $error) {
-                    $this->telegram->sendMessage($chatId, '❌ Không gửi được tỷ số: ' . self::escape($error->getMessage()));
-                }
-                return true;
-
             case 'nyc_transfer':
                 if (!preg_match('/^\\d{1,12}$/', $text) || (int) $text < 1000 || (int) $text > 500000000) {
                     $this->telegram->sendMessage($chatId, 'Số tiền hợp lệ từ 1.000 đến 500.000.000 VNĐ. Hãy nhập lại.');
@@ -2141,6 +1909,13 @@ final class BotService
             return;
         }
         $this->showAdminStats($chatId, $userId);
+    }
+
+    private function miniAppUrl(): string
+    {
+        $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        if (!str_starts_with($base, 'https://')) return '';
+        return $base . '/mini-app?bot=' . rawurlencode($this->botKey);
     }
 
     private function webAppUrl(string $section): string
