@@ -800,10 +800,12 @@ final class BotService
             throw new RuntimeException('Chế độ ghép đôi không hợp lệ.');
         }
 
-        $match = Database::transaction(function () use ($userId, $mode): ?array {
+        $stats = MatchmakingService::ensureStats($userId);
+        $rating = (int) $stats['rating'];
+        $match = Database::transaction(function () use ($userId, $mode, $rating): ?array {
             Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-matchmaking:' . $mode]);
             $active = Database::one(
-                "SELECT * FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                "SELECT * FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
                 [$userId, $userId]
             );
             if ($active !== null) {
@@ -816,14 +818,20 @@ final class BotService
             }
 
             $partner = Database::one(
-                "SELECT id, user_id FROM matchmaking_queue WHERE status = 'waiting' AND mode = ? AND user_id <> ? ORDER BY created_at ASC LIMIT 1 FOR UPDATE",
-                [$mode, $userId]
+                "SELECT q.id, q.user_id FROM matchmaking_queue q " .
+                "LEFT JOIN matchmaking_player_stats s ON s.user_id = q.user_id " .
+                "WHERE q.status = 'waiting' AND q.mode = ? AND q.user_id <> ? " .
+                "AND (? <> 'quick' OR ABS(COALESCE(s.rating, 1000) - ?) <= LEAST(600, 150 + (EXTRACT(EPOCH FROM (NOW() - q.created_at)) / 30 * 25))) " .
+                "ORDER BY CASE WHEN ? = 'quick' THEN ABS(COALESCE(s.rating, 1000) - ?) ELSE 0 END ASC, q.created_at ASC " .
+                "LIMIT 1 FOR UPDATE OF q",
+                [$mode, $userId, $mode, $rating, $mode, $rating]
             );
             if ($partner === null) {
                 Database::run("INSERT INTO matchmaking_queue (user_id, mode, status) VALUES (?, ?, 'waiting')", [$userId, $mode]);
                 return null;
             }
 
+            MatchmakingService::ensureStats((string) $partner['user_id']);
             $created = Database::one(
                 "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, ?, 'matched') RETURNING *",
                 [$partner['user_id'], $userId, $mode]
@@ -840,18 +848,31 @@ final class BotService
         });
 
         if ($match === null) {
-            $this->telegram->sendMessage($chatId, '⏳ Đã vào hàng chờ. Bot sẽ ghép với thành viên phù hợp khi họ tham gia.');
+            $this->telegram->sendMessage($chatId, '⏳ Đã vào hàng chờ ghép đôi. Elo của bạn: <b>' . $rating . '</b>. Hệ thống ưu tiên đối thủ có Elo gần bạn.');
+            return;
+        }
+        if ($match['status'] === 'disputed') {
+            $this->telegram->sendMessage($chatId, '⚠️ Lượt ghép #' . self::escape((string) $match['id']) . ' đang tranh chấp và chờ quản trị viên xử lý.');
             return;
         }
 
         $opponentId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
         $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
-        $opponentName = $opponent['name'] ?: ($opponent['username'] ?: 'Thành viên Hendy');
-        $this->telegram->sendMessage($chatId, '🎮 Bạn đã được ghép đôi với <b>' . self::escape($opponentName) . '</b>. Mã ghép: <code>#' . $match['id'] . '</code>', [
-            'reply_markup' => $this->inlineMenu([[['text' => 'KẾT THÚC LƯỢT GHÉP', 'callback_data' => 'member:duel-finish:' . $match['id']]]]),
-        ]);
+        $opponentName = ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy');
+        $opponentRating = (int) MatchmakingService::ensureStats((string) $opponentId)['rating'];
+        $this->telegram->sendMessage(
+            $chatId,
+            '🎮 Bạn đã được ghép với <b>' . self::escape($opponentName) . '</b>.' .
+            "\nMã trận: <code>#" . self::escape((string) $match['id']) . '</code>' .
+            "\nElo: <b>" . $rating . '</b> · Đối thủ: <b>' . $opponentRating . '</b>' .
+            "\nKhi kết thúc, gửi tỷ số theo thứ tự Người chơi A – Người chơi B.",
+            ['reply_markup' => $this->inlineMenu([[['text' => '🧾 GỬI TỶ SỐ', 'callback_data' => 'member:duel-finish:' . $match['id']]]])]
+        );
         try {
-            (new self($this->botKey))->telegram->sendMessage($opponentId, '🎮 Bạn đã được ghép đôi với một thành viên. Mã ghép: #' . $match['id']);
+            (new self($this->botKey))->telegram->sendMessage(
+                $opponentId,
+                '🎮 Bạn đã được ghép đôi. Mã trận #' . self::escape((string) $match['id']) . '. Hãy trao đổi và gửi tỷ số sau trận.'
+            );
         } catch (Throwable $error) {
             error_log('Không gửi được thông báo ghép đôi: ' . $error->getMessage());
         }
