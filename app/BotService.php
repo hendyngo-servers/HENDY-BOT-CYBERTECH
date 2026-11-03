@@ -1094,8 +1094,8 @@ final class BotService
             $lines[] = '• <b>' . self::escape($order['product_name']) . '</b> · <code>' . self::escape($order['order_code']) . '</code>';
             $lines[] = '  ' . self::money($order['amount']) . ' · ' . self::escape(self::statusLabel((string) $order['status']));
             if ((int) $order['duration_days'] > 0) {
-                $expires = (new \\DateTimeImmutable((string) $order['created_at']))->modify('+' . (int) $order['duration_days'] . ' days');
-                $lines[] = '  Hạn dự kiến: ' . $expires->setTimezone(new \\DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y H:i');
+                $expires = (new \DateTimeImmutable((string) $order['created_at']))->modify('+' . (int) $order['duration_days'] . ' days');
+                $lines[] = '  Hạn dự kiến: ' . $expires->setTimezone(new \DateTimeZone('Asia/Ho_Chi_Minh'))->format('d/m/Y H:i');
             }
             if ($order['status'] === 'completed' && trim((string) $order['delivery_text']) !== '') {
                 $lines[] = '  Thông tin bàn giao: <code>' . self::escape(self::truncate((string) $order['delivery_text'], 240)) . '</code>';
