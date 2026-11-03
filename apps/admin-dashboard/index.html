@@ -471,9 +471,9 @@
   async function renderAccounts() {
     const data = await api('/api/linked-accounts');
     const accounts = data.accounts || [];
-    return '<div class="notice">Liên kết tài khoản theo thương hiệu. Chỉ lưu thương hiệu và tên đăng nhập; không nhập mật khẩu hoặc OTP.</div>' +
+    return '<div class="notice">Liên kết tài khoản theo thương hiệu. Chọn thương hiệu (RR88, MM88, GG88, AD88 và các hệ thống được hỗ trợ). Chỉ lưu thương hiệu và username; không nhập PIN, mật khẩu hoặc OTP.</div>' +
       '<form class="card form" id="linked-account-form"><div class="field"><label>Thương hiệu</label><select name="brand">' +
-      ['QQ88','78WIN','SC88','C168','CM88','F8BET'].map(brand => '<option value="' + brand + '">' + brand + '</option>').join('') +
+      ['RR88','MM88','GG88','AD88','QQ88','78WIN','SC88','C168','CM88','F8BET'].map(brand => '<option value="' + brand + '">' + brand + '</option>').join('') +
       '</select></div><div class="field"><label>Tên đăng nhập (Username)</label><input name="username" minlength="3" maxlength="64" required placeholder="Nhập tên tài khoản"></div>' +
       '<button class="primary">＋ Liên kết tài khoản</button></form>' +
       '<div class="section-head"><h3>Tài khoản đã liên kết</h3><span>' + accounts.length + ' tài khoản</span></div>' +
