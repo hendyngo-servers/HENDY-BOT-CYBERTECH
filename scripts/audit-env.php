@@ -47,7 +47,7 @@ if (in_array('--self-test', $argv, true)) {
         "Env::bool('DATABASE_SSL')" => 'DATABASE_SSL',
         'getenv("BOT1_TOKEN")' => 'BOT1_TOKEN',
         'process.env.WEBHOOK_AUTO_REGISTER' => 'WEBHOOK_AUTO_REGISTER',
-        "${PORT:-10000}" => 'PORT',
+        '${PORT:-10000}' => 'PORT',
     ];
     foreach ($fixtures as $source => $expected) {
         $found = [];
