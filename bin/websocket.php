@@ -166,38 +166,40 @@ final class AdminRealtimeServer implements MessageComponentInterface
 
     public function publish(): void
     {
-        $events = Database::all(
-            'SELECT id, event_type, audience, payload, created_at
-             FROM realtime_events WHERE id > ? ORDER BY id ASC LIMIT 500',
-            [$this->lastId]
-        );
+        do {
+            $events = Database::all(
+                'SELECT id, event_type, audience, payload, created_at
+                 FROM realtime_events WHERE id > ? ORDER BY id ASC LIMIT 500',
+                [$this->lastId]
+            );
 
-        foreach ($events as $event) {
-            $eventId = (int) $event['id'];
-            $this->lastId = max($this->lastId, $eventId);
-            if ((string) $event['audience'] !== 'admin') continue;
+            foreach ($events as $event) {
+                $eventId = (int) $event['id'];
+                $this->lastId = max($this->lastId, $eventId);
+                if ((string) $event['audience'] !== 'admin') continue;
 
-            $message = json_encode([
-                'id' => $eventId,
-                'type' => (string) $event['event_type'],
-                'payload' => is_string($event['payload'])
-                    ? json_decode($event['payload'], true)
-                    : $event['payload'],
-                'createdAt' => $event['created_at'],
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $message = json_encode([
+                    'id' => $eventId,
+                    'type' => (string) $event['event_type'],
+                    'payload' => is_string($event['payload'])
+                        ? json_decode($event['payload'], true)
+                        : $event['payload'],
+                    'createdAt' => $event['created_at'],
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-            foreach ($this->clients as $client) {
-                $state = $this->clients[$client];
-                if ($state['authenticated']) {
-                    try {
-                        $client->send($message);
-                    } catch (Throwable $error) {
-                        error_log('WebSocket send failed: ' . $error->getMessage());
-                        $client->close();
+                foreach ($this->clients as $client) {
+                    $state = $this->clients[$client];
+                    if ($state['authenticated']) {
+                        try {
+                            $client->send($message);
+                        } catch (Throwable $error) {
+                            error_log('WebSocket send failed: ' . $error->getMessage());
+                            $client->close();
+                        }
                     }
                 }
             }
-        }
+        } while (count($events) === 500);
     }
 
     public function sweep(): void
