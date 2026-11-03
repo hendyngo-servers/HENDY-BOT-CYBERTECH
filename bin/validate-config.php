@@ -56,6 +56,7 @@ if (!in_array(strtolower($sslValue), ['true', 'false', '1', '0', 'yes', 'no', 'o
 }
 
 $autoWebhook = Hendy\Env::bool('WEBHOOK_AUTO_REGISTER', true);
+$warnings = [];
 if ($autoWebhook) {
     $appUrl = trim((string) (Hendy\Env::get('APP_URL') ?: Hendy\Env::get('RENDER_EXTERNAL_URL', '')));
     $appParts = $appUrl !== '' ? parse_url($appUrl) : false;
@@ -74,20 +75,34 @@ if ($autoWebhook) {
             $errors[] = 'BOT2_TOKEN đang bật nhưng TELEGRAM_SECOND_WEBHOOK_SECRET chưa hợp lệ.';
         }
         if ($primarySecret !== '' && $secondarySecret !== '' && hash_equals($primarySecret, $secondarySecret)) {
-            $errors[] = 'Hai Telegram webhook secret phải khác nhau.';
+            // Telegram permits the same shape of secret for both bots. Keep the
+            // service online, warn, and let the explicit sync workflow rotate
+            // the secondary secret before its next deploy.
+            $warnings[] = 'Hai Telegram webhook secret đang giống nhau; hãy chạy sync workflow để tự sinh secret riêng cho BOT2.';
         }
     }
 }
 
-$bankSecret = (string) Hendy\Env::get('BANK_WEBHOOK_SECRET', '');
-if ($bankSecret !== '' && preg_match($secretPattern, $bankSecret) !== 1) {
-    $errors[] = 'BANK_WEBHOOK_SECRET phải có ít nhất 32 ký tự an toàn.';
+// The bank callback remains disabled until a provider-specific signature
+// adapter is installed and verified. A shared secret by itself is not enough
+// to enable real-money deposits.
+$bankEnabled = Hendy\Env::bool('BANK_WEBHOOK_ENABLED', false);
+if ($bankEnabled) {
+    $errors[] = 'BANK_WEBHOOK_ENABLED=true bị chặn: chưa cấu hình adapter chữ ký callback theo nhà cung cấp.';
+    $bankSecret = (string) Hendy\Env::get('BANK_WEBHOOK_SECRET', '');
+    if (preg_match($secretPattern, $bankSecret) !== 1) {
+        $errors[] = 'BANK_WEBHOOK_SECRET phải có 32–256 ký tự khi tích hợp adapter hợp lệ.';
+    }
 }
 
 if ($errors !== []) {
     fwrite(STDERR, "Cấu hình chưa hợp lệ:\n- " . implode("\n- ", $errors) . "\n");
     exit(1);
 }
+foreach ($warnings as $warning) {
+    fwrite(STDERR, "CẢNH BÁO: " . $warning . "\n");
+}
 
 echo "Cấu hình hợp lệ. BOT2_TOKEN: " . ($bot2 !== '' ? 'đã bật' : 'đang tắt') .
-    "; Telegram webhook: " . ($autoWebhook ? 'đã bật kiểm tra' : 'đang tắt') . ".\n";
+    "; Telegram webhook: " . ($autoWebhook ? 'đã bật kiểm tra' : 'đang tắt') .
+    "; bank webhook: " . ($bankEnabled ? 'đã bật' : 'đã khóa an toàn') . ".\n";
