@@ -251,33 +251,70 @@ final class BotService
     private function sendHome(string $chatId, array $from): void
     {
         $userId = (string) ($from['id'] ?? '');
-        $name = trim((string) ($from['first_name'] ?? '') . ' ' . (string) ($from['last_name'] ?? ''));
+        $firstName = trim((string) ($from['first_name'] ?? ''));
+        $lastName = trim((string) ($from['last_name'] ?? ''));
+        $name = trim($firstName . ' ' . $lastName);
         $username = trim((string) ($from['username'] ?? ''));
         $user = $this->getUser($userId, $name, $username);
         $config = $this->menuConfig();
         $items = $this->menuItems($config, $userId);
-        $websiteUrl = (string) ($this->settings(['website_url'])['website_url'] ?? '');
-        if ($websiteUrl !== '') {
-            $parts = parse_url($websiteUrl);
-            if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
-                $websiteUrl = '';
-            }
+        $settings = $this->settings(['website_url', 'GROUP_URL', 'CHANNEL_URL', 'bot_username']);
+
+        $websiteUrl = trim((string) ($settings['website_url'] ?? 'https://hendy-bot-tele.onrender.com'));
+        if (!self::isHttpsUrl($websiteUrl)) {
+            $websiteUrl = 'https://hendy-bot-tele.onrender.com';
         }
+
+        $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/lethituanem_nhomchat')));
+        if (!self::isHttpsUrl($groupUrl)) {
+            $groupUrl = 'https://t.me/lethituanem_nhomchat';
+        }
+
+        $botUsername = trim(ltrim((string) ($settings['bot_username'] ?? Env::get('BOT_USERNAME', 'tuanem2027_bot')), '@'));
+        if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $botUsername)) {
+            $botUsername = 'tuanem2027_bot';
+        }
+        $botUrl = 'https://t.me/' . rawurlencode($botUsername);
+
+        $hour = (int) (new \\DateTimeImmutable('now', new \\DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
+        $timeGreeting = match (true) {
+            $hour >= 5 && $hour < 11 => 'buổi sáng',
+            $hour >= 11 && $hour < 13 => 'buổi trưa',
+            $hour >= 13 && $hour < 18 => 'buổi chiều',
+            $hour >= 18 && $hour < 22 => 'buổi tối',
+            default => 'buổi đêm',
+        };
+
+        $displayName = $firstName !== '' ? $firstName : ($name !== '' ? $name : ($username !== '' ? '@' . $username : 'bạn'));
+        $vipLevel = (int) ($user['vip_level'] ?? 0);
+        $memberStatus = $vipLevel > 0 ? 'VIP ' . $vipLevel : 'Bình thường';
         $descriptions = array_map(
             static fn (array $item): string => '• ' . $item['label'] . ' — ' . $item['description'],
             $items
         );
 
-        $text = implode("\n", [
-            '🤖 <b>HENDY BOT | HENDY CYBERTECH</b>',
-            'Xin chào <b>' . self::escape($name !== '' ? $name : ($username ?: 'thành viên')) . '</b>!',
-            '🆔 ID Telegram: <code>' . self::escape($userId) . '</code>',
+        $text = implode("\\n", [
+            '💠🤩 <b>HENDY BOT · TUẤN EM</b> 🤩💠',
+            '<b>LETHITUANEM TEAM</b> · BOT SERVICE LIVESTREAM',
             '━━━━━━━━━━━━━━━━━━━━',
-            '💰 Ví chính: <b>' . self::money($user['balance'] ?? 0) . '</b>',
-            '👑 Cấp thành viên: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
+            '👋 Chúc ' . $timeGreeting . ' vui vẻ, <b>' . self::escape($displayName) . '</b>!',
+            '📱 Telegram ID: <code>' . self::escape($userId) . '</code>',
             '━━━━━━━━━━━━━━━━━━━━',
-            self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT.')),
-            ...($websiteUrl !== '' ? ['🌐 Website chính thức: <a href="' . self::escape($websiteUrl) . '">Mở trang web</a>'] : []),
+            '🔢 <b>TỔNG NẠP: ' . self::money($user['total_deposited'] ?? 0) . '</b>',
+            '➖❍➖',
+            '😄 <b>Ví Chính:</b> ' . self::money($user['balance'] ?? 0),
+            '😄 <b>Ví NYC:</b> ' . self::money($user['nyc_wallet'] ?? 0),
+            '━━━━━━━━━━━━━━━━━━━━',
+            '👍 <b>Trạng thái thành viên:</b> [' . self::escape($memberStatus) . ']',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '🌟 <b>Website:</b> <a href="' . self::escape($websiteUrl) . '">Mở website Hendy</a>',
+            '💥 <b>Nhóm:</b> <a href="' . self::escape($groupUrl) . '">LETHITUANEM · NHÓM PUBLIC</a>',
+            '🤖 <b>Bot:</b> <a href="' . self::escape($botUrl) . '">@' . self::escape($botUsername) . '</a>',
+            '',
+            self::escape((string) ($config['intro_text'] ?? 'Chào mừng bạn đến với HENDY BOT. Chọn một chức năng để tiếp tục 🚀.')),
+            '',
+            '<b>HỆ SINH THÁI DỊCH VỤ</b>',
+            'Tool · Phần mềm · Dịch vụ công nghệ · Điểm thưởng game · Proxy · OTP · Livestream · Trí tuệ nhân tạo',
             '',
             '<b>HƯỚNG DẪN CHỨC NĂNG</b>',
             ...array_map(self::escape(...), $descriptions),
@@ -286,6 +323,17 @@ final class BotService
         $this->telegram->sendMessage($chatId, $text, [
             'reply_markup' => $this->menuMarkup($items, $config),
         ]);
+    }
+
+    private static function isHttpsUrl(string $url): bool
+    {
+        if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+        $parts = parse_url($url);
+        return is_array($parts)
+            && strtolower((string) ($parts['scheme'] ?? '')) === 'https'
+            && !empty($parts['host']);
     }
 
     private function menuConfig(): array
