@@ -49,8 +49,34 @@ jobs:
           set -euo pipefail
           find app public bin tests -name '*.php' -print0 | xargs -0 -n1 php -l
 
+      - name: Audit environment manifest and regex patterns
+        run: |
+          set -euo pipefail
+          php -l scripts/audit-env.php
+          php scripts/audit-env.php --check --self-test
+          php -l bin/validate-config.php
+          bash -n docker/start.sh scripts/sync-render-env.sh scripts/deploy-verify-render.sh
+
       - name: Run PHP tests
         run: php tests/run.php
+
+      - name: Validate runtime config and safe sync dry-run
+        env:
+          BOT1_TOKEN: "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+          ADMIN_ID: "12345678"
+          APP_URL: "https://example.invalid"
+          DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
+          DATABASE_SSL: "false"
+          TELEGRAM_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          WEBHOOK_AUTO_REGISTER: "true"
+        run: |
+          set -euo pipefail
+          php bin/validate-config.php
+          if env ADMIN_ID="12x" php bin/validate-config.php >/dev/null 2>&1; then
+            echo "Validator đã chấp nhận ADMIN_ID sai định dạng." >&2
+            exit 1
+          fi
+          bash scripts/sync-render-env.sh --dry-run
 
       - name: Validate inline dashboard JavaScript
         run: |
@@ -95,6 +121,12 @@ jobs:
           grep -q 'php bin/migrate.php' docker/start.sh
           grep -q '^EXPOSE 10000$' Dockerfile
           grep -q 'WEBHOOK_AUTO_REGISTER' .env.example
+          test -s config/env.schema.json
+          test -s scripts/audit-env.php
+          test -s scripts/sync-render-env.sh
+          test -s scripts/deploy-verify-render.sh
+          test -s .github/workflows/sync-runtime-config.yml
+          grep -q 'deploy-verify-render.sh' .github/workflows/sync-runtime-config.yml
           grep -q 'getMe()' bin/register-webhooks.php
           grep -q '401 Unauthorized' bin/register-webhooks.php
           grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
