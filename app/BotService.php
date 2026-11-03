@@ -1120,7 +1120,7 @@ final class BotService
             : 'Cần nạp thêm <b>' . self::money($status['amountToNext']) . '</b> để đạt mốc tiếp theo (' . self::money($status['nextThreshold']) . ').';
         $checkinText = $status['checkedInToday'] ? '✅ Hôm nay bạn đã điểm danh.' : '🎁 Hôm nay bạn chưa điểm danh.';
 
-        $this->telegram->sendMessage($chatId, implode("\\n", [
+        $this->telegram->sendMessage($chatId, implode("\n", [
             '💎 <b>TRUNG TÂM VIP — TRI ÂN THÀNH VIÊN</b>',
             'Xin chào <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>!',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
@@ -1157,7 +1157,7 @@ final class BotService
         $lines[] = 'Điểm hiện có: <b>' . number_format($status['pointOld'], 0, ',', '.') . '</b>.';
         $lines[] = 'Quyền lợi chi tiết và gói nâng cấp được hiển thị theo các sản phẩm VIP do Admin cấu hình.';
 
-        $this->telegram->sendMessage($chatId, implode("\\n", $lines), [
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🎁 ĐIỂM DANH VIP', 'callback_data' => 'member:vip-checkin']],
                 [['text' => '🔙 TRỞ VỀ TRUNG TÂM VIP', 'callback_data' => 'member:vip']],
