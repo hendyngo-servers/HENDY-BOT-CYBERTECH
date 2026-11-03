@@ -343,6 +343,7 @@ final class ApiController
                     'rating' => (int) $stats['rating'],
                     'points' => (int) $stats['points'],
                     'opponentRating' => (int) $opponentStats['rating'],
+                    'isPlayerOne' => $match['player_one'] === $userId,
                     'pendingResult' => $result !== null ? [
                         'scoreOne' => (int) $result['score_one'],
                         'scoreTwo' => (int) $result['score_two'],
@@ -410,6 +411,9 @@ final class ApiController
                 return $created;
             });
 
+            if ($match !== null && $match['status'] === 'disputed') {
+                return self::response(['status' => 'disputed', 'matchId' => (string) $match['id'], 'message' => 'Lượt ghép đang được quản trị viên xử lý tranh chấp.']);
+            }
             if ($match !== null) {
                 $opponentId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
                 $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
@@ -486,6 +490,29 @@ final class ApiController
 
     private function handleAdmin(string $method, string $path): array
     {
+        if ($method === 'GET' && $path === '/api/admin/matchmaking/disputes') {
+            return self::response([
+                'disputes' => Database::all(
+                    "SELECT r.id AS result_id, r.match_id, r.score_one, r.score_two, r.reported_by, r.confirmed_by, r.created_at, m.mode, m.player_one, m.player_two " .
+                    "FROM matchmaking_results r JOIN matchmaking_matches m ON m.id = r.match_id " .
+                    "WHERE r.status = 'disputed' ORDER BY r.created_at ASC LIMIT 100"
+                ),
+            ]);
+        }
+        if ($method === 'POST' && preg_match('#^/api/admin/matchmaking/([0-9]{1,18})/resolve$#', $path, $match)) {
+            $scoreOne = filter_var($this->body['scoreOne'] ?? null, FILTER_VALIDATE_INT);
+            $scoreTwo = filter_var($this->body['scoreTwo'] ?? null, FILTER_VALIDATE_INT);
+            if ($scoreOne === false || $scoreTwo === false || $scoreOne < 0 || $scoreOne > 999 || $scoreTwo < 0 || $scoreTwo > 999) {
+                throw new HttpException(400, 'Tỷ số phải là số nguyên từ 0 đến 999.');
+            }
+            try {
+                $resolved = MatchmakingService::resolveDispute((int) $match[1], (string) $this->user['id'], (int) $scoreOne, (int) $scoreTwo);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            $this->audit('matchmaking.resolve', $match[1], ['scoreOne' => (int) $scoreOne, 'scoreTwo' => (int) $scoreTwo]);
+            return self::response(['result' => $resolved, 'message' => 'Đã xử lý tranh chấp và cập nhật bảng xếp hạng.']);
+        }
         if ($method === 'GET' && $path === '/api/admin/modules') {
             return self::response(['artifacts' => Database::all('SELECT id, module_key, original_name, mime_type, sha256, status, created_at FROM module_artifacts ORDER BY created_at DESC LIMIT 100')]);
         }
