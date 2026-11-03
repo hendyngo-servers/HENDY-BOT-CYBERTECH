@@ -101,10 +101,7 @@ final class AdminRealtimeServer implements MessageComponentInterface
         $conn->send(json_encode(['type' => 'auth.required']));
     }
 
-    public function onMessage(
-        ConnectionInterface $from,
-        \Ratchet\RFC6455\Messaging\MessageInterface $msg
-    ): void {
+    public function onMessage(ConnectionInterface $from, $msg) {
         if (!$this->clients->contains($from)) {
             $from->close();
             return;
