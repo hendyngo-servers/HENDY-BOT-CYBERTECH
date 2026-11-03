@@ -100,8 +100,16 @@ jobs:
 
       - name: Validate inline dashboard JavaScript
         run: |
-          php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\n;\n", $matches[1]));'
+          php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\\n;\\n", $matches[1]));'
           node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-dashboard.js";')"
+
+      - name: Validate shared Mini App JavaScript and asset files
+        run: |
+          set -euo pipefail
+          test -s apps/mini-app/index.html
+          test -s apps/telegram-landing/index.html
+          php -r '$html=file_get_contents("apps/mini-app/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (count($matches[1]) !== 1) { fwrite(STDERR, "Mini App must contain exactly one inline application script\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-mini-app.js", $matches[1][0]);'
+          node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-mini-app.js";')"
 
       - name: Verify dashboard buttons and Docker tools
         run: |
