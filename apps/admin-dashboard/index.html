@@ -535,10 +535,11 @@
     if (tab === 'bot-menus') state.adminData.botMenus = (await api('/api/admin/bot-menus')).menus;
     if (tab === 'giftcodes') state.adminData.giftcodes = (await api('/api/admin/giftcodes')).giftcodes;
     if (tab === 'users') state.adminData.users = (await api('/api/admin/users')).users;
+    if (tab === 'matchmaking') state.adminData.matchDisputes = (await api('/api/admin/matchmaking/disputes')).disputes || [];
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
@@ -677,6 +678,16 @@
       ).join('') : empty('Chưa có giftcode','Tạo giftcode và đặt hạn sử dụng trước khi chia sẻ.'));
   }
 
+  function adminMatchmaking() {
+    const disputes = state.adminData.matchDisputes || [];
+    return '<div class="notice warn">Chỉ xử lý sau khi đối chiếu bằng chứng. Tỷ số nhập theo thứ tự A (player_one) – B (player_two). Quyết định sẽ cập nhật Elo và điểm nội bộ cho cả hai người chơi.</div>' +
+      (disputes.length ? disputes.map(item =>
+        '<article class="record"><div class="record-top"><div><b>Trận #' + escapeHtml(item.match_id) + ' · ' + escapeHtml(item.mode) + '</b><small>A: ' + escapeHtml(item.player_one) + '<br>B: ' + escapeHtml(item.player_two) + '</small></div><span class="status rejected">Tranh chấp</span></div>' +
+        '<p>Tỷ số đang bị phản đối: <b>' + Number(item.score_one) + ' - ' + Number(item.score_two) + '</b><br>Người gửi: ' + escapeHtml(item.reported_by) + ' · Người phản đối: ' + escapeHtml(item.confirmed_by || '') + '</p>' +
+        '<form class="form" data-match-resolve="' + escapeHtml(item.match_id) + '"><div class="two-col"><div class="field"><label>Tỷ số A</label><input name="scoreOne" type="number" min="0" max="999" step="1" required></div><div class="field"><label>Tỷ số B</label><input name="scoreTwo" type="number" min="0" max="999" step="1" required></div></div><button class="primary">Xác nhận kết quả cuối cùng</button></form></article>'
+      ).join('') : empty('Không có trận tranh chấp','Các kết quả đang chờ đối thủ xác nhận sẽ không xuất hiện ở đây.'));
+  }
+
   function adminUsers() {
     const users = state.adminData.users || [];
     return '<form class="form" id="admin-user-search"><div class="field"><label>Tìm theo Telegram ID, tên hoặc username</label><input name="search" placeholder="Nhập từ khóa"></div><button class="secondary">Tìm thành viên</button></form>' +
@@ -699,6 +710,7 @@
     if (state.adminTab === 'bot-menus') body = adminBotMenus();
     if (state.adminTab === 'giftcodes') body = adminGiftcodes();
     if (state.adminTab === 'users') body = adminUsers();
+    if (state.adminTab === 'matchmaking') body = adminMatchmaking();
     return '<div class="notice good">Đã xác thực quyền quản trị cho Telegram ID ' + escapeHtml(state.boot.user.id) + '.</div>' +
       adminTabs() + body;
   }
