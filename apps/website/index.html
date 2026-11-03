@@ -110,6 +110,24 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 @media(min-width:720px){.shell{padding:25px 24px 42px}.tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tile-wide{grid-column:span 2}.tile:nth-child(even){transform:translateY(16px)}.tile:nth-child(3n){transform:translateY(27px)}.tile:nth-child(even):hover,.tile:nth-child(3n):hover{transform:translateY(8px) scale(1.01)}.hero{padding:30px}.wallets{gap:14px}.wallet{padding:17px}}
 @media(max-width:390px){.shell{padding-left:10px;padding-right:10px}.wallet{padding:11px 9px}.tile{padding:12px;min-height:110px}.tile-icon{width:39px;height:39px;font-size:22px}.tile h3{font-size:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+.hendy-showcase{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(230px,.9fr);align-items:center;gap:6px;min-height:340px}
+.orbit-stage{position:relative;width:min(100%,360px);aspect-ratio:1;margin:0 auto;display:grid;place-items:center;isolation:isolate}
+.orbit-ring{position:absolute;left:50%;top:50%;border:1px dashed #8290c455;border-radius:50%;transform:translate(-50%,-50%);animation:orbit 22s linear infinite}
+.orbit-ring.ring-a{width:68%;height:68%}
+.orbit-ring.ring-b{width:88%;height:88%;animation-direction:reverse;animation-duration:34s}
+.orbit-core{position:relative;z-index:2;width:48%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 45% 35%,#29375f,#0b1022 72%);border:1px solid #7c89c9;box-shadow:0 0 50px #7469ff35, inset 0 0 30px #6c6ad522;animation:core-float 4.4s ease-in-out infinite}
+.orbit-core span{font-size:clamp(48px,8vw,78px);filter:drop-shadow(0 0 14px #31c8ff99)}
+.orbit-node{position:absolute;z-index:3;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#101a32;border:1px solid #58698f;box-shadow:0 12px 30px #0008;font-size:25px;animation:node-float 3.4s ease-in-out infinite}
+.orbit-node.n-rocket{left:7%;top:13%}
+.orbit-node.n-rainbow{left:47%;top:0;animation-delay:.4s}
+.orbit-node.n-gem{right:4%;top:25%;animation-delay:.8s}
+.orbit-node.n-bolt{left:0;bottom:28%;animation-delay:1.2s}
+.orbit-node.n-gift{right:15%;bottom:5%;animation-delay:1.6s}
+@keyframes core-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2deg)}}
+@keyframes node-float{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-9px) rotate(8deg)}}
+.hero.website-login-hero{margin-bottom:18px}
+@media(max-width:720px){.hendy-showcase{grid-template-columns:1fr;min-height:0}.orbit-stage{width:min(82vw,280px);grid-row:1;margin:2px auto 10px}.hero-content{grid-row:2}.orbit-node{width:42px;height:42px;font-size:22px}}
+@media(prefers-reduced-motion:reduce){.orbit-ring,.orbit-core,.orbit-node{animation:none!important}}
 </style>
 </head>
 <body>
@@ -187,15 +205,22 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const user=state.boot.user;
     const first=String(memberName()).split(' ')[0];
     $('#app').innerHTML = `
-      <section class="hero">
+      <section class="hero hendy-showcase">
         <div class="hero-content">
-          <div class="hero-kicker">✨ HENDY DIGITAL ECOSYSTEM · BOT ${botKey==='secondary'?'02':'01'}</div>
+          <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM · BOT ${botKey==='secondary'?'02':'01'}</div>
           <h1>Xin chào <span class="gradient-text">${escapeHtml(first)}</span>!</h1>
           <p>Công nghệ kết nối giá trị thật. Một hệ sinh thái dịch vụ công nghệ, Mini Game Live, Tool, Code, OTP, Proxy và tiện ích thành viên được đồng bộ theo từng bot HENDY.</p>
           <div class="hero-actions">
             <button class="btn primary" data-open="services">🚀 Khám phá dịch vụ</button>
             <button class="btn" data-open="customer">👤 Hồ sơ thành viên</button>
           </div>
+        </div>
+        <div class="orbit-stage" aria-hidden="true">
+          <div class="orbit-ring ring-a"></div><div class="orbit-ring ring-b"></div>
+          <div class="orbit-core"><span>💠</span></div>
+          <span class="orbit-node n-rocket">🚀</span><span class="orbit-node n-rainbow">🌈</span>
+          <span class="orbit-node n-gem">💎</span><span class="orbit-node n-bolt">⚡</span>
+          <span class="orbit-node n-gift">🎁</span>
         </div>
       </section>
       <section class="wallets">
@@ -434,15 +459,21 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const otherUrl = isSecondary ? 'https://t.me/hendymono_bot?start=web_login' : 'https://t.me/HendyBot_Bot?start=web_login';
     $('#bot-chip').textContent = 'HENDY WEBSITE · ĐĂNG NHẬP';
     $('#app').innerHTML = `
-      <section class="hero website-login-hero">
-        <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
-        <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
-        <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
-        <div class="hero-actions">
-          <a class="btn primary" href="${botUrl}" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA BOT ${isSecondary?'2':'1'}</a>
-          <a class="btn" href="${otherUrl}" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA BOT ${isSecondary?'1':'2'}</a>
+      <section class="hero hendy-showcase website-login-hero">
+        <div class="hero-content">
+          <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
+          <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
+          <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="${botUrl}" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA BOT ${isSecondary?'2':'1'}</a>
+            <a class="btn" href="${otherUrl}" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA BOT ${isSecondary?'1':'2'}</a>
+          </div>
+          <div class="notice">Quy trình: mở bot → Telegram gửi link đăng nhập riêng → mở link trong 5 phút. Link chỉ dùng một lần; website nhận cookie bảo mật sau khi máy chủ xác minh.</div>
         </div>
-        <div class="notice">Quy trình: mở bot → Telegram gửi link đăng nhập riêng → mở link trong 5 phút. Link chỉ dùng một lần; website nhận cookie bảo mật sau khi máy chủ xác minh.</div>
+        <div class="orbit-stage" aria-hidden="true">
+          <div class="orbit-ring ring-a"></div><div class="orbit-ring ring-b"></div><div class="orbit-core"><span>💠</span></div>
+          <span class="orbit-node n-rocket">🚀</span><span class="orbit-node n-rainbow">🌈</span><span class="orbit-node n-gem">💎</span><span class="orbit-node n-bolt">⚡</span><span class="orbit-node n-gift">🎁</span>
+        </div>
       </section>
       <section class="tiles">
         <article class="tile"><div class="tile-icon">🚀</div><h3>MINIGAME LIVE</h3><p>Dịch vụ và tài khoản liên kết.</p></article>
