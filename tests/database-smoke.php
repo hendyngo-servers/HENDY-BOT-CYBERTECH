@@ -95,12 +95,13 @@ $assert($ticketCount === 1, 'support ticket schema');
 
 // Telegram payment request: request creation does not credit wallet; admin approval is idempotent.
 $balanceBeforePayment = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
-$payment = PaymentService::create($userId, 50000, 'primary', 'MB', '123456789', 'HENDY TEST');
+$payment = PaymentService::create($userId, 50000, 'secondary', 'MB', '123456789', 'HENDY TEST');
 $assert($payment['status'] === 'pending' && $payment['transfer_content'] !== '', 'payment request is created in pending state');
 $assert((int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]) === $balanceBeforePayment, 'creating a payment request never credits the wallet');
 $approvedPayment = PaymentService::approve((string) $payment['payment_id'], '99887766');
 $balanceAfterPayment = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
 $assert($approvedPayment['newBalance'] === $balanceBeforePayment + 50000 && $balanceAfterPayment === $balanceBeforePayment + 50000, 'admin payment approval credits the exact amount');
+$assert($approvedPayment['botKey'] === 'secondary', 'payment approval retains originating Telegram bot');
 $duplicateApprovalRejected = false;
 try {
     PaymentService::approve((string) $payment['payment_id'], '99887766');
@@ -109,7 +110,8 @@ try {
 }
 $assert($duplicateApprovalRejected, 'payment approval cannot credit wallet twice');
 $rejectedRequest = PaymentService::create($userId, 10000, 'primary', 'MB', '123456789', 'HENDY TEST');
-PaymentService::reject((string) $rejectedRequest['payment_id'], '99887766', 'CI reject');
+$rejected = PaymentService::reject((string) $rejectedRequest['payment_id'], '99887766', 'CI reject');
+$assert($rejected['botKey'] === 'primary', 'payment rejection retains originating Telegram bot');
 $assert((int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]) === $balanceAfterPayment, 'rejecting payment never changes wallet balance');
 
 $videoJob = VideoJobService::create($userId, 'https://youtu.be/dQw4w9WgXcQ', 'primary');
