@@ -21,7 +21,8 @@ final class BotService
         ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ và kết quả yêu cầu Vietsub.', 'style' => 'primary'],
         ['action' => 'otp', 'label' => '⚙️ OTP & PROXY', 'description' => 'Xem các gói OTP và Proxy đang mở bán.', 'style' => 'primary'],
         ['action' => 'viptools', 'label' => '🏆 KHO VIP', 'description' => 'Khám phá kho công cụ dành cho thành viên VIP.', 'style' => 'primary'],
-        ['action' => 'customer', 'label' => '💎 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Xem hồ sơ, số dư, đơn hàng và liên kết.', 'style' => 'primary'],
+        ['action' => 'customer', 'label' => '🔐 QUẢN LÝ TÀI KHOẢN', 'description' => 'Chọn Mini App hoặc đăng nhập truyền thống có thời hạn 5 phút.', 'style' => 'primary'],
+        ['action' => 'abcvip', 'label' => '🏦 KHO TÀI KHOẢN ABCVIP', 'description' => 'Đăng nhập qua cổng liên kết chính thức để kết nối tài khoản ABCVIP.', 'style' => 'success'],
         ['action' => 'duel', 'label' => '⚔️ GHÉP ĐÔI', 'description' => 'Vào hàng chờ và ghép với thành viên khác.', 'style' => 'primary'],
         ['action' => 'ref', 'label' => '🎊 GIỚI THIỆU REF', 'description' => 'Chia sẻ link và theo dõi hoa hồng giới thiệu.', 'style' => 'success'],
         ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Xem cấp VIP và gói nâng cấp.', 'style' => 'primary'],
@@ -631,6 +632,12 @@ final class BotService
             case 'customer':
                 $this->showCustomer($chatId, $userId);
                 return;
+            case 'legacy-login':
+                $this->sendLegacyLoginLink($chatId, $userId);
+                return;
+            case 'abcvip':
+                $this->showAbcvipConnect($chatId);
+                return;
             case 'duel':
                 $this->showMatchmaking($chatId, $userId);
                 return;
@@ -843,43 +850,90 @@ final class BotService
     private function showCustomer(string $chatId, string $userId): void
     {
         $user = $this->getUser($userId);
-        $accounts = (int) Database::value('SELECT COUNT(*) FROM linked_accounts WHERE user_id = ?', [$userId]);
-        $stats = Database::one(
-            "SELECT COUNT(*) AS total_orders,
-                    COUNT(*) FILTER (WHERE status = 'processing') AS processing_orders,
-                    COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
-                    COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_orders
-             FROM orders WHERE user_id = ?",
-            [$userId]
-        ) ?? [];
-        $tickets = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
-        $voucherUrl = $this->webAppUrl('vouchers');
-        $voucherButton = $voucherUrl !== ''
-            ? ['text' => '🎟️ VOUCHER 72H', 'web_app' => ['url' => $voucherUrl]]
-            : ['text' => '🎟️ VOUCHER 72H', 'callback_data' => 'member:customer'];
+        $miniAppUrl = $this->webAppUrl('customer-center');
+        if ($miniAppUrl === '') {
+            $miniAppUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/') . '/';
+        }
+        $rows = [];
+        if (self::isHttpsUrl($miniAppUrl)) {
+            $rows[] = [['text' => '📱 MỞ MINI APP (KHUYẾN NGHỊ)', 'web_app' => ['url' => $miniAppUrl]]];
+        } else {
+            $rows[] = [['text' => '📱 MỞ MINI APP (KHUYẾN NGHỊ)', 'url' => 'https://hendy-bot-tele.onrender.com/']];
+        }
+        $rows[] = [['text' => '🔑 ĐĂNG NHẬP TRUYỀN THỐNG', 'callback_data' => 'member:legacy-login']];
         $this->telegram->sendMessage($chatId, implode("\n", [
-            '💎 <b>TRUNG TÂM KHÁCH HÀNG</b>',
+            '🔐 <b>TRUNG TÂM QUẢN LÝ TÀI KHOẢN</b>',
             '━━━━━━━━━━━━━━━━━━━━',
+            '👤 Thành viên: <b>' . self::escape((string) ($user['name'] ?: 'Thành viên')) . '</b>',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
             '💰 Ví chính: <b>' . self::money($user['balance'] ?? 0) . '</b>',
-            '🪙 Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>',
-            '🎟 Ví Voucher: <b>' . self::money($user['voucher_wallet'] ?? 0) . '</b>',
-            '💳 Tổng nạp: <b>' . self::money($user['total_deposited'] ?? 0) . '</b>',
             '👑 Cấp thành viên: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
-            '⭐ Điểm cũ: <b>' . (int) ($user['point_old'] ?? 0) . '</b>',
-            '🔗 Tài khoản liên kết: <b>' . $accounts . '</b>',
-            '🧾 Đơn hàng: <b>' . (int) ($stats['total_orders'] ?? 0) . '</b> · Đang xử lý: <b>' . (int) ($stats['processing_orders'] ?? 0) . '</b>',
-            '✅ Hoàn tất: <b>' . (int) ($stats['completed_orders'] ?? 0) . '</b> · Đã hủy: <b>' . (int) ($stats['cancelled_orders'] ?? 0) . '</b>',
-            '🎧 Yêu cầu CSKH: <b>' . $tickets . '</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '<b>Chọn một trong hai cách truy cập bên dưới:</b>',
+            '📱 <b>Mini App:</b> Trải nghiệm mới, mượt mà hơn (khuyến nghị).',
+            '🔑 <b>Đăng nhập truyền thống:</b> Link dùng một lần, có hiệu lực 5 phút.',
+            '',
+            'Không chia sẻ link đăng nhập cho người khác. Link sẽ hết hạn hoặc bị vô hiệu ngay sau lần sử dụng đầu tiên.',
+        ]), [
+            'reply_markup' => $this->inlineMenu($rows),
+            'disable_web_page_preview' => true,
+        ]);
+    }
+
+    private function sendLegacyLoginLink(string $chatId, string $userId): void
+    {
+        $baseUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        if (!self::isHttpsUrl($baseUrl)) {
+            throw new RuntimeException('APP_URL HTTPS chưa được cấu hình; chưa thể tạo link đăng nhập an toàn.');
+        }
+        $ticket = bin2hex(random_bytes(32));
+        Database::run(
+            'DELETE FROM legacy_login_tickets WHERE user_id = ? AND bot_key = ? AND (consumed_at IS NOT NULL OR expires_at <= NOW())',
+            [$userId, $this->botKey]
+        );
+        Database::run(
+            "INSERT INTO legacy_login_tickets (token_hash, user_id, bot_key, expires_at) VALUES (?, ?, ?, NOW() + INTERVAL '5 minutes')",
+            [hash('sha256', $ticket), $userId, $this->botKey]
+        );
+        $url = $baseUrl . '/legacy-login?ticket=' . rawurlencode($ticket);
+        $this->telegram->sendMessage($chatId, implode("\n", [
+            '🔑 <b>LINK ĐĂNG NHẬP TRUYỀN THỐNG</b>',
+            'Link chỉ sử dụng được <b>một lần</b> và hết hạn sau <b>5 phút</b>.',
+            'Không chuyển tiếp link này cho người khác.',
+            '',
+            '<a href="' . self::escape($url) . '">👉 BẤM ĐỂ ĐĂNG NHẬP</a>',
         ]), [
             'reply_markup' => $this->inlineMenu([
-                [['text' => '🚀 TÀI KHOẢN MINI GAME', 'callback_data' => 'member:live']],
-                [['text' => '🧾 ĐƠN HÀNG', 'callback_data' => 'member:orders']],
-                [['text' => '🆘 HỖ TRỢ DÍNH LẠM DỤNG (60%)', 'callback_data' => 'member:support-abuse']],
-                [['text' => '🎧 TICKET HỖ TRỢ CSKH', 'callback_data' => 'member:support']],
-                [$voucherButton],
-                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+                [['text' => '🔐 MỞ TRANG ĐĂNG NHẬP', 'url' => $url]],
+                [['text' => '↩️ QUẢN LÝ TÀI KHOẢN', 'callback_data' => 'member:customer']],
             ]),
+            'disable_web_page_preview' => true,
+        ]);
+    }
+
+    private function showAbcvipConnect(string $chatId): void
+    {
+        $settings = $this->settings(['ABCVIP_CONNECT_URL']);
+        $connectUrl = trim((string) ($settings['ABCVIP_CONNECT_URL'] ?? ''));
+        $rows = [];
+        if (self::isHttpsUrl($connectUrl)) {
+            $rows[] = [['text' => '🔐 ĐĂNG NHẬP ABCVIP ĐỂ LIÊN KẾT', 'url' => $connectUrl]];
+        }
+        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
+        $message = [
+            '🏦 <b>KHO TÀI KHOẢN ABCVIP</b>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Liên kết tài khoản qua trang đăng nhập chính thức của nhà cung cấp.',
+            'HENDY không yêu cầu bạn gửi mật khẩu, mã OTP hoặc PIN trong cuộc trò chuyện Telegram.',
+        ];
+        if (!self::isHttpsUrl($connectUrl)) {
+            $message[] = '';
+            $message[] = '⏳ Cổng đăng nhập ABCVIP chưa được cấu hình. Admin cần cung cấp URL OAuth/SSO chính thức và địa chỉ callback được nhà cung cấp hỗ trợ.';
+            $message[] = 'Hiện tại chức năng liên kết ABCVIP đang tạm khóa; không nhập thông tin đăng nhập vào bot.';
+        }
+        $this->telegram->sendMessage($chatId, implode("\n", $message), [
+            'reply_markup' => $this->inlineMenu($rows),
+            'disable_web_page_preview' => true,
         ]);
     }
 
