@@ -16,6 +16,7 @@ require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/VoucherService.php';
+require dirname(__DIR__) . '/app/VipService.php';
 require dirname(__DIR__) . '/app/BotService.php';
 require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ModuleRegistry.php';
