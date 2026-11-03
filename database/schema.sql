@@ -235,8 +235,11 @@ CREATE TABLE IF NOT EXISTS bot_menu_configs (
     button_labels JSONB NOT NULL DEFAULT '{}'::jsonb,
     button_descriptions JSONB NOT NULL DEFAULT '{}'::jsonb,
     button_styles JSONB NOT NULL DEFAULT '{}'::jsonb,
+    button_icons JSONB NOT NULL DEFAULT '{}'::jsonb,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS admin_audit (
     id BIGSERIAL PRIMARY KEY,
