@@ -681,21 +681,34 @@ final class BotService
     {
         $user = $this->getUser($userId);
         $accounts = (int) Database::value('SELECT COUNT(*) FROM linked_accounts WHERE user_id = ?', [$userId]);
-        $orders = (int) Database::value('SELECT COUNT(*) FROM orders WHERE user_id = ?', [$userId]);
+        $stats = Database::one(
+            "SELECT COUNT(*) AS total_orders,
+                    COUNT(*) FILTER (WHERE status = 'processing') AS processing_orders,
+                    COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
+                    COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_orders
+             FROM orders WHERE user_id = ?",
+            [$userId]
+        ) ?? [];
         $tickets = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
         $this->telegram->sendMessage($chatId, implode("\n", [
             '💎 <b>TRUNG TÂM KHÁCH HÀNG</b>',
             '━━━━━━━━━━━━━━━━━━━━',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
-            '💰 Số dư: <b>' . self::money($user['balance'] ?? 0) . '</b>',
+            '💰 Ví chính: <b>' . self::money($user['balance'] ?? 0) . '</b>',
+            '🪙 Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>',
+            '🎟 Ví Voucher: <b>' . self::money($user['voucher_wallet'] ?? 0) . '</b>',
+            '💳 Tổng nạp: <b>' . self::money($user['total_deposited'] ?? 0) . '</b>',
             '👑 Cấp thành viên: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
+            '⭐ Điểm cũ: <b>' . (int) ($user['point_old'] ?? 0) . '</b>',
             '🔗 Tài khoản liên kết: <b>' . $accounts . '</b>',
-            '🧾 Tổng đơn hàng: <b>' . $orders . '</b>',
+            '🧾 Đơn hàng: <b>' . (int) ($stats['total_orders'] ?? 0) . '</b> · Đang xử lý: <b>' . (int) ($stats['processing_orders'] ?? 0) . '</b>',
+            '✅ Hoàn tất: <b>' . (int) ($stats['completed_orders'] ?? 0) . '</b> · Đã hủy: <b>' . (int) ($stats['cancelled_orders'] ?? 0) . '</b>',
             '🎧 Yêu cầu CSKH: <b>' . $tickets . '</b>',
         ]), [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🚀 TÀI KHOẢN MINI GAME', 'callback_data' => 'member:live']],
                 [['text' => '🧾 ĐƠN HÀNG', 'callback_data' => 'member:orders']],
+                [['text' => '🎟️ VOUCHER 72H', 'callback_data' => 'member:customer']],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
@@ -1405,7 +1418,7 @@ final class BotService
             "INSERT INTO users (user_id, name, username) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET " .
             "name = CASE WHEN EXCLUDED.name <> '' THEN EXCLUDED.name ELSE users.name END, " .
             "username = CASE WHEN EXCLUDED.username <> '' THEN EXCLUDED.username ELSE users.username END " .
-            'RETURNING user_id, name, username, balance, vip_level, total_deposited',
+            'RETURNING user_id, name, username, balance, vip_level, total_deposited, nyc_wallet, voucher_wallet, point_old',
             [$userId, $name, $username]
         ) ?? [];
     }
