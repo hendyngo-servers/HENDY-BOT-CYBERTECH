@@ -211,7 +211,7 @@ ON CONFLICT (key) DO NOTHING;
 -- Default welcome-screen links. ON CONFLICT preserves any administrator customization.
 UPDATE app_settings
 SET value = 'https://hendy-bot-tele.onrender.com', updated_at = NOW()
-WHERE key = 'website_url';
+WHERE key = 'website_url' AND value = 'https://lethituanem.com';
 
 INSERT INTO app_settings (key, value, is_public)
 VALUES
@@ -220,18 +220,18 @@ VALUES
     ('bot_display_name', 'HendyBot_Bot', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
--- The HENDY website and community are the single supported brand identity.
+-- Migrate only the old bundled defaults; preserve any administrator customization.
 UPDATE app_settings
 SET value = 'https://t.me/Hendy_Support_Group', updated_at = NOW()
-WHERE key = 'GROUP_URL';
+WHERE key = 'GROUP_URL' AND value = 'https://t.me/lethituanem_nhomchat';
 
 UPDATE app_settings
 SET value = 'hendymono_bot', updated_at = NOW()
-WHERE key = 'bot_username';
+WHERE key = 'bot_username' AND value = 'tuanem2027_bot';
 
 UPDATE app_settings
 SET value = 'HENDY BOT 1', updated_at = NOW()
-WHERE key = 'bot_display_name';
+WHERE key = 'bot_display_name' AND value = 'HendyBot_Bot';
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
