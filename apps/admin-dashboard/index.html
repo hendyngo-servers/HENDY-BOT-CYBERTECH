@@ -471,21 +471,47 @@
 
   async function renderMatchmaking() {
     const data = await api('/api/matchmaking');
+    const leaderboard = await api('/api/matchmaking/leaderboard?limit=5');
+    const ranking = (leaderboard.players || []).map((player, index) =>
+      '<div class="list-row"><div><b>#' + (index + 1) + ' ' + escapeHtml(player.display_name) + '</b><div class="small muted">Elo ' + Number(player.rating) + ' · ' + Number(player.matches_played) + ' trận · ' + Number(player.wins) + ' thắng</div></div><strong>' + Number(player.points) + ' điểm</strong></div>'
+    ).join('');
+    const stats = '<div class="stat-grid"><div class="stat"><small>Elo của bạn</small><b>' + Number(data.rating || 1000) + '</b></div><div class="stat"><small>Điểm xếp hạng</small><b>' + Number(data.points || 0) + '</b></div></div>';
+
     if (data.status === 'matched') {
-      return '<div class="hero"><div class="eyebrow">MATCH FOUND</div><h2>Đã tìm thấy đối thủ 🤝</h2><p>Hai tài khoản đã được ghép thành công. Hãy trao đổi và bắt đầu lượt chơi theo quy tắc của bạn.</p></div>' +
-        '<div class="card"><div class="field"><label>Đối thủ</label><b>' + escapeHtml(data.opponentName) + '</b><p class="small muted">Telegram ID: ' + escapeHtml(data.opponentId) + '</p></div>' +
-        '<div class="code-box"><span>Mã ghép #' + escapeHtml(data.matchId) + '</span><button class="tiny-btn" data-copy="' + escapeHtml(data.matchId) + '">Sao chép</button></div>' +
-        '<button class="primary" data-match-finish="' + escapeHtml(data.matchId) + '" style="width:100%;margin-top:12px">Kết thúc lượt ghép</button></div>';
+      const pending = data.pendingResult;
+      let action = '';
+      if (pending && pending.status === 'pending' && pending.reportedByMe) {
+        action = '<div class="notice">Đã gửi tỷ số <b>' + (pending.scoreOne) + ' - ' + (pending.scoreTwo) + '</b>. Đang chờ đối thủ xác nhận.</div>';
+      } else if (pending && pending.status === 'pending' && !pending.reportedByMe) {
+        action = '<div class="notice">Đối thủ báo tỷ số A-B: <b>' + pending.scoreOne + ' - ' + pending.scoreTwo + '</b>. Chọn xác nhận hoặc báo tranh chấp.</div>' +
+          '<div class="two-col"><button class="primary" data-match-confirm="' + escapeHtml(data.matchId) + '" data-approved="true">Xác nhận kết quả</button><button class="danger" data-match-confirm="' + escapeHtml(data.matchId) + '" data-approved="false">Báo sai kết quả</button></div>';
+      } else {
+        action = '<div class="card"><div class="field"><label>Tỷ số người chơi A</label><input id="match-score-one" type="number" min="0" max="999" step="1" value="0" required></div>' +
+          '<div class="field"><label>Tỷ số người chơi B</label><input id="match-score-two" type="number" min="0" max="999" step="1" value="0" required></div>' +
+          '<p class="small muted">A là người chơi A trong trận, B là người chơi B. Đối thủ cần xác nhận trước khi Elo/điểm được cập nhật.</p>' +
+          '<button class="primary" data-match-report="' + escapeHtml(data.matchId) + '" style="width:100%">Gửi tỷ số cho đối thủ xác nhận</button></div>';
+      }
+      return '<div class="hero"><div class="eyebrow">RATED MATCH</div><h2>Đã tìm thấy đối thủ 🤝</h2><p>Hãy hoàn thành trận đấu rồi báo kết quả. Elo chỉ thay đổi sau xác nhận của cả hai bên.</p></div>' +
+        stats +
+        '<div class="card"><div class="field"><label>Đối thủ</label><b>' + escapeHtml(data.opponentName) + '</b><p class="small muted">Telegram ID: ' + escapeHtml(data.opponentId) + ' · Elo ' + Number(data.opponentRating || 1000) + '</p></div>' +
+        '<div class="code-box"><span>Mã trận #' + escapeHtml(data.matchId) + '</span><button class="tiny-btn" data-copy="' + escapeHtml(data.matchId) + '">Sao chép</button></div>' +
+        '<p class="small muted">Bạn là người chơi ' + (data.isPlayerOne ? 'A' : 'B') + '.</p></div>' + action;
+    }
+    if (data.status === 'disputed') {
+      return '<div class="hero"><div class="eyebrow">MATCH REVIEW</div><h2>Trận đang tranh chấp ⚠️</h2><p>Hai bên chưa thống nhất tỷ số. Elo và điểm chưa được thay đổi; quản trị viên cần xác minh kết quả.</p></div>' +
+        stats + '<div class="notice">Mã trận #' + escapeHtml(data.matchId) + '. Vui lòng chờ quản trị viên xử lý.</div>';
     }
     if (data.status === 'waiting') {
-      return '<div class="hero"><div class="eyebrow">MATCHMAKING</div><h2>Đang tìm người chơi…</h2><p>Hệ thống sẽ ghép bạn với thành viên đang chờ trong cùng chế độ.</p></div>' +
-        '<div class="notice">Bạn đang ở hàng chờ từ ' + new Date(data.createdAt).toLocaleString('vi-VN') + '.</div>' +
+      return '<div class="hero"><div class="eyebrow">MATCHMAKING</div><h2>Đang tìm người chơi…</h2><p>Hệ thống ghép theo Elo và mở rộng phạm vi theo thời gian chờ.</p></div>' +
+        stats + '<div class="notice">Bạn đang ở hàng chờ từ ' + new Date(data.createdAt).toLocaleString('vi-VN') + '.</div>' +
         '<div class="two-col"><button class="secondary" data-match-refresh>Làm mới trạng thái</button><button class="danger" data-match-leave>Rời hàng chờ</button></div>';
     }
-    return '<div class="hero"><div class="eyebrow">HENDY MATCH</div><h2>Tìm bạn chơi phù hợp 🎮</h2><p>Tham gia hàng chờ để kết nối với người chơi khác đang trực tuyến.</p></div>' +
-      '<div class="card"><div class="field"><label>Chế độ ghép đôi</label><select id="match-mode"><option value="quick">Ghép nhanh</option><option value="practice">Luyện tập</option></select></div>' +
+    return '<div class="hero"><div class="eyebrow">HENDY MATCH</div><h2>Ghép đôi xếp hạng 🎮</h2><p>Đối thủ có Elo tương đương sẽ được ưu tiên. Xác nhận hai phía giúp hạn chế báo sai kết quả.</p></div>' +
+      stats +
+      '<div class="card"><div class="field"><label>Chế độ ghép đôi</label><select id="match-mode"><option value="quick">Ghép nhanh · có Elo</option><option value="practice">Luyện tập · không đổi Elo</option></select></div>' +
       '<button class="primary" data-match-join style="width:100%">🤝 Tìm đối thủ ngay</button></div>' +
-      '<div class="notice">Ghép đôi hiện kết nối người dùng trong hàng chờ. Luật chơi, tính điểm, giải thưởng hoặc phòng game trực tiếp cần tích hợp thêm nền tảng trò chơi tương ứng.</div>';
+      '<div class="card"><h3>Bảng xếp hạng Hendy</h3>' + (ranking || '<p class="muted">Chưa có dữ liệu xếp hạng.</p>') + '</div>' +
+      '<div class="notice">Thắng Ghép nhanh: +10 điểm, thua: +3 điểm, hòa: +5 điểm. Chế độ Luyện tập không thay đổi Elo; điểm thưởng không quy đổi thành tiền.</div>';
   }
 
   async function renderVip() {
