@@ -171,7 +171,7 @@ final class ApiController
         if ($path === '/api/linked-accounts' && $method === 'POST') {
             $brand = strtoupper($this->text($this->body['brand'] ?? '', 16));
             $username = $this->text($this->body['username'] ?? '', 64);
-            if (!in_array($brand, ['QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'], true)) {
+            if (!in_array($brand, ['RR88', 'MM88', 'GG88', 'AD88', 'QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'], true)) {
                 throw new HttpException(400, 'Thương hiệu không nằm trong danh sách hỗ trợ.');
             }
             if (mb_strlen($username) < 3 || preg_match('/[\x00-\x1F]/', $username)) {
