@@ -156,6 +156,14 @@ try {
     $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
 
+    if ($method === 'GET' && $path === '/legacy-login') {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        readfile(dirname(__DIR__) . '/apps/admin-dashboard/legacy-login.html');
+        exit;
+    }
+
     if ($method === 'GET' && ($path === '/' || $path === '/index.html')) {
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: no-cache');
