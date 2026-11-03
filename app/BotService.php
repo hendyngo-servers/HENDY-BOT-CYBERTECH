@@ -690,6 +690,10 @@ final class BotService
             [$userId]
         ) ?? [];
         $tickets = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
+        $voucherUrl = $this->webAppUrl('vouchers');
+        $voucherButton = $voucherUrl !== ''
+            ? ['text' => '🎟️ VOUCHER 72H', 'web_app' => ['url' => $voucherUrl]]
+            : ['text' => '🎟️ VOUCHER 72H', 'callback_data' => 'member:customer'];
         $this->telegram->sendMessage($chatId, implode("\n", [
             '💎 <b>TRUNG TÂM KHÁCH HÀNG</b>',
             '━━━━━━━━━━━━━━━━━━━━',
@@ -708,7 +712,7 @@ final class BotService
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🚀 TÀI KHOẢN MINI GAME', 'callback_data' => 'member:live']],
                 [['text' => '🧾 ĐƠN HÀNG', 'callback_data' => 'member:orders']],
-                [['text' => '🎟️ VOUCHER 72H', 'callback_data' => 'member:customer']],
+                [$voucherButton],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
