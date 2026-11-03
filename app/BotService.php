@@ -1620,7 +1620,7 @@ final class BotService
             $lines[] = '';
             $lines[] = '<b>🏆 TOP 5 HENDY MATCH</b>';
             foreach ($leaders as $index => $leader) {
-                $name = (string) (($leader['name'] ?? '') ?: (($leader['username'] ?? '') ?: 'Thành viên'));
+                $name = (string) (($leader['display_name'] ?? '') ?: 'Thành viên');
                 $lines[] = ($index + 1) . '. ' . self::escape($name) . ' · Elo ' . (int) $leader['rating'] . ' · ' . (int) $leader['points'] . ' điểm';
             }
         }
