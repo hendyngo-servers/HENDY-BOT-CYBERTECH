@@ -680,7 +680,7 @@
       '<article class="record"><div class="record-top"><div><b>' + escapeHtml(order.order_code) + ' · ' + escapeHtml(order.product_name) + '</b><small class="muted">User ' + escapeHtml(order.user_id) + ' · ' + money(order.amount) + '</small></div>' +
       '<span class="status ' + escapeHtml(order.status) + '">' + statusLabel(order.status) + '</span></div>' +
       '<form class="form" data-order-form="' + order.id + '"><div class="two-col"><div class="field"><label>Trạng thái</label><select name="status">' +
-      ['pending','processing','completed','rejected','cancelled'].map(status => '<option value="' + status + '" ' + (order.status === status ? 'selected' : '') + '>' + statusLabel(status) + '</option>').join('') +
+      ['pending','processing','completed','rejected','cancelled','refunded'].map(status => '<option value="' + status + '" ' + (order.status === status ? 'selected' : '') + '>' + statusLabel(status) + '</option>').join('') +
       '</select></div><div class="field"><label>Ghi chú Admin</label><input name="adminNote" value="' + escapeHtml(order.admin_note || '') + '"></div></div>' +
       '<div class="field"><label>Nội dung bàn giao (hiện cho khách khi hoàn tất)</label><textarea name="deliveryText">' + escapeHtml(order.delivery_text || '') + '</textarea></div>' +
       '<button class="tiny-btn">Lưu và thông báo khách</button></form></article>'
