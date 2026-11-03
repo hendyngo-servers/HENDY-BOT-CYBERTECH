@@ -18,6 +18,7 @@ final class BotService
         ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo yêu cầu chuyển khoản và theo dõi trạng thái duyệt.', 'style' => 'success'],
         ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi link video hợp lệ để tạo công việc phụ đề.', 'style' => 'primary'],
         ['action' => 'history', 'label' => '📜 LỊCH SỬ HOẠT ĐỘNG', 'description' => 'Xem giao dịch ví, yêu cầu nạp và video jobs.', 'style' => 'primary'],
+        ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ và kết quả yêu cầu Vietsub.', 'style' => 'primary'],
         ['action' => 'otp', 'label' => '⚙️ OTP & PROXY', 'description' => 'Xem các gói OTP và Proxy đang mở bán.', 'style' => 'primary'],
         ['action' => 'viptools', 'label' => '🏆 KHO VIP', 'description' => 'Khám phá kho công cụ dành cho thành viên VIP.', 'style' => 'primary'],
         ['action' => 'customer', 'label' => '💎 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Xem hồ sơ, số dư, đơn hàng và liên kết.', 'style' => 'primary'],
