@@ -13,73 +13,149 @@ use React\EventLoop\Loop;
 use React\Socket\SocketServer;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
-foreach (['Env.php', 'Database.php', 'Realtime.php'] as $file) {
+foreach (['Env.php', 'Database.php', 'TelegramAuth.php', 'Realtime.php'] as $file) {
     require dirname(__DIR__) . '/app/' . $file;
 }
 Env::load(dirname(__DIR__) . '/.env');
 
-/**
- * The primary web service waits for PostgreSQL and applies the idempotent schema
- * during startup. The realtime service waits for that schema instead of racing migrations.
- */
+// The web service applies schema migrations. Realtime waits for its durable tables.
 $waitSeconds = max(0, Env::int('DB_STARTUP_WAIT_SECONDS', 90));
 $deadline = microtime(true) + $waitSeconds;
 $lastDatabaseError = null;
-$schemaReady = false;
-
 do {
     try {
         Database::check();
-        $schemaReady = Database::value("SELECT to_regclass('public.realtime_events')") !== null;
-        if ($schemaReady) {
-            break;
-        }
+        $schemaReady = Database::value("SELECT to_regclass('public.realtime_events')") !== null
+            && Database::value("SELECT to_regclass('public.realtime_tickets')") !== null;
+        if ($schemaReady) break;
     } catch (Throwable $error) {
         $lastDatabaseError = $error;
     }
-
     if (microtime(true) >= $deadline) {
         $reason = $lastDatabaseError !== null ? ' Chi tiết: ' . $lastDatabaseError->getMessage() : '';
-        throw new RuntimeException('PostgreSQL hoặc bảng realtime_events chưa sẵn sàng sau thời gian chờ cấu hình.' . $reason);
+        throw new RuntimeException('PostgreSQL hoặc schema realtime chưa sẵn sàng.' . $reason);
     }
     sleep(2);
 } while (true);
 
+// Subscribe before taking the cursor so a notification cannot be lost between
+// initial cursor discovery and LISTEN registration.
+Realtime::listen();
+
 final class AdminRealtimeServer implements MessageComponentInterface
 {
+    /** @var SplObjectStorage<ConnectionInterface, array{authenticated:bool,lastSeen:float}> */
     private SplObjectStorage $clients;
     private int $lastId = 0;
+    private int $maxConnections;
+    /** @var list<string> */
+    private array $allowedOrigins;
 
     public function __construct()
     {
         $this->clients = new SplObjectStorage();
         $this->lastId = (int) Database::value('SELECT COALESCE(MAX(id), 0) FROM realtime_events');
+        $this->maxConnections = max(1, min(2000, Env::int('WEBSOCKET_MAX_CONNECTIONS', 250)));
+
+        $configured = array_filter(array_map(
+            'trim',
+            explode(',', (string) Env::get('WEBSOCKET_ALLOWED_ORIGINS', ''))
+        ));
+        if ($configured === []) {
+            foreach (['APP_URL', 'ADMIN_URL', 'WEBAPP_URL'] as $key) {
+                $origin = rtrim((string) Env::get($key, ''), '/');
+                if ($origin !== '') $configured[] = $origin;
+            }
+        }
+        $this->allowedOrigins = array_values(array_unique(array_map(
+            static fn(string $origin): string => rtrim($origin, '/'),
+            $configured
+        )));
+        if ($this->allowedOrigins === []) {
+            throw new RuntimeException('WEBSOCKET_ALLOWED_ORIGINS chưa được cấu hình; từ chối mở WebSocket công khai.');
+        }
     }
 
     public function onOpen(ConnectionInterface $conn): void
     {
-        $conn->authenticated = false;
-        $this->clients->attach($conn);
+        $origin = '';
+        try {
+            $origin = rtrim((string) $conn->httpRequest->getHeaderLine('Origin'), '/');
+        } catch (Throwable) {
+            // The connection is rejected below if the browser Origin is absent.
+        }
+
+        if ($origin === '' || !in_array($origin, $this->allowedOrigins, true)) {
+            $conn->send(json_encode(['type' => 'origin.rejected']));
+            $conn->close();
+            return;
+        }
+        if ($this->clients->count() >= $this->maxConnections) {
+            $conn->send(json_encode(['type' => 'server.busy']));
+            $conn->close();
+            return;
+        }
+
+        $this->clients->attach($conn, [
+            'authenticated' => false,
+            'lastSeen' => microtime(true),
+        ]);
         $conn->send(json_encode(['type' => 'auth.required']));
     }
 
-    public function onMessage(ConnectionInterface $from, \Ratchet\RFC6455\Messaging\MessageInterface $msg): void
-    {
-        $data = json_decode((string) $msg, true);
-        if (!$from->authenticated && is_array($data) && ($data['type'] ?? '') === 'auth') {
-            if (Realtime::consumeAdminTicket((string) ($data['ticket'] ?? ''))) {
-                $from->authenticated = true;
-                $from->send(json_encode(['type' => 'realtime.ready']));
-            } else {
+    public function onMessage(
+        ConnectionInterface $from,
+        \Ratchet\RFC6455\Messaging\MessageInterface $msg
+    ): void {
+        if (!$this->clients->contains($from)) {
+            $from->close();
+            return;
+        }
+
+        $raw = (string) $msg;
+        if (strlen($raw) > 4096) {
+            $from->send(json_encode(['type' => 'message.too_large']));
+            $from->close();
+            return;
+        }
+
+        $data = json_decode($raw, true);
+        if (!is_array($data) || !isset($data['type']) || !is_string($data['type'])) {
+            $from->send(json_encode(['type' => 'message.invalid']));
+            return;
+        }
+
+        $state = $this->clients[$from];
+        $state['lastSeen'] = microtime(true);
+
+        if (!$state['authenticated']) {
+            if ($data['type'] !== 'auth' || !is_string($data['ticket'] ?? null)
+                || !Realtime::consumeAdminTicket($data['ticket'])) {
                 $from->send(json_encode(['type' => 'auth.failed']));
                 $from->close();
+                return;
             }
+            $state['authenticated'] = true;
+            $this->clients[$from] = $state;
+            $from->send(json_encode(['type' => 'realtime.ready', 'heartbeatSeconds' => 25]));
+            return;
         }
+
+        if ($data['type'] === 'ping') {
+            $this->clients[$from] = $state;
+            $from->send(json_encode(['type' => 'pong', 'timestamp' => (int) (microtime(true) * 1000)]));
+            return;
+        }
+
+        // Read-only channel: clients cannot publish or request arbitrary database events.
+        $this->clients[$from] = $state;
     }
 
     public function onClose(ConnectionInterface $conn): void
     {
-        $this->clients->detach($conn);
+        if ($this->clients->contains($conn)) {
+            $this->clients->detach($conn);
+        }
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e): void
@@ -91,43 +167,92 @@ final class AdminRealtimeServer implements MessageComponentInterface
     public function publish(): void
     {
         $events = Database::all(
-            'SELECT id, event_type, payload, created_at FROM realtime_events WHERE id > ? ORDER BY id ASC LIMIT 250',
+            'SELECT id, event_type, audience, payload, created_at
+             FROM realtime_events WHERE id > ? ORDER BY id ASC LIMIT 500',
             [$this->lastId]
         );
 
         foreach ($events as $event) {
-            $this->lastId = max($this->lastId, (int) $event['id']);
+            $eventId = (int) $event['id'];
+            $this->lastId = max($this->lastId, $eventId);
+            if ((string) $event['audience'] !== 'admin') continue;
+
             $message = json_encode([
-                'type' => $event['event_type'],
-                'payload' => is_string($event['payload']) ? json_decode($event['payload'], true) : $event['payload'],
+                'id' => $eventId,
+                'type' => (string) $event['event_type'],
+                'payload' => is_string($event['payload'])
+                    ? json_decode($event['payload'], true)
+                    : $event['payload'],
                 'createdAt' => $event['created_at'],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
             foreach ($this->clients as $client) {
-                if ($client->authenticated) {
-                    $client->send($message);
+                $state = $this->clients[$client];
+                if ($state['authenticated']) {
+                    try {
+                        $client->send($message);
+                    } catch (Throwable $error) {
+                        error_log('WebSocket send failed: ' . $error->getMessage());
+                        $client->close();
+                    }
                 }
+            }
+        }
+    }
+
+    public function sweep(): void
+    {
+        $now = microtime(true);
+        foreach ($this->clients as $client) {
+            $state = $this->clients[$client];
+            // Browser sends an application-level ping every 25 seconds.
+            if (($now - $state['lastSeen']) > 90) {
+                $client->close();
+                $this->clients->detach($client);
             }
         }
 
         Database::run("DELETE FROM realtime_events WHERE created_at < NOW() - INTERVAL '2 days'");
         Database::run("DELETE FROM realtime_tickets WHERE expires_at < NOW() OR consumed_at IS NOT NULL");
     }
+
+    public function connectionCount(): int
+    {
+        return $this->clients->count();
+    }
 }
 
 $host = (string) Env::get('WEBSOCKET_BIND', '0.0.0.0');
-$port = max(1, min(65535, Env::int('WEBSOCKET_PORT', 10000)));
+$port = max(1, min(65535, Env::int('WEBSOCKET_PORT', (int) Env::get('PORT', 10000))));
 $server = new AdminRealtimeServer();
 $socket = new SocketServer($host . ':' . $port);
 $io = IoServer::factory(new HttpServer(new WsServer($server)), $socket, Loop::get());
 
-Loop::addPeriodicTimer(1.0, static function () use ($server): void {
+// PostgreSQL NOTIFY wakes this lightweight loop. A 5-second cursor scan is kept
+// as a safety net for notifications lost during a process/network restart.
+Loop::addPeriodicTimer(0.1, static function () use ($server): void {
+    try {
+        if (Realtime::drainNotifications() > 0) $server->publish();
+    } catch (Throwable $error) {
+        error_log('Realtime notification drain failed: ' . $error->getMessage());
+    }
+});
+Loop::addPeriodicTimer(5.0, static function () use ($server): void {
     try {
         $server->publish();
     } catch (Throwable $error) {
-        error_log('Realtime poll failed: ' . $error->getMessage());
+        error_log('Realtime fallback poll failed: ' . $error->getMessage());
+    }
+});
+Loop::addPeriodicTimer(60.0, static function () use ($server): void {
+    try {
+        $server->sweep();
+    } catch (Throwable $error) {
+        error_log('Realtime cleanup failed: ' . $error->getMessage());
     }
 });
 
-echo "Hendy realtime WebSocket listening on {$host}:{$port}\n";
+echo "Hendy realtime WebSocket listening on {$host}:{$port}; allowed origins="
+    . implode(',', $serverOrigins = array_map('htmlspecialchars', explode(',', (string) Env::get('WEBSOCKET_ALLOWED_ORIGINS', ''))))
+    . "; max connections=" . $server->connectionCount() . "\n";
 $io->run();
