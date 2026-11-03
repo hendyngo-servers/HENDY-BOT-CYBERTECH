@@ -348,6 +348,17 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   async function openSection(section){
     try {
       if(section==='home'){renderHome();return;}
+      if(section!=='services'){
+        const title=({
+          wallet:'💳 VÍ & NẠP TIỀN',customer:'👤 TRUNG TÂM KHÁCH HÀNG',minigame:'🚀 MINIGAME LIVE',
+          history:'📜 LỊCH SỬ HOẠT ĐỘNG',ref:'🎊 GIỚI THIỆU REF',vip:'👑 TRUNG TÂM VIP',
+          community:'💬 CỘNG ĐỒNG HENDY',gift:'🎟️ GIFTCODE',support:'🧑‍💻 LIÊN HỆ CSKH',
+          vietsub:'🎬 DỊCH VỤ VIETSUB',tools:'🧰 THUÊ TOOL',codes:'🎁 MUA CODE',
+          otp:'📲 KHO OTP SMS',proxy:'🌐 KHO PROXY',viptools:'💎 KHO VIP','otp-center':'📲 OTP & PROXY CENTER'
+        })[section]||'DỊCH VỤ HENDY';
+        pageFrame('⏳ '+title,'Đang tải dữ liệu trực tiếp từ máy chủ…','<div class="panel loading" role="status" aria-live="polite">🌈 Đang xử lý yêu cầu của bạn...</div>');
+        await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+      }
       if(section==='services'){pageFrame('🌈 DỊCH VỤ HENDY','Chọn nhóm dịch vụ','<section class="tiles">'+tileData.map((tile,i)=>'<button class="tile" style="--i:'+i+'" data-open="'+tile.section+'"><div class="tile-icon">'+tile.icon+'</div><h3>'+tile.title+'</h3><p>'+tile.desc+'</p></button>').join('')+'</section>');setNav('services');return;}
       if(section==='wallet'){await loadWallet();return;}
       if(section==='customer'){await loadCustomer();return;}
@@ -396,13 +407,23 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const del=event.target.closest('[data-delete-account]');
     const open=event.target.closest('[data-open]');
     const action=event.target.closest('[data-action]');
+    const pressed=event.target.closest('button:not(:disabled)');
+    if(pressed && tg?.HapticFeedback){
+      try{tg.HapticFeedback.impactOccurred('light');}catch(_){}
+    }
+    const originalBuyText=buy?.textContent||'';
+    const originalActionText=action?.textContent||'';
     try{
-      if(buy){buy.disabled=true;await createOrder(buy.dataset.buy);return;}
-      if(del){await deleteAccount(del.dataset.deleteAccount);return;}
+      if(buy){buy.disabled=true;buy.textContent='ĐANG XỬ LÝ…';await createOrder(buy.dataset.buy);return;}
+      if(del){del.disabled=true;del.textContent='ĐANG XÓA…';await deleteAccount(del.dataset.deleteAccount);return;}
       if(open){await openSection(open.dataset.open);return;}
-      if(action){action.disabled=true;await handleAction(action.dataset.action);}
+      if(action){action.disabled=true;action.textContent='ĐANG XỬ LÝ…';await handleAction(action.dataset.action);}
     }catch(error){showToast(error.message||'Thao tác thất bại.');}
-    finally{if(buy)buy.disabled=false;if(action)action.disabled=false;}
+    finally{
+      if(buy && buy.isConnected){buy.disabled=false;buy.textContent=originalBuyText;}
+      if(del && del.isConnected){del.disabled=false;del.textContent='XÓA';}
+      if(action && action.isConnected){action.disabled=false;action.textContent=originalActionText;}
+    }
   });
   document.querySelectorAll('[data-nav]').forEach(btn=>btn.addEventListener('click',()=>openSection(btn.dataset.nav)));
   async function start(){
