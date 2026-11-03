@@ -20,7 +20,8 @@ require dirname(__DIR__) . '/app/VipService.php';
 require dirname(__DIR__) . '/app/BotService.php';
 require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ModuleRegistry.php';
-require dirname(__DIR__) . '/app/MatchmakingService.php';
+require dirname(__DIR__) . '/app/WebServiceKernel.php';
+require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
 require dirname(__DIR__) . '/app/ApiController.php';
 
 Env::load(dirname(__DIR__) . '/.env');
@@ -161,6 +162,13 @@ try {
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
         readfile(dirname(__DIR__) . '/apps/admin-dashboard/legacy-login.html');
+        exit;
+    }
+
+    if ($method === 'GET' && in_array($path, ['/mini-app', '/mini-app/'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+        readfile(dirname(__DIR__) . '/apps/mini-app/index.html');
         exit;
     }
 
