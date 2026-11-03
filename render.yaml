@@ -62,44 +62,18 @@ services:
         sync: false
       - key: LEGACY_SESSION_SECRET
         generateValue: true
+      - key: WEBSOCKET_ENABLED
+        value: "true"
       - key: WEBSOCKET_URL
-        sync: false
-
-  - type: web
-    name: hendy-bot-tele-realtime
-    runtime: docker
-    plan: starter
-    region: singapore
-    branch: main
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: php bin/websocket.php
-    autoDeployTrigger: checksPass
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: PORT
-        value: "10000"
-      - key: DB_STARTUP_WAIT_SECONDS
-        value: "120"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: hendy-bot-tele-db
-          property: connectionString
-      - key: DATABASE_SSL
-        value: "false"
-      - key: ADMIN_ID
-        sync: false
-      - key: ADMIN_IDS
-        sync: false
+        value: wss://hendy-bot-tele.onrender.com/ws
       - key: WEBSOCKET_ALLOWED_ORIGINS
-        value: https://hendy-bot-tele.onrender.com,https://hendy-web-admin.pages.dev,https://hendy-mini-app.pages.dev
+        value: https://hendy-bot-tele.onrender.com
       - key: WEBSOCKET_MAX_CONNECTIONS
         value: "250"
       - key: WEBSOCKET_BIND
-        value: 0.0.0.0
+        value: 127.0.0.1
       - key: WEBSOCKET_PORT
-        value: "10000"
+        value: "10001"
 
 databases:
   - name: hendy-bot-tele-db
