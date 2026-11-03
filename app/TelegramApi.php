@@ -14,7 +14,7 @@ final class TelegramApi
         }
     }
 
-    public function call(string $method, array $parameters = []): array
+    public function call(string $method, array $parameters = [], int $timeoutSeconds = 35, int $connectTimeoutSeconds = 8): array
     {
         if (!function_exists('curl_init')) {
             throw new RuntimeException('PHP extension curl chưa được cài đặt.');
@@ -32,8 +32,8 @@ final class TelegramApi
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => 35,
+            CURLOPT_CONNECTTIMEOUT => max(1, min(15, $connectTimeoutSeconds)),
+            CURLOPT_TIMEOUT => max(2, min(60, $timeoutSeconds)),
         ]);
 
         $response = curl_exec($handle);
@@ -83,11 +83,24 @@ final class TelegramApi
 
     public function answerCallback(string $callbackId, string $text = ''): void
     {
+        // Acknowledge inline-button taps quickly so Telegram removes its spinner.
         $this->call('answerCallbackQuery', [
             'callback_query_id' => $callbackId,
             'text' => $text,
             'show_alert' => false,
-        ]);
+        ], 4, 2);
+    }
+
+    public function sendChatAction(string $chatId, string $action = 'typing'): void
+    {
+        $allowed = ['typing', 'upload_photo', 'upload_document', 'record_video', 'upload_video'];
+        if (!in_array($action, $allowed, true)) {
+            $action = 'typing';
+        }
+        $this->call('sendChatAction', [
+            'chat_id' => $chatId,
+            'action' => $action,
+        ], 4, 2);
     }
 
     public function setWebhook(string $url, string $secret): void
