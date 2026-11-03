@@ -7,12 +7,16 @@ require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/VoucherService.php';
 require dirname(__DIR__) . '/app/VipService.php';
+require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/Realtime.php';
 
 use Hendy\Database;
 use Hendy\PaymentService;
 use Hendy\VideoJobService;
 use Hendy\VoucherService;
 use Hendy\VipService;
+use Hendy\TelegramAuth;
+use Hendy\Realtime;
 use Hendy\Env;
 
 Env::load(dirname(__DIR__) . '/.env');
@@ -27,6 +31,28 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 };
 
 $assert(Database::check(), 'PostgreSQL connection');
+
+$previousAdminId = getenv('ADMIN_ID');
+$previousAdminIds = getenv('ADMIN_IDS');
+$realtimeAdminOne = '9500000001';
+$realtimeAdminTwo = '9500000002';
+putenv('ADMIN_ID=' . $realtimeAdminOne);
+putenv('ADMIN_IDS=' . $realtimeAdminTwo);
+$realtimeTicket = Realtime::issueAdminTicket($realtimeAdminTwo);
+$assert(Realtime::consumeAdminTicket($realtimeTicket), 'one-time WebSocket ticket accepts any configured admin');
+$assert(!Realtime::consumeAdminTicket($realtimeTicket), 'WebSocket ticket cannot be reused');
+if ($previousAdminId === false) putenv('ADMIN_ID'); else putenv('ADMIN_ID=' . $previousAdminId);
+if ($previousAdminIds === false) putenv('ADMIN_IDS'); else putenv('ADMIN_IDS=' . $previousAdminIds);
+
+Realtime::listen();
+Realtime::publish('admin.realtime.smoke', ['kind' => 'postgres-notify']);
+$notificationCount = Realtime::drainNotifications();
+$latestRealtimeEvent = Database::one(
+    "SELECT event_type, audience, payload FROM realtime_events ORDER BY id DESC LIMIT 1"
+);
+$assert($notificationCount >= 1, 'PostgreSQL LISTEN/NOTIFY wakes the realtime worker');
+$assert($latestRealtimeEvent !== null && $latestRealtimeEvent['event_type'] === 'admin.realtime.smoke' && $latestRealtimeEvent['audience'] === 'admin', 'realtime publish persists event before notification');
+
 
 $accountUser = '95' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
 Database::run('INSERT INTO users (user_id, name) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING', [$accountUser, 'Account Inventory Smoke']);
