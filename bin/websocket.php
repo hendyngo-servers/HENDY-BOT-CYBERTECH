@@ -38,10 +38,6 @@ do {
     sleep(2);
 } while (true);
 
-// Subscribe before taking the cursor so a notification cannot be lost between
-// initial cursor discovery and LISTEN registration.
-Realtime::listen();
-
 final class AdminRealtimeServer implements MessageComponentInterface
 {
     /** @var SplObjectStorage<ConnectionInterface, array{authenticated:bool,lastSeen:float}> */
@@ -98,6 +94,8 @@ final class AdminRealtimeServer implements MessageComponentInterface
 
         $this->clients->attach($conn, [
             'authenticated' => false,
+            'userId' => null,
+            'audience' => null,
             'lastSeen' => microtime(true),
         ]);
         $conn->send(json_encode(['type' => 'auth.required']));
@@ -129,15 +127,23 @@ final class AdminRealtimeServer implements MessageComponentInterface
         $state['lastSeen'] = microtime(true);
 
         if (!$state['authenticated']) {
-            if ($data['type'] !== 'auth' || !is_string($data['ticket'] ?? null)
-                || !Realtime::consumeAdminTicket($data['ticket'])) {
+            $identity = ($data['type'] === 'auth' && is_string($data['ticket'] ?? null))
+                ? Realtime::consumeTicket($data['ticket'])
+                : null;
+            if ($identity === null) {
                 $from->send(json_encode(['type' => 'auth.failed']));
                 $from->close();
                 return;
             }
             $state['authenticated'] = true;
+            $state['userId'] = $identity['userId'];
+            $state['audience'] = $identity['audience'];
             $this->clients[$from] = $state;
-            $from->send(json_encode(['type' => 'realtime.ready', 'heartbeatSeconds' => 25]));
+            $from->send(json_encode([
+                'type' => 'realtime.ready',
+                'audience' => $identity['audience'],
+                'heartbeatSeconds' => 25,
+            ]));
             return;
         }
 
@@ -176,7 +182,8 @@ final class AdminRealtimeServer implements MessageComponentInterface
             foreach ($events as $event) {
                 $eventId = (int) $event['id'];
                 $this->lastId = max($this->lastId, $eventId);
-                if ((string) $event['audience'] !== 'admin') continue;
+                $eventAudience = (string) $event['audience'];
+                if (!in_array($eventAudience, ['admin', 'users', 'all'], true)) continue;
 
                 $message = json_encode([
                     'id' => $eventId,
@@ -189,7 +196,12 @@ final class AdminRealtimeServer implements MessageComponentInterface
 
                 foreach ($this->clients as $client) {
                     $state = $this->clients[$client];
-                    if ($state['authenticated']) {
+                    $canReceive = $state['authenticated'] && (
+                        $eventAudience === 'all'
+                        || ($eventAudience === 'admin' && $state['audience'] === 'admin')
+                        || ($eventAudience === 'users' && in_array($state['audience'], ['users', 'admin'], true))
+                    );
+                    if ($canReceive) {
                         try {
                             $client->send($message);
                         } catch (Throwable $error) {
@@ -224,9 +236,13 @@ final class AdminRealtimeServer implements MessageComponentInterface
     }
 }
 
+// Take the durable cursor before LISTEN, then replay once immediately after
+// subscribing. This closes the startup window in which a NOTIFY could be missed.
 $host = (string) Env::get('WEBSOCKET_BIND', '0.0.0.0');
 $port = max(1, min(65535, Env::int('WEBSOCKET_PORT', (int) Env::get('PORT', 10000))));
 $server = new AdminRealtimeServer();
+Realtime::listen();
+$server->publish();
 $socket = new SocketServer($host . ':' . $port);
 $io = IoServer::factory(new HttpServer(new WsServer($server)), $socket, Loop::get());
 
