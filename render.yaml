@@ -42,8 +42,8 @@ services:
         generateValue: true
       - key: TELEGRAM_SECOND_WEBHOOK_SECRET
         generateValue: true
-      - key: BANK_WEBHOOK_SECRET
-        generateValue: true
+      - key: BANK_WEBHOOK_ENABLED
+        value: "false"
       - key: WEBHOOK_AUTO_REGISTER
         value: "true"
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
