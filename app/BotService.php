@@ -602,7 +602,6 @@ final class BotService
             case 'otp-products':
                 $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS', $userId);
                 return;
-            case 'proxy-products':
             case 'proxy':
             case 'proxy-center':
                 $this->showProxyCenter($chatId, $userId);
