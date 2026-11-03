@@ -30,6 +30,28 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 
 $assert(Database::check(), 'PostgreSQL connection');
 
+$accountUser = '95' . str_pad((string) random_int(1, 999999999999), 12, '0', STR_PAD_LEFT);
+Database::run('INSERT INTO users (user_id, name) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING', [$accountUser, 'Account Inventory Smoke']);
+foreach (['RR88', 'MM88', 'GG88', 'AD88'] as $platform) {
+    Database::run(
+        'INSERT INTO linked_accounts (user_id, brand, username) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+        [$accountUser, $platform, 'test_' . strtolower($platform)]
+    );
+}
+$accountPlatforms = Database::all(
+    'SELECT brand FROM linked_accounts WHERE user_id = ? ORDER BY brand',
+    [$accountUser]
+);
+$accountPlatformNames = array_column($accountPlatforms, 'brand');
+$assert(count(array_intersect(['RR88', 'MM88', 'GG88', 'AD88'], $accountPlatformNames)) === 4, 'legacy minigame platforms map to the existing linked account inventory');
+
+$abuseTicket = Database::one(
+    "INSERT INTO support_tickets (user_id, ticket_type, subject, message) VALUES (?, 'dinh_lam', ?, ?) RETURNING id, ticket_type",
+    [$accountUser, 'Hỗ trợ dính lạm dụng (60%) · Đơn TEST', 'Kiểm tra quy trình ticket dính lạm dụng smoke test.']
+);
+$assert($abuseTicket !== null && $abuseTicket['ticket_type'] === 'dinh_lam', 'Telegram customer centre can store the abuse-support ticket type');
+
+
 $vipUserId = (string) (900000000000 + random_int(100000, 999999));
 Database::run('INSERT INTO users (user_id, name, username) VALUES (?, ?, ?)', [$vipUserId, 'VIP Checkin Smoke', 'vip_checkin_smoke']);
 $vipBefore = (int) Database::value('SELECT point_old FROM users WHERE user_id = ?', [$vipUserId]);
