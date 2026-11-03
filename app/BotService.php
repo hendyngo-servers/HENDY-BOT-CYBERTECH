@@ -276,7 +276,7 @@ final class BotService
         }
         $botUrl = 'https://t.me/' . rawurlencode($botUsername);
 
-        $hour = (int) (new \\DateTimeImmutable('now', new \\DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
+        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Ho_Chi_Minh')))->format('G');
         $timeGreeting = match (true) {
             $hour >= 5 && $hour < 11 => 'buổi sáng',
             $hour >= 11 && $hour < 13 => 'buổi trưa',
@@ -293,7 +293,7 @@ final class BotService
             $items
         );
 
-        $text = implode("\\n", [
+        $text = implode("\n", [
             '💠🤩 <b>HENDY BOT · TUẤN EM</b> 🤩💠',
             '<b>LETHITUANEM TEAM</b> · BOT SERVICE LIVESTREAM',
             '━━━━━━━━━━━━━━━━━━━━',
