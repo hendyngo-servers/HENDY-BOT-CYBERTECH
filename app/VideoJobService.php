@@ -182,12 +182,12 @@ final class VideoJobService
         $minutes = max(15, min(360, $staleMinutes ?? Env::int('VIDEO_PROCESSING_STALE_MINUTES', 90)));
         $failed = Database::run(
             "UPDATE video_jobs SET status = 'failed', error_message = 'Worker timeout after maximum dispatch attempts.', completed_at = NOW(), updated_at = NOW() " .
-            "WHERE status = 'processing' AND claimed_at < NOW() - (INTERVAL '1 minute' * ?) AND attempts >= 3 RETURNING id",
+            "WHERE status = 'processing' AND claimed_at < NOW() - (?::integer * INTERVAL '1 minute') AND attempts >= 3 RETURNING id",
             [$minutes]
         );
         $requeued = Database::run(
             "UPDATE video_jobs SET status = 'queued', progress = 0, claimed_at = NULL, updated_at = NOW() " .
-            "WHERE status = 'processing' AND claimed_at < NOW() - (INTERVAL '1 minute' * ?) AND attempts < 3 RETURNING id",
+            "WHERE status = 'processing' AND claimed_at < NOW() - (?::integer * INTERVAL '1 minute') AND attempts < 3 RETURNING id",
             [$minutes]
         );
         return ['failed' => $failed->rowCount(), 'requeued' => $requeued->rowCount(), 'staleMinutes' => $minutes];
