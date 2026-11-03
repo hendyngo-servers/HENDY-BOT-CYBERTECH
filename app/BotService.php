@@ -683,6 +683,283 @@ final class BotService
         ]);
     }
 
+    private function showBalance(string $chatId, string $userId): void
+    {
+        $user = $this->getUser($userId);
+        $this->telegram->sendMessage($chatId, '💰 <b>SỐ DƯ VÍ HENDY</b>' . "\n" .
+            'Số dư hiện tại: <b>' . self::money($user['balance'] ?? 0) . '</b>', [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '＋ NẠP TIỀN', 'callback_data' => 'member:wallet']],
+                [['text' => '📜 LỊCH SỬ', 'callback_data' => 'member:history']],
+            ]),
+        ]);
+    }
+
+    private function showWalletMenu(string $chatId, string $userId): void
+    {
+        $user = $this->getUser($userId);
+        $this->telegram->sendMessage($chatId, '💳 <b>NẠP TIỀN VÀO VÍ</b>' . "\n" .
+            'Số dư hiện tại: <b>' . self::money($user['balance'] ?? 0) . '</b>' . "\n" .
+            'Chọn nhanh số tiền hoặc nhập số tiền khác. Sau khi chuyển khoản, Admin sẽ kiểm tra sao kê và duyệt thủ công.', [
+            'reply_markup' => $this->inlineMenu([
+                [
+                    ['text' => '10.000đ', 'callback_data' => 'member:deposit:10000'],
+                    ['text' => '20.000đ', 'callback_data' => 'member:deposit:20000'],
+                ],
+                [
+                    ['text' => '50.000đ', 'callback_data' => 'member:deposit:50000'],
+                    ['text' => '100.000đ', 'callback_data' => 'member:deposit:100000'],
+                ],
+                [['text' => '✏️ NHẬP SỐ TIỀN KHÁC', 'callback_data' => 'member:deposit:custom']],
+                [['text' => '📜 LỊCH SỬ NẠP', 'callback_data' => 'member:deposit-history']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function startVideoRequest(string $chatId, string $userId): void
+    {
+        $this->setPending($userId, 'video_url');
+        $this->telegram->sendMessage($chatId,
+            '🎬 <b>YÊU CẦU VIETSUB</b>' . "\n" .
+            'Gửi link video HTTPS từ nền tảng đã được cho phép (mặc định: YouTube, TikTok, Facebook).' . "\n" .
+            'Hệ thống sẽ tạo job và đưa vào hàng chờ. Việc xử lý thực tế cần cấu hình VIDEO_PROCESSOR_URL và VIDEO_PROCESSOR_SECRET.', [
+            'reply_markup' => $this->inlineMenu([[['text' => 'HỦY / MENU CHÍNH', 'callback_data' => 'member:home']]]),
+        ]);
+    }
+
+    private function showUserHistory(string $chatId, string $userId): void
+    {
+        $ledger = Database::all(
+            'SELECT amount, transaction_type, reference_code, description, created_at FROM wallet_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT 5',
+            [$userId]
+        );
+        $payments = PaymentService::forUser($userId, 5);
+        $jobs = VideoJobService::forUser($userId, 5);
+
+        $lines = ['📜 <b>LỊCH SỬ HOẠT ĐỘNG</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>💰 Giao dịch ví</b>'];
+        if ($ledger === []) {
+            $lines[] = '• Chưa có biến động số dư.';
+        } else {
+            foreach ($ledger as $item) {
+                $sign = (int) $item['amount'] >= 0 ? '+' : '';
+                $lines[] = '• ' . $sign . self::money($item['amount']) . ' · ' . self::escape((string) $item['transaction_type']);
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '<b>💳 Yêu cầu nạp gần đây</b>';
+        if ($payments === []) {
+            $lines[] = '• Chưa tạo yêu cầu nạp.';
+        } else {
+            foreach ($payments as $payment) {
+                $lines[] = '• <code>' . self::escape((string) $payment['payment_id']) . '</code> · ' .
+                    self::money($payment['amount']) . ' · ' . self::escape(self::statusLabel((string) $payment['status']));
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '<b>🎬 Video jobs gần đây</b>';
+        if ($jobs === []) {
+            $lines[] = '• Chưa có yêu cầu Vietsub.';
+        } else {
+            foreach ($jobs as $job) {
+                $lines[] = '• <code>' . self::escape(substr((string) $job['id'], 0, 8)) . '</code> · ' .
+                    self::escape(self::statusLabel((string) $job['status'])) . ' (' . (int) $job['progress'] . '%)';
+            }
+        }
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '🎬 VIDEO JOBS', 'callback_data' => 'member:jobs']],
+                [['text' => '💳 LỊCH SỬ NẠP', 'callback_data' => 'member:deposit-history']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function showVideoJobs(string $chatId, string $userId): void
+    {
+        $jobs = VideoJobService::forUser($userId, 10);
+        $lines = ['🎬 <b>VIDEO JOBS CỦA BẠN</b>', '━━━━━━━━━━━━━━━━━━━━'];
+        foreach ($jobs as $job) {
+            $lines[] = '• <code>' . self::escape(substr((string) $job['id'], 0, 8)) . '</code> · ' .
+                self::escape(self::statusLabel((string) $job['status'])) . ' · ' . (int) $job['progress'] . '%';
+            $lines[] = '  Nguồn: ' . self::escape(self::truncate((string) $job['source_url'], 100));
+            if ($job['status'] === 'completed' && $job['output_url'] !== '') {
+                $lines[] = '  Kết quả: ' . self::escape((string) $job['output_url']);
+            }
+            if ($job['status'] === 'failed' && $job['error_message'] !== '') {
+                $lines[] = '  Lỗi: ' . self::escape(self::truncate((string) $job['error_message'], 160));
+            }
+        }
+        if ($jobs === []) {
+            $lines[] = 'Chưa có video job nào. Bấm DỊCH VỤ VIETSUB để gửi link video.';
+        }
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '🎬 TẠO YÊU CẦU VIETSUB', 'callback_data' => 'member:vietsub']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function notifyAdmins(string $message, array $replyMarkup = []): void
+    {
+        foreach (TelegramAuth::adminIds() as $adminId) {
+            try {
+                $options = $replyMarkup !== [] ? ['reply_markup' => $replyMarkup] : [];
+                $this->telegram->sendMessage($adminId, $message, $options);
+            } catch (Throwable $error) {
+                error_log('Không gửi được thông báo admin: ' . $error->getMessage());
+            }
+        }
+    }
+
+    private function showAdminStats(string $chatId, string $userId): void
+    {
+        if (!TelegramAuth::isAdmin($userId)) {
+            $this->telegram->sendMessage($chatId, '⛔ Bạn không có quyền quản trị.');
+            return;
+        }
+        $payments = PaymentService::stats();
+        $jobs = VideoJobService::stats();
+        $users = (int) Database::value('SELECT COUNT(*) FROM users');
+        $orders = (int) Database::value("SELECT COUNT(*) FROM orders WHERE status IN ('pending','processing')");
+        $tickets = (int) Database::value("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','processing')");
+        $this->telegram->sendMessage($chatId, implode("\n", [
+            '🛡️ <b>HENDY BOT — TỔNG QUAN QUẢN TRỊ</b>',
+            '👥 Thành viên: <b>' . $users . '</b>',
+            '🧾 Đơn hàng cần xử lý: <b>' . $orders . '</b>',
+            '🎧 Ticket CSKH mở: <b>' . $tickets . '</b>',
+            '💳 Yêu cầu nạp chờ duyệt: <b>' . $payments['pending'] . '</b>',
+            '🎬 Video jobs: <b>' . $jobs['queued'] . '</b> chờ · <b>' . $jobs['processing'] . '</b> xử lý · <b>' . $jobs['failed'] . '</b> lỗi',
+        ]), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '💳 DUYỆT NẠP TIỀN', 'callback_data' => 'member:admin-payments']],
+                [['text' => '🎬 VIDEO JOBS', 'callback_data' => 'member:admin-jobs']],
+                ...(($url = $this->webAppUrl('admin')) !== '' ? [[['text' => '🖥️ MỞ DASHBOARD ADMIN', 'web_app' => ['url' => $url]]]] : []),
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function showAdminPayments(string $chatId, string $userId): void
+    {
+        if (!TelegramAuth::isAdmin($userId)) {
+            $this->telegram->sendMessage($chatId, '⛔ Bạn không có quyền duyệt nạp tiền.');
+            return;
+        }
+        $pending = PaymentService::pending(15);
+        if ($pending === []) {
+            $this->telegram->sendMessage($chatId, '✅ Không có yêu cầu nạp tiền đang chờ.', [
+                'reply_markup' => $this->inlineMenu([[['text' => '🔙 QUẢN TRỊ', 'callback_data' => 'member:admin-stats']]]),
+            ]);
+            return;
+        }
+        $this->telegram->sendMessage($chatId, '💳 <b>CÓ ' . count($pending) . ' YÊU CẦU NẠP CHỜ DUYỆT</b>' . "\n" .
+            'Chỉ bấm Duyệt sau khi đã đối soát giao dịch trên sao kê ngân hàng.');
+        foreach ($pending as $payment) {
+            $name = trim((string) ($payment['name'] ?? '')) ?: (string) ($payment['username'] ?? 'Thành viên');
+            $text = implode("\n", [
+                '💳 <b>YÊU CẦU ' . self::escape((string) $payment['payment_id']) . '</b>',
+                'Thành viên: <b>' . self::escape($name) . '</b>',
+                'Telegram ID: <code>' . self::escape((string) $payment['user_id']) . '</code>',
+                'Số tiền: <b>' . self::money($payment['amount']) . '</b>',
+                'Nội dung chuyển khoản: <code>' . self::escape((string) $payment['transfer_content']) . '</code>',
+                'Tài khoản nhận: <b>' . self::escape((string) $payment['bank_id']) . '</b> · <code>' . self::escape((string) $payment['account_number']) . '</code>',
+                'Chủ tài khoản: ' . self::escape((string) $payment['account_holder']),
+                'Tạo lúc: ' . self::escape((string) $payment['created_at']),
+                '',
+                '⚠️ Đây mới là yêu cầu của người dùng, không phải bằng chứng ngân hàng đã nhận tiền.',
+            ]);
+            $this->telegram->sendMessage($chatId, $text, [
+                'reply_markup' => $this->inlineMenu([[
+                    ['text' => '✅ ĐÃ ĐỐI SOÁT — DUYỆT', 'callback_data' => 'member:payment-approve:' . $payment['payment_id']],
+                    ['text' => '❌ TỪ CHỐI', 'callback_data' => 'member:payment-reject:' . $payment['payment_id']],
+                ]]),
+            ]);
+        }
+    }
+
+    private function approvePaymentRequest(string $chatId, string $adminId, string $paymentId): void
+    {
+        if (!TelegramAuth::isAdmin($adminId)) {
+            throw new RuntimeException('Bạn không có quyền duyệt yêu cầu nạp.');
+        }
+        $result = PaymentService::approve($paymentId, $adminId);
+        $this->telegram->sendMessage($chatId, '✅ Đã duyệt yêu cầu <code>' . self::escape($paymentId) . '</code>. Cộng ' .
+            self::money($result['amountVnd']) . '. Số dư mới: <b>' . self::money($result['newBalance']) . '</b>.');
+        try {
+            $this->telegram->sendMessage((string) $result['telegramId'], '🎉 <b>NẠP TIỀN ĐÃ ĐƯỢC ADMIN DUYỆT</b>' . "\n" .
+                'Mã: <code>' . self::escape($paymentId) . '</code>' . "\n" .
+                'Số tiền: <b>+' . self::money($result['amountVnd']) . '</b>' . "\n" .
+                'Số dư mới: <b>' . self::money($result['newBalance']) . '</b>');
+        } catch (Throwable $error) {
+            error_log('Không gửi được thông báo duyệt nạp: ' . $error->getMessage());
+        }
+    }
+
+    private function rejectPaymentRequest(string $chatId, string $adminId, string $paymentId): void
+    {
+        if (!TelegramAuth::isAdmin($adminId)) {
+            throw new RuntimeException('Bạn không có quyền từ chối yêu cầu nạp.');
+        }
+        $result = PaymentService::reject($paymentId, $adminId, 'Admin từ chối sau khi đối soát.');
+        $this->telegram->sendMessage($chatId, '❌ Đã từ chối yêu cầu <code>' . self::escape($paymentId) . '</code>. Ví không thay đổi.');
+        try {
+            $this->telegram->sendMessage((string) $result['telegramId'], '❌ Yêu cầu nạp <code>' . self::escape($paymentId) . '</code> chưa được duyệt. Vui lòng kiểm tra nội dung chuyển khoản hoặc liên hệ CSKH.');
+        } catch (Throwable $error) {
+            error_log('Không gửi được thông báo từ chối nạp: ' . $error->getMessage());
+        }
+    }
+
+    private function showAdminVideoJobs(string $chatId, string $userId): void
+    {
+        if (!TelegramAuth::isAdmin($userId)) {
+            $this->telegram->sendMessage($chatId, '⛔ Bạn không có quyền quản lý video jobs.');
+            return;
+        }
+        $stats = VideoJobService::stats();
+        $jobs = VideoJobService::recent(15);
+        $this->telegram->sendMessage($chatId, '🎬 <b>VIDEO JOBS</b>' . "\n" .
+            'Chờ: ' . $stats['queued'] . ' · Đang xử lý: ' . $stats['processing'] . ' · Hoàn tất: ' . $stats['completed'] . ' · Lỗi: ' . $stats['failed'] . "\n" .
+            'Worker chỉ dispatch khi cấu hình VIDEO_PROCESSOR_URL và VIDEO_PROCESSOR_SECRET.');
+        foreach ($jobs as $job) {
+            $name = trim((string) ($job['name'] ?? '')) ?: (string) ($job['username'] ?? '');
+            $lines = [
+                '🎬 <code>' . self::escape(substr((string) $job['id'], 0, 8)) . '</code> · <b>' . self::escape(self::statusLabel((string) $job['status'])) . '</b>',
+                'User: <code>' . self::escape((string) $job['user_id']) . '</code> ' . self::escape($name),
+                'Tiến độ: ' . (int) $job['progress'] . '%',
+                'Nguồn: ' . self::escape(self::truncate((string) $job['source_url'], 150)),
+            ];
+            if ($job['error_message'] !== '') {
+                $lines[] = 'Lỗi: ' . self::escape(self::truncate((string) $job['error_message'], 180));
+            }
+            $buttons = [];
+            if ($job['status'] === 'failed') {
+                $buttons[] = ['text' => '♻️ ĐƯA LẠI VÀO HÀNG CHỜ', 'callback_data' => 'member:video-retry:' . $job['id']];
+            }
+            $buttons[] = ['text' => '🔄 TẢI LẠI', 'callback_data' => 'member:admin-jobs'];
+            $this->telegram->sendMessage($chatId, implode("\n", $lines), [
+                'reply_markup' => $this->inlineMenu([$buttons]),
+            ]);
+        }
+    }
+
+    private function retryVideoJob(string $chatId, string $adminId, string $jobId): void
+    {
+        if (!TelegramAuth::isAdmin($adminId)) {
+            throw new RuntimeException('Bạn không có quyền chạy lại video job.');
+        }
+        $job = VideoJobService::retry($jobId);
+        $this->telegram->sendMessage($chatId, '♻️ Đã đưa job <code>' . self::escape(substr((string) $job['id'], 0, 8)) . '</code> về hàng chờ. Cần worker/provider đang hoạt động để xử lý.');
+        try {
+            $this->telegram->sendMessage((string) $job['user_id'], 'Video job của bạn đã được đưa lại vào hàng chờ. Mã job: ' . substr((string) $job['id'], 0, 8) . '.');
+        } catch (Throwable) {
+        }
+    }
+
     private function showDepositHistory(string $chatId, string $userId): void
     {
         $transactions = Database::all(
