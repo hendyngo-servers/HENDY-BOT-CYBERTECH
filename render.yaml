@@ -90,6 +90,12 @@ services:
         value: "false"
       - key: ADMIN_ID
         sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: WEBSOCKET_ALLOWED_ORIGINS
+        value: https://hendy-bot-tele.onrender.com
+      - key: WEBSOCKET_MAX_CONNECTIONS
+        value: "250"
       - key: WEBSOCKET_BIND
         value: 0.0.0.0
       - key: WEBSOCKET_PORT
