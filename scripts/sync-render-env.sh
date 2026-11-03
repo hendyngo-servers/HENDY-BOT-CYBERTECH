@@ -136,7 +136,23 @@ sync_render_key() {
   local classification="$2"
   local value="$3"
 
-  [[ -n "$value" ]] || return 0
+  if [[ -z "$value" ]]; then
+    local delete_on_empty
+    delete_on_empty="$(jq -r --arg key "$key" '.variables[$key].delete_on_empty // false' "$SCHEMA")"
+    if [[ "$delete_on_empty" == "true" ]]; then
+      local http_code
+      http_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+        --request DELETE \
+        --url "https://api.render.com/v1/services/$RENDER_SERVICE_ID/env-vars/$key" \
+        --header "Authorization: Bearer $RENDER_API_KEY" \
+        --header "Accept: application/json")"
+      case "$http_code" in
+        204|404) echo "Đã tắt $key trên Render (biến đã xóa hoặc không tồn tại)." ;;
+        *) echo "Không thể xóa $key khỏi Render (HTTP $http_code)." >&2; return 1 ;;
+      esac
+    fi
+    return 0
+  fi
   if [[ "$classification" == "secret" ]]; then
     echo "::add-mask::$value"
   fi
