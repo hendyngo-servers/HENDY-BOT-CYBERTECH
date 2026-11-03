@@ -120,13 +120,19 @@ final class VipService
         );
         $level = max(0, (int) $user['vip_level']);
         $thresholds = array_column(self::LEVELS, 'threshold', 'level');
+        $totalDeposited = (int) $user['total_deposited'];
+        $currentThreshold = (int) ($thresholds[$level] ?? 0);
         $nextThreshold = $level >= 3 ? null : (int) ($thresholds[$level + 1] ?? 5000000);
+        $progressPercent = $nextThreshold === null
+            ? 100
+            : (int) max(0, min(100, floor((($totalDeposited - $currentThreshold) / max(1, $nextThreshold - $currentThreshold)) * 100)));
 
         return [
             'currentLevel' => $level,
             'totalDeposited' => (int) $user['total_deposited'],
             'pointOld' => (int) $user['point_old'],
             'nextThreshold' => $nextThreshold,
+            'progressPercent' => $progressPercent,
             'amountToNext' => $nextThreshold === null ? 0 : max(0, $nextThreshold - (int) $user['total_deposited']),
             'checkedInToday' => $checkin !== null,
             'checkinDate' => $date,
