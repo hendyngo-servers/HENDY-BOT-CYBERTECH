@@ -240,8 +240,9 @@ $port = max(1, min(65535, Env::int('WEBSOCKET_PORT', Env::int('PORT', 10000))));
 $server = new AdminRealtimeServer();
 Realtime::listen();
 $server->publish();
-$socket = new SocketServer($host . ':' . $port);
-$io = IoServer::factory(new HttpServer(new WsServer($server)), $socket, Loop::get());
+$loop = Loop::get();
+$socket = new SocketServer($host . ':' . $port, [], $loop);
+$io = new IoServer(new HttpServer(new WsServer($server)), $socket, $loop);
 
 // PostgreSQL NOTIFY wakes this lightweight loop. A 5-second cursor scan is kept
 // as a safety net for notifications lost during a process/network restart.
