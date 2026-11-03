@@ -958,20 +958,39 @@ final class ApiController
 
         $now = time();
         $header = self::base64Url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+        $sessionTtl = max(900, min(43200, Env::int('WEBSITE_SESSION_TTL_SECONDS', 43200)));
         $payload = self::base64Url(json_encode([
             'sub' => (string) $identity['user']['user_id'],
-            'name' => $identity['user']['name'],
-            'username' => $identity['user']['username'],
-            'vipLevel' => (int) $identity['user']['vip_level'],
-            'balance' => (int) $identity['user']['balance'],
-            'bot' => $identity['identity']['bot_key'],
+            'name' => (string) $identity['user']['name'],
+            'username' => (string) $identity['user']['username'],
+            'bot' => (string) $identity['identity']['bot_key'],
             'aud' => 'hendy-legacy-account',
             'iat' => $now,
-            'exp' => $now + 300,
+            'exp' => $now + $sessionTtl,
         ], JSON_UNESCAPED_UNICODE));
         $unsigned = $header . '.' . $payload;
         $signature = self::base64Url(hash_hmac('sha256', $unsigned, $secret, true));
-        return self::response(['token' => $unsigned . '.' . $signature, 'tokenType' => 'Bearer', 'expiresInSeconds' => 300, 'user' => ['id' => (string) $identity['user']['user_id'], 'name' => (string) $identity['user']['name'], 'username' => (string) $identity['user']['username'], 'vipLevel' => (int) $identity['user']['vip_level'], 'balance' => (int) $identity['user']['balance']]]);
+        $sessionToken = $unsigned . '.' . $signature;
+        $cookieSecure = true;
+        setcookie('hendy_web_session', $sessionToken, [
+            'expires' => $now + $sessionTtl,
+            'path' => '/',
+            'secure' => $cookieSecure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        return self::response([
+            'authenticated' => true,
+            'botKey' => (string) $identity['identity']['bot_key'],
+            'expiresInSeconds' => $sessionTtl,
+            'user' => [
+                'id' => (string) $identity['user']['user_id'],
+                'name' => (string) $identity['user']['name'],
+                'username' => (string) $identity['user']['username'],
+                'vipLevel' => (int) $identity['user']['vip_level'],
+                'balance' => (int) $identity['user']['balance'],
+            ],
+        ]);
     }
 
     private function userRow(): array
