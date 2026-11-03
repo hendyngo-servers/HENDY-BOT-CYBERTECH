@@ -20,7 +20,7 @@ final class ApiController
     private const CATEGORIES = ['minigame', 'tools', 'codes', 'otp', 'proxy', 'vip'];
     private const ORDER_STATUSES = ['pending', 'processing', 'completed', 'rejected', 'cancelled', 'refunded'];
     private const SETTINGS = [
-        'homepage_title', 'announcement', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
+        'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
         'referral_commission_percent', 'support_message',
     ];
@@ -902,8 +902,11 @@ final class ApiController
                         throw new HttpException(400, 'Tỷ lệ hoa hồng phải từ 0 đến 30%.');
                     }
                 }
-                if (in_array($key, ['GROUP_URL', 'CHANNEL_URL'], true)) {
-                    self::validateHttps($text, 'Liên kết nhóm/kênh phải sử dụng HTTPS.');
+                if (in_array($key, ['website_url', 'GROUP_URL', 'CHANNEL_URL'], true)) {
+                    self::validateHttps($text, 'Liên kết website/nhóm/kênh phải sử dụng HTTPS.');
+                    if ($text !== '' && filter_var($text, FILTER_VALIDATE_URL) === false) {
+                        throw new HttpException(400, 'Liên kết website phải là URL hợp lệ.');
+                    }
                 }
                 $values[$key] = $text;
             }
