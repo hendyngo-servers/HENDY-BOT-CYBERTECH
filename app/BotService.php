@@ -126,10 +126,6 @@ final class BotService
 
         if (preg_match('/^\/start(?:@\w+)?(?:\s+(.+))?$/u', $text, $matches)) {
             $payload = trim((string) ($matches[1] ?? ''));
-            if ($payload === 'web_login') {
-                $this->sendLegacyLoginLink($chatId, $userId);
-                return;
-            }
             $referrer = preg_match('/^ref_(\d{5,20})$/', $payload, $refMatch) ? $refMatch[1] : null;
             if ($referrer === $userId) {
                 $referrer = null;
@@ -140,6 +136,10 @@ final class BotService
                 'username = CASE WHEN EXCLUDED.username <> \'\' THEN EXCLUDED.username ELSE users.username END',
                 [$userId, trim($firstName . ' ' . $lastName), $username, $referrer]
             );
+            if ($payload === 'web_login') {
+                $this->sendLegacyLoginLink($chatId, $userId);
+                return;
+            }
             $this->clearPending($userId);
             $this->sendHome($chatId, $from);
             return;
