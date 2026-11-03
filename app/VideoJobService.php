@@ -116,7 +116,7 @@ final class VideoJobService
     public static function retry(string $jobId): array
     {
         $job = Database::one(
-            "UPDATE video_jobs SET status = 'queued', progress = 0, error_message = '', claimed_at = NULL, updated_at = NOW() " .
+            "UPDATE video_jobs SET status = 'queued', progress = 0, error_message = '', attempts = 0, claimed_at = NULL, updated_at = NOW() " .
             "WHERE id = ? AND status = 'failed' RETURNING id, user_id, bot_key, status, progress",
             [$jobId]
         );
