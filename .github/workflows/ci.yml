@@ -52,7 +52,7 @@ jobs:
       - name: Smoke test public HTTP entrypoint wiring
         run: |
           set -euo pipefail
-          php -r '\$_SERVER["REQUEST_METHOD"]="GET"; \$_SERVER["REQUEST_URI"]="/"; require "public/index.php";' >/dev/null
+          php -r '$_SERVER["REQUEST_METHOD"]="GET"; $_SERVER["REQUEST_URI"]="/"; require "public/index.php";' >/dev/null
 
       - name: Audit environment manifest and regex patterns
         run: |
