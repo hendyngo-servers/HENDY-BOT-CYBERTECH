@@ -1470,7 +1470,9 @@ final class BotService
 
     private function showReferral(string $chatId, string $userId): void
     {
-        $botUsername = ltrim((string) Env::get('BOT_USERNAME', ''), '@');
+        $usernameKey = $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME';
+        $defaultUsername = $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot';
+        $botUsername = ltrim((string) Env::get($usernameKey, Env::get('BOT_USERNAME', $defaultUsername)), '@');
         if ($botUsername === '') {
             try {
                 $me = $this->telegram->getMe();
