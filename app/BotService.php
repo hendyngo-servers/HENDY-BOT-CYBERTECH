@@ -99,6 +99,7 @@ final class BotService
         }
 
         Realtime::publish('bot.update', ['botKey' => $this->botKey, 'updateId' => $updateId, 'kind' => isset($update['message']) ? 'message' : (isset($update['callback_query']) ? 'callback' : 'other')]);
+        Realtime::publish('user.data.changed', ['botKey' => $this->botKey], 'users');
 
         if ($updateId !== null) {
             Database::run(
