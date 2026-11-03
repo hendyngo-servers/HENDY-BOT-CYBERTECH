@@ -65,6 +65,15 @@ if [[ "${WEBHOOK_AUTO_REGISTER:-true}" == "true" ]]; then
   fi
 fi
 
+# Truyền khóa vừa sinh sang các step sau của cùng GitHub Actions job.
+# File GITHUB_ENV không được in vào log và chỉ áp dụng cho step kế tiếp trở đi.
+persist_for_next_step() {
+  local name="$1"
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_ENV"
+  fi
+}
+
 # Sinh khóa ngẫu nhiên ở runtime; không in giá trị ra log.
 generate_secret() {
   local name="$1"
@@ -74,6 +83,7 @@ generate_secret() {
     printf -v "$name" '%s' "$value"
     export "$name"
     echo "::add-mask::$value"
+    persist_for_next_step "$name"
     GENERATED_SECRETS+=("$name")
   fi
 }
@@ -85,6 +95,7 @@ if [[ -n "${BOT2_TOKEN:-}" ]]; then
     TELEGRAM_SECOND_WEBHOOK_SECRET="$(openssl rand -hex 32)"
     export TELEGRAM_SECOND_WEBHOOK_SECRET
     echo "::add-mask::$TELEGRAM_SECOND_WEBHOOK_SECRET"
+    persist_for_next_step TELEGRAM_SECOND_WEBHOOK_SECRET
     GENERATED_SECRETS+=("TELEGRAM_SECOND_WEBHOOK_SECRET")
     echo "TELEGRAM_SECOND_WEBHOOK_SECRET trùng secret bot chính; đã tạo khóa riêng mới."
   fi
