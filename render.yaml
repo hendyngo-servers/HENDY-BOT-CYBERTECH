@@ -49,7 +49,15 @@ services:
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
         value: "86400"
       - key: BOT_USERNAME
-        sync: false
+        value: HendyBot_Bot
+      - key: BOT1_USERNAME
+        value: HendyBot_Bot
+      - key: BOT2_USERNAME
+        value: hendymono_bot
+      - key: BOT1_DISPLAY_NAME
+        value: HENDY BOT CHÍNH
+      - key: BOT2_DISPLAY_NAME
+        value: HENDY BOT THỬ NGHIỆM
       - key: VIETQR_BANK_ID
         sync: false
       - key: VIETQR_ACCOUNT_NO

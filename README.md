@@ -1,8 +1,8 @@
 # Hendy Bot Tele — PHP Edition
 
-Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. BOT1 và BOT2 có webhook, session, menu, danh tính Mini App và link giới thiệu riêng; hai bot dùng chung một bộ mã Mini App và backend, xác thực riêng bằng token của từng bot. Trang `/` là landing page HENDY mới, `/mini-app?bot=primary|secondary` là Mini App dùng chung giao diện, còn `/admin` là Dashboard quản trị riêng.
+Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PHP 8.3 + Apache + PostgreSQL** trên Render. **BOT1/primary là bot chính @HendyBot_Bot**; **BOT2/secondary là bot thử nghiệm @hendymono_bot**. Hai bot có webhook, session, menu và danh tính riêng nhưng dùng chung backend/PostgreSQL; update, menu và pending input được phân vùng theo bot. Trang `/` là landing page HENDY, `/mini-app?bot=primary|secondary` dùng chung giao diện và xác thực theo token từng bot, còn `/admin` là Dashboard quản trị riêng.
 
-> **Chỉ dùng hai biến Telegram Bot Token:** **BOT1_TOKEN** và **BOT2_TOKEN**. BOT2_TOKEN có thể để trống để chỉ chạy một bot. ADMIN_ID là Telegram user ID dùng chung cho hai bot.
+> **Chỉ dùng hai biến Telegram Bot Token:** `BOT1_TOKEN` phải là token của **@HendyBot_Bot**; `BOT2_TOKEN` phải là token của **@hendymono_bot**. BOT2_TOKEN có thể để trống để chỉ chạy bot chính. ADMIN_ID là Telegram user ID dùng chung cho hai bot.
 
 ## Những tính năng được giữ lại
 
@@ -76,9 +76,14 @@ JavaScript trong `apps/mini-app/index.html` và `apps/admin-dashboard/index.html
 
 Tạo file .env từ .env.example. Hai biến token bot duy nhất:
 
-    BOT1_TOKEN=YOUR_TELEGRAM_BOT_1_TOKEN
-    BOT2_TOKEN=
+    BOT1_TOKEN=TOKEN_CUA_HendyBot_Bot
+    BOT2_TOKEN=TOKEN_CUA_hendymono_bot
     ADMIN_ID=YOUR_TELEGRAM_NUMERIC_ADMIN_ID
+
+    BOT1_USERNAME=HendyBot_Bot
+    BOT2_USERNAME=hendymono_bot
+    BOT1_DISPLAY_NAME=HENDY BOT CHÍNH
+    BOT2_DISPLAY_NAME=HENDY BOT THỬ NGHIỆM
 
 Các biến vận hành còn lại:
 
@@ -108,8 +113,10 @@ Token mẫu chỉ là placeholder. Không commit .env, token Telegram, mật kh�
 
 | Biến | Bắt buộc | Ý nghĩa |
 |---|---:|---|
-| BOT1_TOKEN | Có | Token bot chính |
-| BOT2_TOKEN | Không | Token bot thứ hai; để trống để tắt bot 2 |
+| BOT1_TOKEN | Có | Token của bot chính @HendyBot_Bot |
+| BOT2_TOKEN | Không | Token bot thử nghiệm @hendymono_bot; để trống để tắt bot thử nghiệm |
+| BOT1_USERNAME / BOT2_USERNAME | Không | Username hiển thị của bot chính / bot thử nghiệm |
+| BOT1_DISPLAY_NAME / BOT2_DISPLAY_NAME | Không | Tên hiển thị trong lời chào của từng bot |
 | ADMIN_ID | Có | Telegram numeric user ID của Admin; dùng cho cả hai bot |
 | DATABASE_URL | Có | PostgreSQL connection string |
 | DATABASE_SSL | Có | false cho PostgreSQL private/internal Render cùng region; true cho DB yêu cầu TLS |
@@ -123,6 +130,19 @@ Token mẫu chỉ là placeholder. Không commit .env, token Telegram, mật kh�
 | LEGACY_SESSION_SECRET | Khi dùng cầu nối đăng nhập cũ | Ký ticket đăng nhập một lần |
 
 Runtime PHP chỉ đọc BOT1_TOKEN và BOT2_TOKEN. Không dùng các bí danh BOTCHINH_TOKEN, BOTPHU_TOKEN, BOT_TOKEN hoặc BOT_SECOND_TOKEN.
+
+## Điều hướng Mini Game Live
+
+Từ nút **🚀 MINIGAME LIVE**, luồng inline keyboard đi theo ba cấp: chọn nhóm nhà cái → chọn game → chọn gói hoặc kho ACC. Ba nhóm được cấu hình trong `app/BotService.php`: QQ88/HI88/78WIN; RR88/MM88/GG88; [ABCVIP]/XX8/U888/J88/ABC8/88CLB. Từng màn hình có nút quay lại cấp trước và trở về menu chính.
+
+Gói RR88 mặc định hiển thị `RR88 MINI | 88 ĐIỂM - 9,000đ`. Các gói khác được lấy từ `products` có `category=minigame` và brand khớp trong `metadata.brand`, slug hoặc tên. Màn hình kho hiển thị số dư Ví Chính và số username của thành viên đã lưu trong `linked_accounts`; mở màn hình không tự mua gói hoặc trừ ví. Chỉ lưu username, không lưu mật khẩu, PIN, OTP hoặc mã xác minh. Dữ liệu ví và tài khoản thành viên đang dùng chung giữa hai bot; trạng thái hội thoại và menu vẫn tách theo bot.
+
+Trước khi triển khai, gán đúng token trong Render:
+- `BOT1_TOKEN` = token lấy từ BotFather của **@HendyBot_Bot**.
+- `BOT2_TOKEN` = token lấy từ BotFather của **@hendymono_bot**.
+- `BOT1_USERNAME` / `BOT2_USERNAME` và tên hiển thị cần đồng nhất như trên.
+
+Không thể suy ra token từ username. Sau khi đổi vai trò, cập nhật hai secret trong Render Environment rồi redeploy; không commit token vào repo.
 
 ## Chạy local
 
