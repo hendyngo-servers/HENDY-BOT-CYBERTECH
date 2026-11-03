@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/app/MatchmakingService.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/VoucherService.php';
+require dirname(__DIR__) . '/app/VipService.php';
 
 use Hendy\Database;
 use Hendy\MatchmakingService;
@@ -27,6 +28,18 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 };
 
 $assert(Database::check(), 'PostgreSQL connection');
+
+$vipUserId = (string) (900000000000 + random_int(100000, 999999));
+Database::run('INSERT INTO users (user_id, name, username) VALUES (?, ?, ?)', [$vipUserId, 'VIP Checkin Smoke', 'vip_checkin_smoke']);
+$vipBefore = (int) Database::value('SELECT point_old FROM users WHERE user_id = ?', [$vipUserId]);
+$vipCheckin = VipService::checkin($vipUserId);
+$vipAfter = (int) Database::value('SELECT point_old FROM users WHERE user_id = ?', [$vipUserId]);
+$assert(!$vipCheckin['alreadyCheckedIn'] && $vipAfter === $vipBefore + 1, 'VIP daily check-in credits the configured internal point');
+$vipDuplicate = VipService::checkin($vipUserId);
+$vipAfterDuplicate = (int) Database::value('SELECT point_old FROM users WHERE user_id = ?', [$vipUserId]);
+$assert($vipDuplicate['alreadyCheckedIn'] && $vipAfterDuplicate === $vipAfter, 'VIP check-in is idempotent for the same Vietnam-local day');
+$vipStatus = VipService::status($vipUserId);
+$assert($vipStatus['checkedInToday'] && $vipStatus['pointOld'] === $vipAfter, 'VIP status reports daily check-in and point balance');
 $userId = '987654321012';
 Database::run(
     'INSERT INTO users (user_id, name, username) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET name = EXCLUDED.name, username = EXCLUDED.username',
