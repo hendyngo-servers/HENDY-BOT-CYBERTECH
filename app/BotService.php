@@ -920,7 +920,7 @@ final class BotService
             'Toàn bộ thao tác khách hàng được thực hiện trực tiếp bằng menu Telegram; không cần Mini App.',
         ]), [
             'reply_markup' => $this->inlineMenu([
-                [['text' => '💳 LỊCH SỬ GIAO DỊCH / NẠP TIỀN', 'callback_data' => 'member:history']],
+                [['text' => '💳 LỊCH SỬ GIAO DỊCH / NẠP TIỀN', 'callback_data' => 'member:deposit-history']],
                 [['text' => '🚀 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT', 'callback_data' => 'member:linked-accounts']],
                 [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']],
                 [['text' => '🎟️ YÊU CẦU VOUCHER 72H', 'callback_data' => 'member:voucher72']],
