@@ -1398,31 +1398,32 @@ final class BotService
     {
         $requests = PaymentService::forUser($userId, 10);
         $transactions = Database::all(
-            "SELECT amount, reference_code, created_at FROM transactions WHERE user_id = ? AND type = 'DEPOSIT' ORDER BY created_at DESC LIMIT 10",
+            "SELECT amount, type, reference_code, wallet_type, status, created_at
+             FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20",
             [$userId]
         );
-        $lines = ['💳 <b>LỊCH SỬ NẠP TIỀN</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>Yêu cầu nạp</b>'];
+        $lines = ['💳 <b>LỊCH SỬ NẠP TIỀN & GIAO DỊCH</b>', '━━━━━━━━━━━━━━━━━━━━', '<b>Yêu cầu QR / chuyển khoản</b>'];
         foreach ($requests as $request) {
             $lines[] = '• <code>' . self::escape((string) $request['payment_id']) . '</code> · ' .
                 self::money($request['amount']) . ' · ' . self::escape(self::statusLabel((string) $request['status']));
-            if ($request['status'] === 'pending') {
-                $lines[] = '  Nội dung CK: <code>' . self::escape((string) $request['transfer_content']) . '</code>';
-            }
+            $lines[] = '  Ngân hàng: <b>' . self::escape((string) $request['bank_id']) . '</b> · STK <code>' . self::escape((string) $request['account_number']) . '</code>';
+            $lines[] = '  Chủ TK: <b>' . self::escape((string) $request['account_holder']) . '</b>';
+            $lines[] = '  Nội dung CK: <code>' . self::escape((string) $request['transfer_content']) . '</code>';
         }
-        if ($requests === []) {
-            $lines[] = 'Chưa tạo yêu cầu nạp.';
-        }
+        if ($requests === []) $lines[] = 'Chưa có yêu cầu QR/chuyển khoản.';
         $lines[] = '';
-        $lines[] = '<b>Giao dịch đã được ghi có</b>';
+        $lines[] = '<b>Giao dịch đã ghi nhận</b>';
         foreach ($transactions as $transaction) {
-            $lines[] = '• +' . self::money($transaction['amount']) . ' · ' . self::escape((string) ($transaction['reference_code'] ?? '—'));
+            $sign = in_array((string) $transaction['type'], ['DEPOSIT', 'GIFTCODE', 'REFERRAL_REWARD', 'VOUCHER_CREDIT'], true) ? '+' : '';
+            $lines[] = '• ' . $sign . self::money($transaction['amount']) . ' · ' . self::escape((string) $transaction['type']) .
+                ' · Ví ' . self::escape((string) ($transaction['wallet_type'] ?? 'MAIN')) .
+                ' · ' . self::escape((string) ($transaction['reference_code'] ?? '—'));
         }
-        if ($transactions === []) {
-            $lines[] = 'Chưa có giao dịch nạp được duyệt.';
-        }
+        if ($transactions === []) $lines[] = 'Chưa có giao dịch phát sinh.';
         $this->telegram->sendMessage($chatId, implode("\n", $lines), [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '＋ TẠO YÊU CẦU NẠP', 'callback_data' => 'member:wallet']],
+                [['text' => '📜 LỊCH SỬ VÍ CHI TIẾT', 'callback_data' => 'member:history']],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
