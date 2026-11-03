@@ -161,7 +161,9 @@ jobs:
           grep -q 'deploy-verify-render.sh' .github/workflows/sync-runtime-config.yml
           grep -q 'getMe()' bin/register-webhooks.php
           grep -q '401 Unauthorized' bin/register-webhooks.php
-          grep -q 'Apache vẫn sẽ được chạy' docker/start.sh
+          grep -q 'apache2-foreground' docker/start.sh
+          grep -q 'php bin/websocket.php' docker/start.sh
+          grep -q 'WEBSOCKET_ENABLED' render.yaml
           bash -n docker/start.sh
 
       - name: Verify deployment files
