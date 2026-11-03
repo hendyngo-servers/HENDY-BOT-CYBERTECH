@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
 -- Default official website URL shown in the supplied Telegram welcome-screen reference.
 -- Admin can change it from the application settings page; preserve later edits.
 INSERT INTO app_settings (key, value, is_public)
-VALUES ('website_url', 'https://lethituanem.com', TRUE)
+VALUES ('website_url', 'https://hendy-bot-tele.onrender.com', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
 INSERT INTO app_settings (key, value, is_public)
@@ -211,19 +211,27 @@ ON CONFLICT (key) DO NOTHING;
 -- Default welcome-screen links. ON CONFLICT preserves any administrator customization.
 UPDATE app_settings
 SET value = 'https://hendy-bot-tele.onrender.com', updated_at = NOW()
-WHERE key = 'website_url' AND value = 'https://lethituanem.com';
+WHERE key = 'website_url';
 
 INSERT INTO app_settings (key, value, is_public)
 VALUES
     ('GROUP_URL', 'https://t.me/Hendy_Support_Group', TRUE),
-    ('bot_username', 'tuanem2027_bot', TRUE),
+    ('bot_username', 'hendymono_bot', TRUE),
     ('bot_display_name', 'HendyBot_Bot', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
--- Update the previous bundled default only; keep administrator-provided group URLs.
+-- The HENDY website and community are the single supported brand identity.
 UPDATE app_settings
 SET value = 'https://t.me/Hendy_Support_Group', updated_at = NOW()
-WHERE key = 'GROUP_URL' AND value = 'https://t.me/lethituanem_nhomchat';
+WHERE key = 'GROUP_URL';
+
+UPDATE app_settings
+SET value = 'hendymono_bot', updated_at = NOW()
+WHERE key = 'bot_username';
+
+UPDATE app_settings
+SET value = 'HENDY BOT 1', updated_at = NOW()
+WHERE key = 'bot_display_name';
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
