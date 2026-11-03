@@ -32,12 +32,10 @@ final class BotService
 
     private TelegramApi $telegram;
     private string $botKey;
-    private string $adminId;
 
     public function __construct(string $botKey)
     {
         $this->botKey = $botKey === 'secondary' ? 'secondary' : 'primary';
-        $this->adminId = TelegramAuth::adminId();
         $token = TelegramAuth::token($this->botKey);
         if ($token === '') {
             throw new RuntimeException('Token cho ' . $this->botKey . ' chưa được cấu hình.');
@@ -539,7 +537,6 @@ final class BotService
                 $row[] = [
                     'text' => 'Xóa #' . $account['id'],
                     'callback_data' => 'member:link-delete:' . $account['id'],
-                    'style' => 'danger',
                 ];
             }
             $rows[] = $row;
@@ -567,7 +564,6 @@ final class BotService
             $rows[] = [[
                 'text' => $label,
                 'callback_data' => 'member:order:' . $product['id'],
-                'style' => 'success',
             ]];
             if (trim((string) $product['description']) !== '') {
                 $lines[] = '• <b>' . self::escape($product['name']) . '</b> — ' . self::money($product['price']);
@@ -1040,7 +1036,6 @@ final class BotService
             $rows[] = [[
                 'text' => self::truncate($product['name'] . ' · ' . self::money($product['price']), 55),
                 'callback_data' => 'member:order:' . $product['id'],
-                'style' => 'success',
             ]];
         }
         $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
