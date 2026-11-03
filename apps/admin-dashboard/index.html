@@ -810,7 +810,7 @@
       '<div class="field"><label>Điểm nhận khi điểm danh VIP mỗi ngày (0–1.000)</label><input name="vip_checkin_points" type="number" min="0" max="1000" step="1" value="' + escapeHtml(s.vip_checkin_points || '1') + '"></div>' +
       '<div class="field"><label>Lời nhắn CSKH</label><textarea name="support_message">' + escapeHtml(s.support_message || '') + '</textarea></div>' +
       '<button class="primary">Lưu cấu hình</button></form>' +
-      '<div class="notice">Website được hiển thị trong lời chào Telegram và trang chủ Mini App. Chỉ lưu URL HTTPS; không nhập token hoặc mật khẩu vào đây.</div>' +
+      '<div class="notice">Website được hiển thị trong lời chào Telegram và trang chủ Mini App. URL kết nối ABCVIP phải là cổng OAuth/SSO chính thức của nhà cung cấp và hỗ trợ callback; không nhập mật khẩu hoặc OTP tại đây.</div>' +
       '<div class="notice warn">Các trường còn lại là cấu hình nghiệp vụ không phải secret. BOT1_TOKEN, DATABASE_URL, WEBHOOK_SECRET và API key chỉ thay đổi trong Render Environment, không lưu ở cơ sở dữ liệu ứng dụng.</div>';
   }
 
