@@ -968,10 +968,11 @@ final class BotService
         }
         $job = VideoJobService::retry($jobId);
         $this->telegram->sendMessage($chatId, '♻️ Đã đưa job <code>' . self::escape(substr((string) $job['id'], 0, 8)) . '</code> về hàng chờ. Cần worker/provider đang hoạt động để xử lý.');
-        try {
-            $this->telegram->sendMessage((string) $job['user_id'], 'Video job của bạn đã được đưa lại vào hàng chờ. Mã job: ' . substr((string) $job['id'], 0, 8) . '.');
-        } catch (Throwable) {
-        }
+        $this->notifyUserOnBot(
+            (string) ($job['bot_key'] ?? $this->botKey),
+            (string) $job['user_id'],
+            'Video job của bạn đã được đưa lại vào hàng chờ. Mã job: ' . substr((string) $job['id'], 0, 8) . '.'
+        );
     }
 
     private function showDepositHistory(string $chatId, string $userId): void
