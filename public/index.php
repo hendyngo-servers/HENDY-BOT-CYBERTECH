@@ -164,10 +164,16 @@ try {
         exit;
     }
 
-    if ($method === 'GET' && ($path === '/' || $path === '/index.html')) {
+    if ($method === 'GET' && in_array($path, ['/admin', '/admin/'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+        readfile(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
+        exit;
+    }
+    if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: no-cache');
-        readfile(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
+        readfile(dirname(__DIR__) . '/apps/telegram-landing/index.html');
         exit;
     }
     if ($method === 'GET' && $path === '/styles/buttons.css') {
