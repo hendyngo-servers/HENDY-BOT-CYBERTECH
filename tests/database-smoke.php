@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/MatchmakingService.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
+require dirname(__DIR__) . '/app/VoucherService.php';
 
 use Hendy\Database;
 use Hendy\MatchmakingService;
@@ -57,6 +58,46 @@ $order = Database::one(
     [$orderCode, $userId, $product['id'], 'PHP Smoke Tool']
 );
 $assert($order !== null, 'create order');
+
+// Customer center: legacy-compatible wallet fields and 72-hour voucher eligibility.
+Database::run("UPDATE orders SET status = 'processing', created_at = NOW() - INTERVAL '73 hours' WHERE id = ?", [$order['id']]);
+$eligible = VoucherService::eligibleOrders($userId);
+$assert(count(array_filter($eligible, static fn (array $row): bool => (int) $row['id'] === (int) $order['id'])) === 1, 'only processing orders older than 72 hours are voucher eligible');
+$voucher = VoucherService::create($userId, (int) $order['id'], 'Đơn hàng đã quá 72 giờ chưa hoàn tất.');
+$assert($voucher['status'] === 'pending' && $voucher['order_code'] === $orderCode, 'create pending voucher request for eligible order');
+$duplicateVoucherRejected = false;
+try {
+    VoucherService::create($userId, (int) $order['id'], 'Gửi trùng yêu cầu voucher.');
+} catch (RuntimeException) {
+    $duplicateVoucherRejected = true;
+}
+$assert($duplicateVoucherRejected, 'one voucher request per order');
+$mainBalanceBeforeVoucher = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
+$voucherBalanceBefore = (int) Database::value('SELECT voucher_wallet FROM users WHERE user_id = ?', [$userId]);
+$reviewedVoucher = VoucherService::review((int) $voucher['id'], 'approve', '99887766', 25000, 'Đã đối chiếu đơn hàng.');
+$mainBalanceAfterVoucher = (int) Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
+$voucherBalanceAfter = (int) Database::value('SELECT voucher_wallet FROM users WHERE user_id = ?', [$userId]);
+$assert($reviewedVoucher['status'] === 'approved' && $voucherBalanceAfter === $voucherBalanceBefore + 25000, 'voucher approval credits voucher wallet');
+$assert($mainBalanceAfterVoucher === $mainBalanceBeforeVoucher, 'voucher approval never credits main wallet');
+$voucherLedger = Database::one("SELECT wallet_type, amount FROM wallet_ledger WHERE reference_code = ?", ['voucher-request:' . $voucher['id']]);
+$assert($voucherLedger !== null && $voucherLedger['wallet_type'] === 'VOUCHER' && (int) $voucherLedger['amount'] === 25000, 'voucher credit has a separate idempotent ledger entry');
+$secondVoucherApprovalRejected = false;
+try {
+    VoucherService::review((int) $voucher['id'], 'approve', '99887766', 25000);
+} catch (RuntimeException) {
+    $secondVoucherApprovalRejected = true;
+}
+$assert($secondVoucherApprovalRejected, 'approved voucher cannot be credited twice');
+
+$rejectOrderCode = 'CIVR' . strtoupper(bin2hex(random_bytes(4)));
+$rejectOrder = Database::one(
+    "INSERT INTO orders (order_code, user_id, product_id, product_name, category, amount, status, created_at) VALUES (?, ?, ?, ?, 'tools', 15000, 'pending', NOW() - INTERVAL '80 hours') RETURNING id",
+    [$rejectOrderCode, $userId, $product['id'], 'Voucher rejection smoke']
+);
+$rejectVoucher = VoucherService::create($userId, (int) $rejectOrder['id'], 'Kiểm tra quy trình từ chối voucher.');
+$rejectedVoucher = VoucherService::review((int) $rejectVoucher['id'], 'reject', '99887766', 0, 'Không đủ điều kiện.');
+$assert($rejectedVoucher['status'] === 'rejected' && (int) Database::value('SELECT voucher_wallet FROM users WHERE user_id = ?', [$userId]) === $voucherBalanceAfter, 'rejecting voucher request never changes voucher wallet');
+
 
 $reference = 'ci-ledger-' . bin2hex(random_bytes(5));
 Database::run(
