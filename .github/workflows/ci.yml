@@ -111,6 +111,18 @@ jobs:
           php -r '$html=file_get_contents("apps/mini-app/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (count($matches[1]) !== 1) { fwrite(STDERR, "Mini App must contain exactly one inline application script\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-mini-app.js", $matches[1][0]);'
           node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-mini-app.js";')"
 
+      - name: Validate unified HENDY website JavaScript and customer-center route
+        run: |
+          set -euo pipefail
+          test -s apps/website/index.html
+          php -r '$html=file_get_contents("apps/website/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (count($matches[1]) !== 1) { fwrite(STDERR, "Website must contain exactly one inline application script\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-website.js", $matches[1][0]);'
+          node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-website.js";')"
+          php -r '$paths=["/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php","//KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php"]; foreach($paths as $path){if(!preg_match("#^/+KHACH-HANG/TRUNG-TAM-KHACH-HANG/index\\.php/?$#i",$path)){fwrite(STDERR,"Customer center route not matched: ".$path."\\n");exit(1);}}'
+          grep -q 'api('/api/customer-center')' apps/website/index.html || grep -q '/api/customer-center' apps/website/index.html
+          grep -q 'data-customer-tab' apps/website/index.html
+          grep -q 'support-abuse' apps/website/index.html
+          grep -q 'submit-voucher' apps/website/index.html
+
       - name: Verify dashboard buttons and Docker tools
         run: |
           grep -q -- '--btn-primary-start' apps/admin-dashboard/styles/buttons.css
