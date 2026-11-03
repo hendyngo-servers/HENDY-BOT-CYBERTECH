@@ -311,31 +311,56 @@ final class ApiController
             return self::response(['ticket' => $ticket, 'message' => 'Đã gửi yêu cầu hỗ trợ.'], 201);
         }
 
+        if ($path === '/api/matchmaking/leaderboard' && $method === 'GET') {
+            $limit = (int) ($this->query['limit'] ?? 10);
+            return self::response([
+                'players' => MatchmakingService::leaderboard($limit),
+                'currentPlayer' => MatchmakingService::ensureStats($userId),
+            ]);
+        }
+
         if ($path === '/api/matchmaking' && $method === 'GET') {
+            $stats = MatchmakingService::ensureStats($userId);
             $match = Database::one(
-                "SELECT id, mode, status, created_at, CASE WHEN player_one = ? THEN player_two ELSE player_one END AS opponent_id " .
-                "FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
+                "SELECT id, mode, status, created_at, player_one, player_two, CASE WHEN player_one = ? THEN player_two ELSE player_one END AS opponent_id " .
+                "FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
                 [$userId, $userId, $userId]
             );
             if ($match !== null) {
                 $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$match['opponent_id']]);
+                $opponentStats = MatchmakingService::ensureStats((string) $match['opponent_id']);
+                $result = Database::one(
+                    'SELECT score_one, score_two, status, reported_by, created_at FROM matchmaking_results WHERE match_id = ?',
+                    [$match['id']]
+                );
                 return self::response([
-                    'status' => 'matched',
+                    'status' => $match['status'] === 'disputed' ? 'disputed' : 'matched',
                     'matchId' => (string) $match['id'],
                     'mode' => $match['mode'],
                     'opponentId' => $match['opponent_id'],
                     'opponentName' => ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy'),
                     'createdAt' => $match['created_at'],
+                    'rating' => (int) $stats['rating'],
+                    'points' => (int) $stats['points'],
+                    'opponentRating' => (int) $opponentStats['rating'],
+                    'pendingResult' => $result !== null ? [
+                        'scoreOne' => (int) $result['score_one'],
+                        'scoreTwo' => (int) $result['score_two'],
+                        'status' => $result['status'],
+                        'reportedByMe' => $result['reported_by'] === $userId,
+                    ] : null,
                 ]);
             }
+
             $waiting = Database::one(
                 "SELECT id, mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1",
                 [$userId]
             );
             return self::response($waiting !== null
-                ? ['status' => 'waiting', 'mode' => $waiting['mode'], 'createdAt' => $waiting['created_at']]
-                : ['status' => 'idle']);
+                ? ['status' => 'waiting', 'mode' => $waiting['mode'], 'createdAt' => $waiting['created_at'], 'rating' => (int) $stats['rating'], 'points' => (int) $stats['points']]
+                : ['status' => 'idle', 'rating' => (int) $stats['rating'], 'points' => (int) $stats['points']]);
         }
+
         if ($path === '/api/matchmaking/join' && $method === 'POST') {
             $mode = $this->text($this->body['mode'] ?? 'quick', 24);
             if (!in_array($mode, ['quick', 'practice'], true)) {
@@ -343,8 +368,10 @@ final class ApiController
             }
             $match = Database::transaction(function () use ($userId, $mode): ?array {
                 Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-matchmaking:' . $mode]);
+                $myStats = MatchmakingService::ensureStats($userId);
+                $myRating = (int) $myStats['rating'];
                 $active = Database::one(
-                    "SELECT * FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                    "SELECT * FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
                     [$userId, $userId]
                 );
                 if ($active !== null) {
@@ -355,13 +382,19 @@ final class ApiController
                     return null;
                 }
                 $partner = Database::one(
-                    "SELECT id, user_id FROM matchmaking_queue WHERE status = 'waiting' AND mode = ? AND user_id <> ? ORDER BY created_at ASC LIMIT 1 FOR UPDATE",
-                    [$mode, $userId]
+                    "SELECT q.id, q.user_id FROM matchmaking_queue q " .
+                    "LEFT JOIN matchmaking_player_stats s ON s.user_id = q.user_id " .
+                    "WHERE q.status = 'waiting' AND q.mode = ? AND q.user_id <> ? " .
+                    "AND (? <> 'quick' OR ABS(COALESCE(s.rating, 1000) - ?) <= LEAST(600, 150 + (EXTRACT(EPOCH FROM (NOW() - q.created_at)) / 30 * 25))) " .
+                    "ORDER BY CASE WHEN ? = 'quick' THEN ABS(COALESCE(s.rating, 1000) - ?) ELSE 0 END ASC, q.created_at ASC " .
+                    "LIMIT 1 FOR UPDATE OF q",
+                    [$mode, $userId, $mode, $myRating, $mode, $myRating]
                 );
                 if ($partner === null) {
                     Database::run("INSERT INTO matchmaking_queue (user_id, mode, status) VALUES (?, ?, 'waiting')", [$userId, $mode]);
                     return null;
                 }
+                MatchmakingService::ensureStats((string) $partner['user_id']);
                 $created = Database::one(
                     "INSERT INTO matchmaking_matches (player_one, player_two, mode, status) VALUES (?, ?, ?, 'matched') RETURNING *",
                     [$partner['user_id'], $userId, $mode]
@@ -385,34 +418,51 @@ final class ApiController
                 $this->notify($opponentId, '🎮 Bạn đã được ghép đôi với một thành viên. Mã ghép #' . $match['id']);
                 return self::response(['status' => 'matched', 'matchId' => (string) $match['id'], 'opponentId' => $opponentId, 'opponentName' => $name]);
             }
-            return self::response(['status' => 'waiting', 'message' => 'Đang chờ người chơi phù hợp.']);
+            return self::response(['status' => 'waiting', 'message' => 'Đang chờ người chơi có điểm xếp hạng phù hợp.']);
         }
+
         if ($path === '/api/matchmaking/leave' && $method === 'POST') {
             $updated = Database::run("UPDATE matchmaking_queue SET status = 'cancelled', updated_at = NOW() WHERE user_id = ? AND status = 'waiting' RETURNING id", [$userId]);
             if ($updated->rowCount() === 0) {
-                $active = Database::one("SELECT id FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) LIMIT 1", [$userId, $userId]);
+                $active = Database::one("SELECT id FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) LIMIT 1", [$userId, $userId]);
                 if ($active !== null) {
-                    throw new HttpException(409, 'Bạn đã được ghép đôi. Hãy kết thúc lượt ghép trước khi rời hàng chờ.');
+                    throw new HttpException(409, 'Bạn đã được ghép đôi hoặc đang chờ xử lý kết quả. Không thể rời lượt ghép.');
                 }
             }
             return self::response(['success' => true, 'status' => 'idle']);
         }
-        if ($path === '/api/matchmaking/finish' && $method === 'POST') {
+
+        if ($path === '/api/matchmaking/report' && $method === 'POST') {
             $matchId = (string) ($this->body['matchId'] ?? '');
-            if (!preg_match('/^\d{1,18}$/', $matchId)) {
-                throw new HttpException(400, 'Mã ghép đôi không hợp lệ.');
+            $scoreOne = filter_var($this->body['scoreOne'] ?? null, FILTER_VALIDATE_INT);
+            $scoreTwo = filter_var($this->body['scoreTwo'] ?? null, FILTER_VALIDATE_INT);
+            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $scoreOne === false || $scoreTwo === false) {
+                throw new HttpException(400, 'Mã lượt ghép và tỷ số phải là số nguyên hợp lệ.');
             }
-            Database::transaction(function () use ($matchId, $userId): void {
-                $match = Database::one(
-                    "UPDATE matchmaking_matches SET status = 'completed', finished_at = NOW() WHERE id = ? AND status = 'matched' AND (player_one = ? OR player_two = ?) RETURNING id",
-                    [$matchId, $userId, $userId]
-                );
-                if ($match === null) {
-                    throw new HttpException(404, 'Không tìm thấy lượt ghép đang hoạt động.');
-                }
-                Database::run("UPDATE matchmaking_queue SET status = 'completed', updated_at = NOW() WHERE match_id = ?", [$matchId]);
-            });
-            return self::response(['success' => true, 'status' => 'completed']);
+            try {
+                $result = MatchmakingService::report((int) $matchId, $userId, (int) $scoreOne, (int) $scoreTwo);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            return self::response(['result' => $result['result'], 'status' => 'pending', 'message' => 'Đã gửi tỷ số. Chờ đối thủ xác nhận.'], 201);
+        }
+
+        if ($path === '/api/matchmaking/confirm' && $method === 'POST') {
+            $matchId = (string) ($this->body['matchId'] ?? '');
+            $approved = filter_var($this->body['approved'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $approved === null) {
+                throw new HttpException(400, 'Mã lượt ghép hoặc lựa chọn xác nhận không hợp lệ.');
+            }
+            try {
+                $result = MatchmakingService::confirm((int) $matchId, $userId, $approved);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            return self::response($result);
+        }
+
+        if ($path === '/api/matchmaking/finish' && $method === 'POST') {
+            throw new HttpException(410, 'Không thể kết thúc lượt ghép trực tiếp. Hãy gửi tỷ số và chờ đối thủ xác nhận.');
         }
 
         if ($path === '/api/vip' && $method === 'GET') {
