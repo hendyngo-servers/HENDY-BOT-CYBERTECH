@@ -205,14 +205,14 @@ Tạo Environment tên `production` (và `staging` nếu cần) trong **Settings
 **Environment Secrets**
 - Bắt buộc: `BOT1_TOKEN`.
 - Nếu chạy bot thứ hai: `BOT2_TOKEN`.
-- Có thể đặt trước hoặc để workflow tự sinh: `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SECOND_WEBHOOK_SECRET`, `BANK_WEBHOOK_SECRET`, `LEGACY_SESSION_SECRET`.
+- Có thể đặt trước hoặc để workflow tự sinh: `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SECOND_WEBHOOK_SECRET`, `LEGACY_SESSION_SECRET`. Nếu secret của BOT2 bị trùng BOT1, chế độ apply tự tạo secret riêng và lưu lại. `BANK_WEBHOOK_SECRET` không tự sinh/đồng bộ khi chưa có adapter ngân hàng chính thức.
 - Khi dùng VietQR: `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME`.
 - Hạ tầng CI: `RENDER_API_KEY`, `GH_CONFIG_SYNC_TOKEN`.
 - `DATABASE_URL` không được workflow ghi đè. Giữ biến này do Render PostgreSQL/Blueprint quản lý để tránh thay nhầm database.
 
 **Environment Variables**
 - Bắt buộc: `ADMIN_ID`, `APP_URL`, `RENDER_SERVICE_ID`.
-- Có thể thêm: `APP_ENV`, `PORT`, `WEBAPP_URL`, `ALLOWED_ORIGINS`, `BOT_USERNAME`, `DATABASE_SSL`, `DB_STARTUP_WAIT_SECONDS`, `RUN_MIGRATIONS_ON_START`, `WEBHOOK_AUTO_REGISTER`, `VIETQR_BANK_ID`, `GROUP_URL`, `CHANNEL_URL`, `TELEGRAM_INIT_DATA_MAX_AGE_SECONDS`, `WEBSOCKET_URL`, `WEBSOCKET_BIND`, `WEBSOCKET_PORT`.
+- Có thể thêm: `APP_ENV`, `PORT`, `WEBAPP_URL`, `ALLOWED_ORIGINS`, `BOT_USERNAME`, `DATABASE_SSL`, `DB_STARTUP_WAIT_SECONDS`, `RUN_MIGRATIONS_ON_START`, `WEBHOOK_AUTO_REGISTER`, `BANK_WEBHOOK_ENABLED` (mặc định `false` và không được bật ở bản hiện tại), `VIETQR_BANK_ID`, `GROUP_URL`, `CHANNEL_URL`, `TELEGRAM_INIT_DATA_MAX_AGE_SECONDS`, `WEBSOCKET_URL`, `WEBSOCKET_BIND`, `WEBSOCKET_PORT`.
 
 `GH_CONFIG_SYNC_TOKEN` cần quyền ghi GitHub Environment secrets/variables cho repository (fine-grained PAT hoặc GitHub App token với repository permission **Environments: write**). `RENDER_API_KEY` cần quyền cập nhật biến môi trường và trigger deploy cho service được chọn. Không dùng một token cá nhân có quyền rộng hơn mức cần thiết.
 
@@ -231,17 +231,17 @@ Script dùng endpoint cập nhật **từng biến** của Render, không dùng 
 ### Giới hạn của các tích hợp ngoài
 
 - Mini Game OAuth cần tên nhà cung cấp, authorization URL, token URL, profile URL, scope và client credentials hợp lệ.
-- Bank adapter production cần tài liệu chữ ký callback của ngân hàng/đơn vị trung gian (header, thuật toán, timestamp, payload canonicalization và cơ chế idempotency).
+- Bank webhook hiện bị khóa an toàn (`BANK_WEBHOOK_ENABLED=false`; endpoint trả HTTP 503). Chưa có adapter chữ ký theo nhà cung cấp; shared secret đơn thuần không đủ để xác minh giao dịch nạp tiền. Chỉ bật sau khi triển khai/verifiy đúng chữ ký, timestamp, chống replay, idempotency và test sandbox của nhà cung cấp.
 - App Store Connect, Google Play và Microsoft Store cần quyền nhà phát hành, issuer/key hoặc service account, package/bundle ID và cấu hình upload theo từng store.
-- Ghép đôi hiện là queue FIFO; Elo/rating, kết quả có xác nhận và cơ chế thưởng chưa được kích hoạt.
+- Ghép đôi đã có Elo (K=32), ghép theo mức rating gần nhau, bảng xếp hạng, báo tỷ số và xác nhận hai phía; kết quả tranh chấp vào dashboard admin để xử lý. Điểm thưởng chỉ là điểm nội bộ, không cộng ví/không quy đổi tiền và chưa chứng minh kết quả từ game bên ngoài.
 
 Không tự bật login, nạp tiền thật hoặc publish store chỉ bằng cách điền placeholder. Những API/credential bên ngoài chưa được cung cấp phải giữ trạng thái disabled đến khi có cấu hình chính thức và bộ kiểm thử sandbox.
 
 ## Lưu ý nghiệp vụ và bảo mật
 
 - Liên kết Mini Game Live hiện chỉ lưu thương hiệu và username do thành viên nhập; không tự đăng nhập vào dịch vụ bên thứ ba.
-- Ghép đôi hiện là hàng chờ kết nối hai thành viên; không phải engine game trực tiếp, hệ thống điểm hoặc giải thưởng game.
-- VietQR tạo mã thanh toán và backend nhận callback ngân hàng qua secret. Cần cấu hình nhà cung cấp webhook/bank adapter thực tế để gửi dữ liệu đã xác thực đến POST /webhook/bank; không coi nội dung chuyển khoản do người dùng tự gửi là bằng chứng nạp tiền.
+- Nút Ghép đôi trong Telegram mở Mini App xếp hạng. Queue, Elo, xác nhận tỷ số, dispute và bảng xếp hạng nằm trong API/Mini App; đây không phải engine game trực tiếp và chưa có tích hợp xác minh kết quả từ game bên ngoài.
+- VietQR chỉ tạo mã thanh toán. Endpoint POST /webhook/bank đang bị khóa và không ghi có ví. Đừng bật nạp tiền thật cho tới khi adapter chữ ký callback theo ngân hàng được cài đặt và kiểm thử.
 - Các token bot và webhook secrets không hiển thị hoặc lưu trong Dashboard. Chúng được quản lý tại Render Environment.
 - Migration chỉ tạo bảng/index/setting còn thiếu. Trước khi deploy với dữ liệu hiện hữu, hãy backup PostgreSQL và thử trên staging.
 - Thay đổi code không tự chuyển dữ liệu đang ở Cloudflare D1 hoặc database khác. Hãy export, mapping, import, đối soát số dư/ledger/đơn hàng/referral trước khi ngừng nguồn dữ liệu cũ.
