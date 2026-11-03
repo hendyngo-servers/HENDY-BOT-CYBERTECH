@@ -22,7 +22,7 @@ final class ApiController
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
-        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username',
+        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name',
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
@@ -907,10 +907,10 @@ final class ApiController
             $values = [];
             foreach ($this->body as $key => $value) {
                 $text = $this->text($value, 500);
-                if ($key === 'bot_username') {
+                if ($key === 'bot_display_name' || $key === 'bot_username') {
                     $text = ltrim($text, '@');
                     if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $text)) {
-                        throw new HttpException(400, 'Tên bot phải là username Telegram hợp lệ, không cần ký tự @.');
+                        throw new HttpException(400, 'Username bot phải hợp lệ, chỉ gồm chữ cái, số và dấu gạch dưới, không cần @.');
                     }
                 }
                 if ($key === 'vip_checkin_points') {
