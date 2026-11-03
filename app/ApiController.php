@@ -110,8 +110,8 @@ final class ApiController
                 'products' => $this->listProducts(null, false),
                 'settings' => $publicSettings,
                 'referralCount' => $referrals,
-                'botUsername' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME', $publicSettings['bot_username'] ?? Env::get('BOT_USERNAME', '')),
-                'botDisplayName' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME', ''),
+                'botUsername' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME', $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot'),
+                'botDisplayName' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME', $this->botKey === 'secondary' ? 'HENDY BOT 2' : 'HENDY BOT 1'),
             ]);
         }
 
@@ -343,7 +343,8 @@ final class ApiController
             );
             $commission = $this->settings(['referral_commission_percent'], true);
             $usernameKey = $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME';
-            $username = ltrim((string) Env::get($usernameKey, Env::get('BOT_USERNAME', '')), '@');
+            $defaultUsername = $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot';
+            $username = ltrim((string) Env::get($usernameKey, Env::get('BOT_USERNAME', $defaultUsername)), '@');
             $link = $username !== '' ? 'https://t.me/' . $username . '?start=ref_' . $userId : '';
             return self::response([
                 'totalInvited' => $count,
