@@ -213,6 +213,16 @@ try {
         respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
     }
 
+    // --- ROUTE TÙY CHỈNH MỞ RỘNG ---
+    if ($method === 'POST' && $path === '/api/custom-action') {
+        $input = json_decode((string) file_get_contents('php://input'), true) ?? [];
+        $name = trim((string) ($input['name'] ?? 'Khách'));
+        respond([
+            'status' => 'success',
+            'message' => 'Xin chào ' . $name . ', tuyến đường tùy chỉnh đã hoạt động thành công!'
+        ]);
+    }
+
     if ($method === 'POST' && $path === '/webhook/video') {
         $secret = (string) Env::get('VIDEO_PROCESSOR_SECRET', '');
         if ($secret === '') {
