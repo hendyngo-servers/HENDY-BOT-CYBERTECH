@@ -885,9 +885,9 @@ final class BotService
             [$userId]
         );
         if ($updated->rowCount() === 0) {
-            $active = Database::one("SELECT id FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) LIMIT 1", [$userId, $userId]);
+            $active = Database::one("SELECT id FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) LIMIT 1", [$userId, $userId]);
             if ($active !== null) {
-                throw new RuntimeException('Bạn đã được ghép đôi. Hãy kết thúc lượt ghép trước khi rời hàng chờ.');
+                throw new RuntimeException('Bạn đang trong trận hoặc có kết quả tranh chấp cần xử lý; không thể rời hàng chờ.');
             }
         }
         $this->telegram->sendMessage($chatId, 'Đã rời hàng chờ ghép đôi.');
