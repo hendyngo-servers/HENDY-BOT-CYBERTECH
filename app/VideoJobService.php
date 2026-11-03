@@ -162,6 +162,11 @@ final class VideoJobService
         if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
             throw new RuntimeException('VIDEO_PROCESSOR_URL phải là HTTPS.');
         }
+        $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        $baseParts = $base !== '' ? parse_url($base) : false;
+        if (!is_array($baseParts) || strtolower((string) ($baseParts['scheme'] ?? '')) !== 'https' || empty($baseParts['host'])) {
+            throw new RuntimeException('APP_URL/RENDER_EXTERNAL_URL HTTPS phải được cấu hình trước khi bật worker.');
+        }
 
         $job = Database::transaction(function (): ?array {
             $next = Database::one(
@@ -180,7 +185,6 @@ final class VideoJobService
             return null;
         }
 
-        $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         $body = json_encode([
             'jobId' => $job['id'],
             'telegramId' => $job['user_id'],
