@@ -169,6 +169,9 @@ try {
     }
 
     if ($method === 'POST' && $path === '/webhook/bank') {
+        if (!Env::bool('BANK_WEBHOOK_ENABLED', false)) {
+            throw new HttpException(503, 'Webhook nạp tiền đang tạm khóa cho đến khi cấu hình adapter chữ ký của nhà cung cấp ngân hàng.');
+        }
         $body = json_decode((string) file_get_contents('php://input'), true);
         if (!is_array($body)) {
             throw new HttpException(400, 'Dữ liệu JSON không hợp lệ.');
