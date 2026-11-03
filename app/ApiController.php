@@ -440,8 +440,8 @@ final class ApiController
             $matchId = (string) ($this->body['matchId'] ?? '');
             $scoreOne = filter_var($this->body['scoreOne'] ?? null, FILTER_VALIDATE_INT);
             $scoreTwo = filter_var($this->body['scoreTwo'] ?? null, FILTER_VALIDATE_INT);
-            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $scoreOne === false || $scoreTwo === false) {
-                throw new HttpException(400, 'Mã lượt ghép và tỷ số phải là số nguyên hợp lệ.');
+            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $scoreOne === false || $scoreTwo === false || $scoreOne < 0 || $scoreOne > 999 || $scoreTwo < 0 || $scoreTwo > 999) {
+                throw new HttpException(400, 'Mã lượt ghép và tỷ số phải là số nguyên từ 0 đến 999.');
             }
             try {
                 $result = MatchmakingService::report((int) $matchId, $userId, (int) $scoreOne, (int) $scoreTwo);
@@ -454,7 +454,7 @@ final class ApiController
         if ($path === '/api/matchmaking/confirm' && $method === 'POST') {
             $matchId = (string) ($this->body['matchId'] ?? '');
             $approved = filter_var($this->body['approved'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || $approved === null) {
+            if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || !array_key_exists('approved', $this->body) || $approved === null) {
                 throw new HttpException(400, 'Mã lượt ghép hoặc lựa chọn xác nhận không hợp lệ.');
             }
             try {
