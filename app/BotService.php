@@ -19,7 +19,7 @@ final class BotService
         ['action' => 'otp', 'label' => '📲 OTP & PROXY', 'description' => 'Thuê OTP, Proxy và quản lý kho đã thuê.', 'style' => 'primary'],
         ['action' => 'viptools', 'label' => '💎 KHO VIP', 'description' => 'Công cụ và ưu đãi dành cho thành viên VIP.', 'style' => 'danger'],
         ['action' => 'customer', 'label' => '👤 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Hồ sơ, ví, tài khoản liên kết và lịch sử.', 'style' => 'primary'],
-        ['action' => 'miniapp', 'label' => '🌈 MỞ MINI APP HENDY', 'description' => 'Mở giao diện dịch vụ HENDY dành riêng cho bot này.', 'style' => 'success'],
+        ['action' => 'miniapp', 'label' => '🌈 MỞ WEBSITE HENDY', 'description' => 'Mở website dịch vụ HENDY đã tích hợp đầy đủ tính năng dành riêng cho bot này.', 'style' => 'success'],
         ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi video vào hàng đợi xử lý phụ đề.', 'style' => 'primary'],
         ['action' => 'history', 'label' => '📜 LỊCH SỬ GIAO DỊCH', 'description' => 'Tra cứu yêu cầu nạp và biến động số dư.', 'style' => 'success'],
         ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ xử lý video.', 'style' => 'primary'],
