@@ -9,7 +9,7 @@ use Throwable;
 final class BotService
 {
     private const TTL_MINUTES = 10;
-    private const BRANDS = ['QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'];
+    private const BRANDS = ['RR88', 'MM88', 'GG88', 'AD88', 'QQ88', '78WIN', 'SC88', 'C168', 'CM88', 'F8BET'];
 
     private const MENU = [
         ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Liên kết và quản lý tài khoản trò chơi.', 'style' => 'primary'],
@@ -196,6 +196,22 @@ final class BotService
 
         if (preg_match('/^\/orders(?:@\w+)?$/u', $text)) {
             $this->showOrders($chatId, $userId);
+            return;
+        }
+        if (preg_match('/^\/(?:customer|cskh)(?:@\w+)?$/u', $text)) {
+            $this->showCustomer($chatId, $userId);
+            return;
+        }
+        if (preg_match('/^\/minigame(?:@\w+)?$/u', $text)) {
+            $this->showLiveAccounts($chatId, $userId);
+            return;
+        }
+        if (preg_match('/^\/otp(?:@\w+)?$/u', $text)) {
+            $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS');
+            return;
+        }
+        if (preg_match('/^\/proxy(?:@\w+)?$/u', $text)) {
+            $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY');
             return;
         }
 
@@ -587,6 +603,10 @@ final class BotService
                 $this->setPending($userId, 'giftcode');
                 $this->telegram->sendMessage($chatId, '🎟️ Vui lòng nhập mã Giftcode trong vòng 10 phút.');
                 return;
+            case 'support-abuse':
+                $this->setPending($userId, 'support_abuse', ['stage' => 'order']);
+                $this->telegram->sendMessage($chatId, '🆘 <b>HỖ TRỢ DÍNH LẠM DỤNG (60%)</b>' . "\\n" . 'Vui lòng nhập mã đơn hàng đã hoàn tất để CSKH kiểm tra. Yêu cầu chỉ được ghi nhận sau khi đối chiếu đơn; không tự động hoàn tiền hoặc cộng voucher.');
+                return;
             case 'support':
                 $this->setPending($userId, 'support');
                 $this->telegram->sendMessage($chatId, '🧑‍💻 Hãy mô tả vấn đề cần hỗ trợ. Bot sẽ tạo ticket và gửi thông tin cho Admin.');
@@ -651,13 +671,16 @@ final class BotService
         $lines = [$title, '━━━━━━━━━━━━━━━━━━━━', 'Chọn sản phẩm để tạo đơn hàng:'];
         $rows = [];
         foreach ($products as $product) {
-            $label = self::truncate($product['name'] . ' · ' . self::money($product['price']), 55);
+            $stock = $product['stock'] === null ? 'Còn hàng' : 'Còn ' . number_format((int) $product['stock'], 0, ',', '.') . ' sản phẩm';
+            $label = self::truncate($product['name'] . ' · ' . self::money($product['price']) . ' · ' . $stock, 55);
             $rows[] = [[
                 'text' => $label,
                 'callback_data' => 'member:order:' . $product['id'],
             ]];
+            $lines[] = '• <b>' . self::escape($product['name']) . '</b> — ' . self::money($product['price']);
+            $lines[] = '  Kho: <b>' . self::escape($stock) . '</b>' .
+                ((int) ($product['duration_days'] ?? 0) > 0 ? ' · Thời hạn: ' . (int) $product['duration_days'] . ' ngày' : '');
             if (trim((string) $product['description']) !== '') {
-                $lines[] = '• <b>' . self::escape($product['name']) . '</b> — ' . self::money($product['price']);
                 $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 180));
             }
         }
@@ -785,6 +808,8 @@ final class BotService
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🚀 TÀI KHOẢN MINI GAME', 'callback_data' => 'member:live']],
                 [['text' => '🧾 ĐƠN HÀNG', 'callback_data' => 'member:orders']],
+                [['text' => '🆘 HỖ TRỢ DÍNH LẠM DỤNG (60%)', 'callback_data' => 'member:support-abuse']],
+                [['text' => '🎧 TICKET HỖ TRỢ CSKH', 'callback_data' => 'member:support']],
                 [$voucherButton],
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
@@ -1389,6 +1414,60 @@ final class BotService
                 } catch (Throwable $error) {
                     $this->telegram->sendMessage($chatId, '❌ Giftcode không hợp lệ: ' . self::escape($error->getMessage()));
                 }
+                return true;
+
+            case 'support_abuse':
+                $stage = (string) ($payload['stage'] ?? 'order');
+                if ($stage === 'order') {
+                    if (!preg_match('/^[A-Za-z0-9_-]{4,40}$/', $text)) {
+                        $this->telegram->sendMessage($chatId, 'Mã đơn hàng không đúng định dạng. Hãy nhập đúng mã hiển thị trong mục Đơn hàng.');
+                        return true;
+                    }
+                    $order = Database::one(
+                        "SELECT id, order_code, product_name FROM orders WHERE order_code = ? AND user_id = ? AND status = 'completed'",
+                        [$text, $userId]
+                    );
+                    if ($order === null) {
+                        $this->telegram->sendMessage($chatId, 'Không tìm thấy đơn đã hoàn tất thuộc tài khoản của bạn. Hãy kiểm tra mã đơn hoặc chọn Ticket hỗ trợ chung.');
+                        return true;
+                    }
+                    $payload['stage'] = 'message';
+                    $payload['order_id'] = (int) $order['id'];
+                    $payload['order_code'] = (string) $order['order_code'];
+                    $payload['product_name'] = (string) $order['product_name'];
+                    $this->setPending($userId, 'support_abuse', $payload);
+                    $this->telegram->sendMessage($chatId, '✅ Đã xác nhận đơn <b>' . self::escape((string) $order['order_code']) . '</b>. Hãy mô tả lỗi dính lạm dụng/không nhận điểm (ít nhất 5 ký tự). Không gửi mật khẩu hoặc OTP.');
+                    return true;
+                }
+
+                if ($stage === 'message') {
+                    if (mb_strlen($text) < 5) {
+                        $this->telegram->sendMessage($chatId, 'Nội dung cần ít nhất 5 ký tự. Hãy mô tả rõ vấn đề bạn gặp phải.');
+                        return true;
+                    }
+                    $orderCode = (string) ($payload['order_code'] ?? '');
+                    $subject = 'Hỗ trợ dính lạm dụng (60%) · Đơn ' . $orderCode;
+                    $message = 'Đơn hàng: ' . $orderCode . "\\n" .
+                        'Sản phẩm: ' . (string) ($payload['product_name'] ?? '') . "\\n\\n" .
+                        mb_substr($text, 0, 2600);
+                    $ticket = Database::one(
+                        "INSERT INTO support_tickets (user_id, ticket_type, subject, message) VALUES (?, 'dinh_lam', ?, ?) RETURNING id",
+                        [$userId, $subject, mb_substr($message, 0, 3000)]
+                    );
+                    $this->clearPending($userId);
+                    $this->notifyAdmins(
+                        '🆘 <b>YÊU CẦU DÍNH LẠM DỤNG (60%)</b>' . "\\n" .
+                        'Ticket: <code>#' . (int) $ticket['id'] . '</code>' . "\\n" .
+                        'User: <code>' . self::escape($userId) . '</code>' . "\\n" .
+                        'Đơn: <code>' . self::escape($orderCode) . '</code>' . "\\n" .
+                        'Nội dung: ' . self::escape(mb_substr($text, 0, 1600)),
+                        ['inline_keyboard' => [[['text' => '🎧 MỞ QUẢN LÝ TICKET', 'callback_data' => 'member:admin']]]]
+                    );
+                    $this->telegram->sendMessage($chatId, '✅ Đã tạo ticket hỗ trợ dính lạm dụng #' . (int) $ticket['id'] . ' cho đơn ' . self::escape($orderCode) . '. CSKH sẽ kiểm tra và phản hồi. Việc bồi hoàn (nếu có) cần Admin xác minh thủ công.');
+                    return true;
+                }
+
+                $this->clearPending($userId);
                 return true;
 
             case 'support':
