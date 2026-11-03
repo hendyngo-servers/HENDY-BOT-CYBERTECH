@@ -114,6 +114,38 @@ if ($videoProcessorUrl !== '') {
     }
 }
 
+$websiteSessionTtl = Env::int('WEBSITE_SESSION_TTL_SECONDS', 43200);
+if ($websiteSessionTtl < 900 || $websiteSessionTtl > 43200) {
+    $errors[] = 'WEBSITE_SESSION_TTL_SECONDS phải nằm trong khoảng 900–43200 giây.';
+}
+
+if (Env::bool('WEBSOCKET_ENABLED', false)) {
+    $socketUrl = trim((string) Env::get('WEBSOCKET_URL', ''));
+    $socketParts = $socketUrl !== '' ? parse_url($socketUrl) : false;
+    if (!is_array($socketParts) || strtolower((string) ($socketParts['scheme'] ?? '')) !== 'wss' || empty($socketParts['host'])) {
+        $errors[] = 'WEBSOCKET_URL phải là URL WSS HTTPS hợp lệ khi bật WebSocket.';
+    }
+    $origins = array_values(array_filter(array_map('trim', explode(',', (string) Env::get('WEBSOCKET_ALLOWED_ORIGINS', '')))));
+    if ($origins === []) {
+        $errors[] = 'WEBSOCKET_ALLOWED_ORIGINS phải có ít nhất một HTTPS origin khi bật WebSocket.';
+    }
+    foreach ($origins as $origin) {
+        $originParts = parse_url($origin);
+        if (!is_array($originParts) || strtolower((string) ($originParts['scheme'] ?? '')) !== 'https'
+            || empty($originParts['host']) || isset($originParts['path']) || isset($originParts['query']) || isset($originParts['fragment'])) {
+            $errors[] = 'Mỗi WEBSOCKET_ALLOWED_ORIGINS phải là HTTPS origin, không bao gồm path/query.';
+            break;
+        }
+    }
+    $socketPort = Env::int('WEBSOCKET_PORT', 10001);
+    if ($socketPort < 1 || $socketPort > 65535 || $socketPort === Env::int('PORT', 10000)) {
+        $errors[] = 'WEBSOCKET_PORT phải là cổng nội bộ hợp lệ và khác PORT public của Apache.';
+    }
+    if (strlen((string) Env::get('LEGACY_SESSION_SECRET', '')) < 32) {
+        $errors[] = 'LEGACY_SESSION_SECRET phải có ít nhất 32 ký tự để ký cookie website.';
+    }
+}
+
 // The bank callback remains disabled until a provider-specific signature
 // adapter is installed and verified. A shared secret by itself is not enough
 // to enable real-money deposits.
