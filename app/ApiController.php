@@ -264,6 +264,7 @@ final class ApiController
                 $created['walletType'] = $walletType;
                 return $created;
             });
+            $this->publishUserDataChanged('order');
             return self::response(['order' => $order, 'message' => 'Đơn hàng đã được tạo và trừ đúng loại ví thành công.'], 201);
         }
 
@@ -306,6 +307,8 @@ final class ApiController
                 '🔔 YÊU CẦU NẠP MỚI ' . $request['payment_id'] . ' · ' . number_format($amount, 0, ',', '.') .
                 ' VNĐ · User ' . $userId . ' · Nội dung CK: ' . $request['transfer_content'] . '. Cần đối soát sao kê trước khi duyệt.'
             );
+            $this->publishUserDataChanged('payment-request');
+            Realtime::publish('admin.payment.created', ['paymentId' => $request['payment_id'], 'botKey' => $this->botKey], 'admin');
             return self::response(['request' => $request, 'qrUrl' => $qrUrl, 'message' => 'Yêu cầu đã tạo và đang chờ Admin đối soát.'], 201);
         }
         if ($path === '/api/wallet/payment-info' && $method === 'GET') {
@@ -420,6 +423,8 @@ final class ApiController
                 'INSERT INTO support_tickets (user_id, ticket_type, subject, message) VALUES (?, ?, ?, ?) RETURNING id, ticket_type, subject, message, status, created_at',
                 [$userId, $ticketType, $subject, $message]
             );
+            $this->publishUserDataChanged('support-ticket');
+            Realtime::publish('admin.support.created', ['ticketId' => (int) $ticket['id'], 'type' => $ticketType], 'admin');
             return self::response(['ticket' => $ticket, 'message' => 'Đã gửi yêu cầu hỗ trợ.'], 201);
         }
 
@@ -437,6 +442,8 @@ final class ApiController
             }
             try {
                 $request = VoucherService::create($userId, (int) $orderId, $reason);
+                $this->publishUserDataChanged('voucher-request');
+                Realtime::publish('admin.voucher.created', ['voucherId' => (int) $request['id'], 'orderId' => (int) $orderId], 'admin');
             } catch (RuntimeException $error) {
                 throw new HttpException(409, $error->getMessage());
             }
@@ -496,6 +503,7 @@ final class ApiController
                 throw new HttpException(409, $error->getMessage());
             }
             $this->audit('payment.' . $paymentMatch[2], $paymentId, ['amount' => $result['amountVnd']]);
+            $this->publishUserDataChanged('payment-status');
             return self::response(['payment' => $result, 'message' => $paymentMatch[2] === 'approve' ? 'Đã duyệt và cập nhật ví.' : 'Đã từ chối; ví không thay đổi.']);
         }
         if ($method === 'GET' && $path === '/api/admin/video-jobs') {
@@ -1060,6 +1068,14 @@ final class ApiController
             $result[$row['key']] = $row['value'];
         }
         return $result;
+    }
+
+    private function publishUserDataChanged(string $kind): void
+    {
+        $allowed = ['order', 'payment-request', 'payment-status', 'support-ticket', 'voucher-request', 'wallet', 'giftcode', 'video-job'];
+        if (in_array($kind, $allowed, true)) {
+            Realtime::publish('user.data.changed', ['kind' => $kind], 'users');
+        }
     }
 
     private function audit(string $action, string $target, array $details): void
