@@ -712,34 +712,86 @@ final class BotService
 
     private function showMatchmaking(string $chatId, string $userId): void
     {
+        $stats = MatchmakingService::ensureStats($userId);
         $match = Database::one(
-            "SELECT * FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
+            "SELECT * FROM matchmaking_matches WHERE status IN ('matched', 'disputed') AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
             [$userId, $userId]
         );
         if ($match !== null) {
-            $opponentId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
+            $playerOne = (string) $match['player_one'];
+            $playerTwo = (string) $match['player_two'];
+            $isPlayerOne = $playerOne === $userId;
+            $opponentId = $isPlayerOne ? $playerTwo : $playerOne;
             $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
-            $this->telegram->sendMessage($chatId, '🤝 Đã ghép đôi với <b>' . self::escape($opponent['name'] ?: ($opponent['username'] ?: 'Thành viên Hendy')) . '</b>.' . "\nMã ghép: <code>" . $match['id'] . '</code>', [
-                'reply_markup' => $this->inlineMenu([[['text' => 'KẾT THÚC LƯỢT GHÉP', 'callback_data' => 'member:duel-finish:' . $match['id']]]]),
-            ]);
+            $opponentName = ($opponent['name'] ?? '') ?: (($opponent['username'] ?? '') ?: 'Thành viên Hendy');
+            $result = Database::one('SELECT score_one, score_two, status, reported_by FROM matchmaking_results WHERE match_id = ?', [$match['id']]);
+
+            $summary = '🤝 <b>HENDY MATCH #' . self::escape((string) $match['id']) . '</b>' .
+                "\nĐối thủ: <b>" . self::escape($opponentName) . '</b>' .
+                "\nElo của bạn: <b>" . (int) $stats['rating'] . '</b> · Điểm: <b>' . (int) $stats['points'] . '</b>' .
+                "\nElo đối thủ: <b>" . (int) MatchmakingService::ensureStats($opponentId)['rating'] . '</b>';
+
+            if ($match['status'] === 'disputed') {
+                $this->telegram->sendMessage($chatId, $summary . "\n\n⚠️ Kết quả đang tranh chấp. Quản trị viên cần xác minh trước khi cập nhật Elo và điểm.");
+                return;
+            }
+
+            if ($result !== null && $result['status'] === 'pending') {
+                $scoreLabel = $isPlayerOne
+                    ? ((int) $result['score_one'] . ' - ' . (int) $result['score_two'])
+                    : ((int) $result['score_two'] . ' - ' . (int) $result['score_one']);
+                if ($result['reported_by'] === $userId) {
+                    $this->telegram->sendMessage($chatId, $summary . "\n\n⏳ Tỷ số bạn gửi: <b>" . $scoreLabel . '</b>. Đang chờ đối thủ xác nhận.');
+                } else {
+                    $this->telegram->sendMessage($chatId, $summary . "\n\n🧾 Đối thủ báo tỷ số (theo thứ tự của bạn): <b>" . $scoreLabel . '</b>. Bạn hãy xác nhận hoặc báo tranh chấp.', [
+                        'reply_markup' => $this->inlineMenu([
+                            [['text' => '✅ XÁC NHẬN KẾT QUẢ', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':yes']],
+                            [['text' => '⚠️ BÁO SAI KẾT QUẢ', 'callback_data' => 'member:duel-confirm:' . $match['id'] . ':no']],
+                        ]),
+                    ]);
+                }
+                return;
+            }
+
+            $this->telegram->sendMessage(
+                $chatId,
+                $summary . "\n\nSau khi kết thúc trận, gửi tỷ số để đối thủ xác nhận. Chỉ chế độ Ghép nhanh mới thay đổi Elo.",
+                ['reply_markup' => $this->inlineMenu([[['text' => '🧾 GỬI TỶ SỐ TRẬN ĐẤU', 'callback_data' => 'member:duel-finish:' . $match['id']]]])]
+            );
             return;
         }
 
         $waiting = Database::one("SELECT id, mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1", [$userId]);
         if ($waiting !== null) {
-            $this->telegram->sendMessage($chatId, '⏳ Bạn đang ở hàng chờ ghép đôi (' . self::escape($waiting['mode']) . ').', [
-                'reply_markup' => $this->inlineMenu([[['text' => 'RỜI HÀNG CHỜ', 'callback_data' => 'member:duel-leave']]]),
-            ]);
+            $this->telegram->sendMessage(
+                $chatId,
+                '⏳ Bạn đang ở hàng chờ (' . self::escape($waiting['mode']) . '). Elo hiện tại: <b>' . (int) $stats['rating'] . '</b> · Điểm: <b>' . (int) $stats['points'] . '</b>.' . "\nHệ thống sẽ ưu tiên người có Elo tương đương và mở rộng dải ghép theo thời gian chờ.",
+                ['reply_markup' => $this->inlineMenu([[['text' => 'RỜI HÀNG CHỜ', 'callback_data' => 'member:duel-leave']]])]
+            );
             return;
         }
 
-        $this->telegram->sendMessage($chatId, '⚔️ <b>HỆ THỐNG GHÉP ĐÔI</b>' . "\nChọn chế độ để tìm người chơi đang chờ.", [
-            'reply_markup' => $this->inlineMenu([
-                [['text' => '🤝 GHÉP NHANH', 'callback_data' => 'member:duel-join:quick']],
-                [['text' => '🎯 LUYỆN TẬP', 'callback_data' => 'member:duel-join:practice']],
-                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
-            ]),
-        ]);
+        $leaders = MatchmakingService::leaderboard(5);
+        $ranking = [];
+        foreach ($leaders as $index => $leader) {
+            $ranking[] = ($index + 1) . '. ' . self::escape((string) $leader['display_name']) .
+                ' · Elo ' . (int) $leader['rating'] . ' · ' . (int) $leader['points'] . ' điểm';
+        }
+        $this->telegram->sendMessage(
+            $chatId,
+            '⚔️ <b>HỆ THỐNG GHÉP ĐÔI XẾP HẠNG</b>' .
+            "\nElo của bạn: <b>" . (int) $stats['rating'] . '</b> · Điểm: <b>' . (int) $stats['points'] . '</b>' .
+            "\nTrận: " . (int) $stats['matches_played'] . ' · Thắng: ' . (int) $stats['wins'] . ' · Thua: ' . (int) $stats['losses'] . ' · Hòa: ' . (int) $stats['draws'] .
+            "\n\n🏆 <b>TOP 5 HENDY</b>\n" . ($ranking !== [] ? implode("\n", $ranking) : 'Chưa có dữ liệu xếp hạng.') .
+            "\n\nChế độ Ghép nhanh có tính Elo. Luyện tập không thay đổi Elo.",
+            [
+                'reply_markup' => $this->inlineMenu([
+                    [['text' => '🤝 GHÉP NHANH XẾP HẠNG', 'callback_data' => 'member:duel-join:quick']],
+                    [['text' => '🎯 LUYỆN TẬP', 'callback_data' => 'member:duel-join:practice']],
+                    [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+                ]),
+            ]
+        );
     }
 
     private function joinMatch(string $chatId, string $userId, string $mode): void
