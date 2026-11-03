@@ -12,6 +12,7 @@ use Hendy\Database;
 use Hendy\MatchmakingService;
 use Hendy\PaymentService;
 use Hendy\VideoJobService;
+use Hendy\VoucherService;
 use Hendy\Env;
 
 Env::load(dirname(__DIR__) . '/.env');
