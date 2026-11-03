@@ -208,11 +208,11 @@ final class BotService
             return;
         }
         if (preg_match('/^\/otp(?:@\w+)?$/u', $text)) {
-            $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS', $userId);
+            $this->showOtpCenter($chatId, $userId);
             return;
         }
         if (preg_match('/^\/proxy(?:@\w+)?$/u', $text)) {
-            $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY', $userId);
+            $this->showProxyCenter($chatId, $userId);
             return;
         }
 
@@ -637,7 +637,11 @@ final class BotService
                 $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE', $userId);
                 return;
             case 'otp':
-                $this->showOtpCenter($chatId);
+                $this->showOtpCenter($chatId, $userId);
+                return;
+            case 'nyc-transfer':
+                $this->setPending($userId, 'nyc_transfer');
+                $this->telegram->sendMessage($chatId, '🪙 Nhập số tiền chuyển từ Ví Chính sang Ví NYC (từ 1.000 đến 500.000.000 VNĐ). Đây là chuyển nội bộ, không phải nạp ngân hàng.');
                 return;
             case 'otp-catalog':
                 $this->showProducts($chatId, ['otp'], '📱 KHO DỊCH VỤ OTP', $userId);
@@ -1004,10 +1008,12 @@ final class BotService
         $this->telegram->sendMessage($chatId, implode("\\n", $lines) . "\\n\\nYêu cầu cần Admin duyệt; chỉ cộng Ví Voucher sau khi được chấp thuận.");
     }
 
-    private function showOtpCenter(string $chatId): void
+    private function showOtpCenter(string $chatId, string $userId): void
     {
-        $this->telegram->sendMessage($chatId, '⚙️ <b>OTP & PROXY CENTER</b>' . "\\nChọn dịch vụ. Sản phẩm/giá lấy từ kho PostgreSQL; kết nối nhà cung cấp OTP cần cấu hình riêng.", [
+        $nycBalance = (int) (Database::value('SELECT nyc_wallet FROM users WHERE user_id = ?', [$userId]) ?? 0);
+        $this->telegram->sendMessage($chatId, '⚙️ <b>OTP & PROXY CENTER</b>' . "\\nSố dư Ví NYC: <b>' . self::money($nycBalance) . '</b>\\nChọn dịch vụ. Sản phẩm/giá lấy từ kho PostgreSQL; kết nối nhà cung cấp OTP cần cấu hình riêng.", [
             'reply_markup' => $this->inlineMenu([
+                [['text' => '🪙 NẠP VÍ NYC TỪ VÍ CHÍNH', 'callback_data' => 'member:nyc-transfer']],
                 [['text' => '📱 THUÊ OTP SMS', 'callback_data' => 'member:otp-catalog']],
                 [['text' => '🌐 PROXY CENTER', 'callback_data' => 'member:proxy-center']],
                 [['text' => '📜 LỊCH SỬ OTP', 'callback_data' => 'member:otp-history']],
@@ -1955,6 +1961,40 @@ final class BotService
                     $this->notifyUserOnBot($this->botKey, (string) $reported['opponentId'], '🧾 Đối thủ đã gửi tỷ số trận #' . $matchId . ': ' . $scoreOne . '-' . $scoreTwo . '. Mở mục GHÉP ĐÔI trong bot để xác nhận hoặc báo sai.');
                 } catch (Throwable $error) {
                     $this->telegram->sendMessage($chatId, '❌ Không gửi được tỷ số: ' . self::escape($error->getMessage()));
+                }
+                return true;
+
+            case 'nyc_transfer':
+                if (!preg_match('/^\\d{1,12}$/', $text) || (int) $text < 1000 || (int) $text > 500000000) {
+                    $this->telegram->sendMessage($chatId, 'Số tiền hợp lệ từ 1.000 đến 500.000.000 VNĐ. Hãy nhập lại.');
+                    return true;
+                }
+                $amount = (int) $text;
+                try {
+                    $transfer = Database::transaction(function () use ($userId, $amount): array {
+                        $user = Database::one('SELECT balance, nyc_wallet FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+                        if ($user === null || (int) $user['balance'] < $amount) throw new RuntimeException('Ví Chính không đủ số dư để chuyển.');
+                        Database::run('UPDATE users SET balance = balance - ?, nyc_wallet = nyc_wallet + ? WHERE user_id = ?', [$amount, $amount, $userId]);
+                        $reference = 'nyc-transfer:' . bin2hex(random_bytes(12));
+                        Database::run(
+                            "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description, wallet_type) VALUES (?, ?, ?, 'WALLET_TRANSFER', ?, 'MAIN')",
+                            [$reference . ':out', $userId, -$amount, 'Chuyển từ Ví Chính sang Ví NYC']
+                        );
+                        Database::run(
+                            "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description, wallet_type) VALUES (?, ?, ?, 'WALLET_TRANSFER', ?, 'NYC')",
+                            [$reference . ':in', $userId, $amount, 'Nhận từ Ví Chính']
+                        );
+                        Database::run(
+                            "INSERT INTO transactions (user_id, amount, type, reference_code, status, wallet_type) VALUES (?, ?, 'WALLET_TRANSFER_OUT', ?, 'paid', 'MAIN'), (?, ?, 'WALLET_TRANSFER_IN', ?, 'paid', 'NYC')",
+                            [$userId, $amount, $reference, $userId, $amount, $reference]
+                        );
+                        $balances = Database::one('SELECT balance, nyc_wallet FROM users WHERE user_id = ?', [$userId]);
+                        return ['main' => (int) $balances['balance'], 'nyc' => (int) $balances['nyc_wallet']];
+                    });
+                    $this->clearPending($userId);
+                    $this->telegram->sendMessage($chatId, '✅ <b>CHUYỂN VÍ THÀNH CÔNG</b>' . "\\nĐã chuyển: <b>" . self::money($amount) . "</b>" . "\\nVí Chính: " . self::money($transfer['main']) . "\\nVí NYC: " . self::money($transfer['nyc']));
+                } catch (Throwable $error) {
+                    $this->telegram->sendMessage($chatId, '❌ Không thể chuyển ví: ' . self::escape($error->getMessage()));
                 }
                 return true;
 
