@@ -14,7 +14,8 @@ Hệ thống Telegram Bot kép trong một mã nguồn, triển khai bằng **PH
 - Sản phẩm/dịch vụ: Mini Game Live, thuê tool, code, OTP, proxy, VIP.
 - Hồ sơ Trung tâm khách hàng: ví chính (balance), ví NYC, ví Voucher, tổng nạp, điểm thành viên; thống kê đơn pending/processing/completed/cancelled/refunded, lịch sử giao dịch, ticket CSKH và yêu cầu voucher 72 giờ. Dữ liệu gắn với Telegram initData đã xác thực, không có Telegram ID mẫu.
 - Trung tâm VIP với thông tin các cấp, giao diện thẻ VIP PRO neon/gold, thanh tiến trình lên hạng, điểm danh mỗi ngày theo múi giờ Việt Nam, chống cộng điểm trùng và phần thưởng điểm nội bộ có thể cấu hình trong Admin; điểm không phải tiền.
-- Liên kết tài khoản game bằng thương hiệu và username, không lưu mật khẩu/OTP.
+- Kho liên kết tài khoản Mini Game dùng `linked_accounts` (tương ứng `user_accounts` trong ví dụ cũ), hỗ trợ RR88/MM88/GG88/AD88 và các thương hiệu sẵn có; chỉ lưu username, không lưu PIN/mật khẩu/OTP. Quy trình nhập liệu Telegram dùng `bot_pending_inputs` có TTL theo từng BOT1/BOT2 (tương ứng `bot_sessions`), không cần tạo bảng session MySQL trùng lặp.
+- OTP và Proxy hiển thị sản phẩm/tồn kho thực từ `products`, đơn mua được theo dõi bằng `orders`; không hiển thị số lượng kho mẫu cố định. Ticket dính lạm dụng yêu cầu mã đơn thuộc chính người dùng và đơn phải ở trạng thái hoàn tất trước khi tạo ticket loại `dinh_lam`.
 - Ví, lịch sử giao dịch, VietQR, nhận callback ngân hàng qua secret riêng và idempotency theo mã giao dịch.
 - Đơn hàng, trừ ví trong transaction, hoàn tiền khi Admin từ chối/hủy, bàn giao khi hoàn tất.
 - Giftcode có số lượt, hạn dùng, khóa/mở và giới hạn mỗi thành viên một lần.
