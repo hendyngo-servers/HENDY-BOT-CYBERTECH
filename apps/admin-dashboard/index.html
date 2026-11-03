@@ -701,7 +701,7 @@
     const payments = state.adminData.payments || [];
     return '<div class="notice warn">Yêu cầu nạp chỉ là thông tin do người dùng tạo. Admin phải kiểm tra sao kê ngân hàng, số tiền và nội dung chuyển khoản trước khi duyệt. Duyệt sẽ ghi có ví theo transaction idempotent; từ chối không thay đổi số dư.</div>' +
       (payments.length ? payments.map(item =>
-        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(item.payment_id) + ' · ' + money(item.amount) + '</b><small>Telegram ' + escapeHtml(item.user_id) + ' · ' + escapeHtml(item.name || item.username || '') + '</small></div><span class="status pending">Chờ duyệt</span></div>' +
+        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(item.payment_id) + ' · ' + money(item.amount) + '</b><small>' + escapeHtml(String(item.bot_key || 'primary').toUpperCase()) + ' · Telegram ' + escapeHtml(item.user_id) + ' · ' + escapeHtml(item.name || item.username || '') + '</small></div><span class="status pending">Chờ duyệt</span></div>' +
         '<p>Nội dung CK: <code>' + escapeHtml(item.transfer_content) + '</code><br>' + escapeHtml(item.bank_id) + ' · ' + escapeHtml(item.account_number) + ' · ' + escapeHtml(item.account_holder) + '</p>' +
         '<div class="two-col"><button class="primary" data-payment-action="approve" data-payment-id="' + escapeHtml(item.payment_id) + '">Đã đối soát · Duyệt</button><button class="danger" data-payment-action="reject" data-payment-id="' + escapeHtml(item.payment_id) + '">Từ chối</button></div></article>'
       ).join('') : empty('Không có yêu cầu nạp chờ duyệt','Yêu cầu mới từ Telegram hoặc Mini App sẽ xuất hiện tại đây.'));
