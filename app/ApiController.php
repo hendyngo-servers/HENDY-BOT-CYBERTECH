@@ -22,7 +22,7 @@ final class ApiController
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL', 'ABCVIP_CONNECT_URL',
-        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name',
+        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name', 'replay_live_url',
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'miniapp',
