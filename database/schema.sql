@@ -179,6 +179,38 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_matchmaking_one_waiting
 CREATE INDEX IF NOT EXISTS idx_matchmaking_mode_waiting
     ON matchmaking_queue(mode, status, created_at);
 
+-- Matchmaking progression: Elo rating, non-cash points and bilateral result review.
+CREATE TABLE IF NOT EXISTS matchmaking_player_stats (
+    user_id TEXT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL DEFAULT 1000,
+    points BIGINT NOT NULL DEFAULT 0 CHECK (points >= 0),
+    matches_played INTEGER NOT NULL DEFAULT 0 CHECK (matches_played >= 0),
+    wins INTEGER NOT NULL DEFAULT 0 CHECK (wins >= 0),
+    losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0),
+    draws INTEGER NOT NULL DEFAULT 0 CHECK (draws >= 0),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_matchmaking_stats_leaderboard
+    ON matchmaking_player_stats(rating DESC, points DESC, matches_played ASC);
+
+CREATE TABLE IF NOT EXISTS matchmaking_results (
+    id BIGSERIAL PRIMARY KEY,
+    match_id BIGINT NOT NULL UNIQUE REFERENCES matchmaking_matches(id) ON DELETE CASCADE,
+    reported_by TEXT NOT NULL REFERENCES users(user_id),
+    score_one INTEGER NOT NULL CHECK (score_one BETWEEN 0 AND 999),
+    score_two INTEGER NOT NULL CHECK (score_two BETWEEN 0 AND 999),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'disputed')),
+    confirmed_by TEXT REFERENCES users(user_id),
+    rating_delta_one INTEGER NOT NULL DEFAULT 0,
+    rating_delta_two INTEGER NOT NULL DEFAULT 0,
+    points_awarded_one INTEGER NOT NULL DEFAULT 0,
+    points_awarded_two INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    confirmed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_matchmaking_results_status
+    ON matchmaking_results(status, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS bot_pending_inputs (
     user_id TEXT NOT NULL,
     bot_key TEXT NOT NULL CHECK (bot_key IN ('primary','secondary')),
