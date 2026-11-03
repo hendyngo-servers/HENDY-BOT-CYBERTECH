@@ -448,6 +448,10 @@ final class ApiController
             } catch (RuntimeException $error) {
                 throw new HttpException(409, $error->getMessage());
             }
+            $this->notify(
+                (string) $result['opponentId'],
+                '🧾 Đối thủ đã gửi tỷ số trận #' . $matchId . ': ' . (int) $scoreOne . '-' . (int) $scoreTwo . ' (thứ tự A-B). Mở mục Ghép đôi trong bot để xác nhận hoặc báo sai.'
+            );
             return self::response(['result' => $result['result'], 'status' => 'pending', 'message' => 'Đã gửi tỷ số. Chờ đối thủ xác nhận.'], 201);
         }
 
@@ -457,10 +461,18 @@ final class ApiController
             if (!preg_match('/\A[0-9]{1,18}\z/', $matchId) || !array_key_exists('approved', $this->body) || $approved === null) {
                 throw new HttpException(400, 'Mã lượt ghép hoặc lựa chọn xác nhận không hợp lệ.');
             }
+            $match = Database::one('SELECT player_one, player_two FROM matchmaking_matches WHERE id = ?', [$matchId]);
             try {
                 $result = MatchmakingService::confirm((int) $matchId, $userId, $approved);
             } catch (RuntimeException $error) {
                 throw new HttpException(409, $error->getMessage());
+            }
+            if ($match !== null) {
+                $otherId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
+                $message = $result['status'] === 'disputed'
+                    ? '⚠️ Kết quả trận #' . $matchId . ' đang tranh chấp. Elo và điểm chưa thay đổi; quản trị viên sẽ kiểm tra.'
+                    : '✅ Kết quả trận #' . $matchId . ' đã được hai bên xác nhận. Điểm và Elo đã được cập nhật.';
+                $this->notify((string) $otherId, $message);
             }
             return self::response($result);
         }
