@@ -357,7 +357,12 @@ final class BotService
         }
 
         if (preg_match('/^duel-finish:(\d{1,18})$/', $action, $matches)) {
-            $this->finishMatch($chatId, $userId, $matches[1]);
+            $this->requestMatchResult($chatId, $userId, $matches[1]);
+            return;
+        }
+
+        if (preg_match('/^duel-confirm:(\d{1,18}):(yes|no)$/', $action, $matches)) {
+            $this->confirmMatchResult($chatId, $userId, $matches[1], $matches[2] === 'yes');
             return;
         }
 
