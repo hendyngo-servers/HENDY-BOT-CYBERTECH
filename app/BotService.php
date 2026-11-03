@@ -125,6 +125,7 @@ final class BotService
             );
             $this->clearPending($userId);
             $this->sendHome($chatId, $from);
+            $this->showVipWelcome($chatId, $userId);
             return;
         }
 
@@ -513,6 +514,12 @@ final class BotService
                 return;
             case 'vip':
                 $this->showVip($chatId, $userId);
+                return;
+            case 'vip-checkin':
+                $this->handleVipCheckin($chatId, $userId);
+                return;
+            case 'vip-info':
+                $this->showVipInfo($chatId, $userId);
                 return;
             case 'group':
             case 'news':
@@ -1101,26 +1108,74 @@ final class BotService
 
     private function showVip(string $chatId, string $userId): void
     {
+        $this->showVipWelcome($chatId, $userId);
+    }
+
+    private function showVipWelcome(string $chatId, string $userId): void
+    {
         $user = $this->getUser($userId);
-        $products = Database::all(
-            "SELECT id, name, price FROM products WHERE category = 'vip' AND is_active = TRUE ORDER BY price ASC LIMIT 20"
-        );
-        $rows = [];
-        foreach ($products as $product) {
-            $rows[] = [[
-                'text' => self::truncate($product['name'] . ' · ' . self::money($product['price']), 55),
-                'callback_data' => 'member:order:' . $product['id'],
-            ]];
-        }
-        $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
-        $this->telegram->sendMessage($chatId, implode("\n", [
-            '👑 <b>TRUNG TÂM VIP</b>',
-            'Cấp hiện tại: <b>VIP ' . (int) ($user['vip_level'] ?? 0) . '</b>',
-            'Tổng nạp: <b>' . self::money($user['total_deposited'] ?? 0) . '</b>',
-            'Gói VIP đang mở bán: ' . count($products),
+        $status = VipService::status($userId);
+        $next = $status['nextThreshold'] === null
+            ? 'Bạn đang ở cấp VIP cao nhất.'
+            : 'Cần nạp thêm <b>' . self::money($status['amountToNext']) . '</b> để đạt mốc tiếp theo (' . self::money($status['nextThreshold']) . ').';
+        $checkinText = $status['checkedInToday'] ? '✅ Hôm nay bạn đã điểm danh.' : '🎁 Hôm nay bạn chưa điểm danh.';
+
+        $this->telegram->sendMessage($chatId, implode("\\n", [
+            '💎 <b>TRUNG TÂM VIP — TRI ÂN THÀNH VIÊN</b>',
+            'Xin chào <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>!',
+            '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
+            '━━━━━━━━━━━━━━━━━━━━',
+            '👑 Hạng hiện tại: <b>VIP ' . $status['currentLevel'] . '</b>',
+            '💳 Tổng nạp tích lũy: <b>' . self::money($status['totalDeposited']) . '</b>',
+            '⭐ Điểm thành viên: <b>' . number_format($status['pointOld'], 0, ',', '.') . '</b>',
+            $next,
+            $checkinText,
+            '🔥 Chuỗi điểm danh: <b>' . $status['streak'] . ' ngày</b>',
         ]), [
-            'reply_markup' => $this->inlineMenu($rows),
+            'reply_markup' => $this->inlineMenu([
+                [['text' => $status['checkedInToday'] ? '✅ ĐÃ ĐIỂM DANH HÔM NAY' : '🎁 ĐIỂM DANH VIP', 'callback_data' => 'member:vip-checkin']],
+                [['text' => 'ℹ️ THÔNG TIN TẤT CẢ VIP', 'callback_data' => 'member:vip-info']],
+                [['text' => '🔙 TRỞ VỀ', 'callback_data' => 'member:home']],
+            ]),
         ]);
+    }
+
+    private function showVipInfo(string $chatId, string $userId): void
+    {
+        $status = VipService::status($userId);
+        $lines = [
+            '👑 <b>THÔNG TIN TẤT CẢ CẤP VIP</b>',
+            'Mốc xét hạng dựa trên tổng nạp tích lũy:',
+            '',
+        ];
+        foreach (VipService::levels() as $level) {
+            $current = (int) $level['level'] === $status['currentLevel'] ? '  ← HẠNG HIỆN TẠI' : '';
+            $lines[] = '• <b>VIP ' . (int) $level['level'] . '</b> — ' . self::money($level['threshold']) . $current;
+        }
+        $lines[] = '';
+        $lines[] = 'Điểm danh mỗi ngày nhận <b>' . $status['checkinPoints'] . ' điểm</b> vào điểm thành viên, không phải số dư tiền.';
+        $lines[] = 'Điểm hiện có: <b>' . number_format($status['pointOld'], 0, ',', '.') . '</b>.';
+        $lines[] = 'Quyền lợi chi tiết và gói nâng cấp được hiển thị theo các sản phẩm VIP do Admin cấu hình.';
+
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '🎁 ĐIỂM DANH VIP', 'callback_data' => 'member:vip-checkin']],
+                [['text' => '🔙 TRỞ VỀ TRUNG TÂM VIP', 'callback_data' => 'member:vip']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function handleVipCheckin(string $chatId, string $userId): void
+    {
+        $result = VipService::checkin($userId);
+        $message = $result['alreadyCheckedIn']
+            ? '✅ Bạn đã điểm danh hôm nay. Hệ thống không cộng điểm lần thứ hai.'
+            : '🎉 Điểm danh thành công! +' . $result['pointsAwarded'] .
+                ' điểm thành viên. Tổng điểm hiện có: ' . number_format($result['pointsTotal'], 0, ',', '.') .
+                '. Chuỗi điểm danh: ' . $result['streak'] . ' ngày.';
+        $this->telegram->sendMessage($chatId, $message);
+        $this->showVipWelcome($chatId, $userId);
     }
 
     private function showCommunityLink(string $chatId, string $action): void
