@@ -167,9 +167,8 @@ try {
     }
 
     if ($method === 'GET' && in_array($path, ['/mini-app', '/mini-app/'], true)) {
-        header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: no-store');
-        readfile(dirname(__DIR__) . '/apps/mini-app/index.html');
+        $bot = (($_GET['bot'] ?? 'primary') === 'secondary') ? 'secondary' : 'primary';
+        header('Location: /?bot=' . $bot, true, 302);
         exit;
     }
 
@@ -181,9 +180,19 @@ try {
     }
     if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
         header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: no-cache');
-        readfile(dirname(__DIR__) . '/apps/telegram-landing/index.html');
+        header('Cache-Control: no-store');
+        readfile(dirname(__DIR__) . '/apps/website/index.html');
         exit;
+    }
+    if ($method === 'POST' && $path === '/auth/logout') {
+        setcookie('hendy_web_session', '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        respond(['ok' => true]);
     }
     if ($method === 'GET' && $path === '/styles/buttons.css') {
         header('Content-Type: text/css; charset=utf-8');
