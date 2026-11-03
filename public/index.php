@@ -13,6 +13,8 @@ require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/PaymentService.php';
+require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/BotService.php';
 require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ModuleRegistry.php';
@@ -167,6 +169,58 @@ try {
     if ($method === 'GET' && in_array($path, ['/healthz', '/api/health'], true)) {
         Database::check();
         respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
+    }
+
+    if ($method === 'POST' && $path === '/webhook/video') {
+        $secret = (string) Env::get('VIDEO_PROCESSOR_SECRET', '');
+        if ($secret === '') {
+            throw new HttpException(503, 'Video processor callback chưa được cấu hình.');
+        }
+        $rawBody = (string) file_get_contents('php://input');
+        if ($rawBody === '' || strlen($rawBody) > 131072) {
+            throw new HttpException(400, 'Payload video callback không hợp lệ.');
+        }
+        $received = trim((string) ($_SERVER['HTTP_X_HENDY_VIDEO_SIGNATURE'] ?? ''));
+        $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $secret);
+        if (!hash_equals($expected, $received)) {
+            throw new HttpException(401, 'Chữ ký video callback không hợp lệ.');
+        }
+        $payload = json_decode($rawBody, true);
+        if (!is_array($payload)) {
+            throw new HttpException(400, 'JSON video callback không hợp lệ.');
+        }
+        try {
+            $job = VideoJobService::updateFromCallback($payload);
+        } catch (Throwable $error) {
+            throw new HttpException(400, $error->getMessage());
+        }
+
+        if (empty($job['duplicate']) && in_array(($job['status'] ?? ''), ['completed', 'failed'], true)) {
+            $token = TelegramAuth::token((string) ($job['bot_key'] ?? 'primary'));
+            if ($token !== '') {
+                try {
+                    $api = new TelegramApi($token);
+                    if ($job['status'] === 'completed') {
+                        $api->sendMessage(
+                            (string) $job['user_id'],
+                            '✅ <b>VIDEO VIETSUB ĐÃ HOÀN TẤT</b>' . "\n" .
+                            'Mã job: <code>' . htmlspecialchars(substr((string) $job['id'], 0, 8), ENT_QUOTES, 'UTF-8') . '</code>' . "\n" .
+                            'Kết quả: ' . htmlspecialchars((string) ($job['output_url'] ?? ''), ENT_QUOTES, 'UTF-8')
+                        );
+                    } else {
+                        $api->sendMessage(
+                            (string) $job['user_id'],
+                            '❌ <b>VIDEO VIETSUB CHƯA THỂ HOÀN TẤT</b>' . "\n" .
+                            'Mã job: <code>' . htmlspecialchars(substr((string) $job['id'], 0, 8), ENT_QUOTES, 'UTF-8') . '</code>' . "\n" .
+                            'Lý do: ' . htmlspecialchars((string) ($job['error_message'] ?? 'Nhà xử lý video báo lỗi.'), ENT_QUOTES, 'UTF-8')
+                        );
+                    }
+                } catch (Throwable $error) {
+                    error_log('Không gửi được thông báo video job: ' . $error->getMessage());
+                }
+            }
+        }
+        respond(['ok' => true, 'jobId' => $job['id'] ?? null, 'status' => $job['status'] ?? 'unknown']);
     }
 
     if ($method === 'POST' && $path === '/webhook/bank') {
