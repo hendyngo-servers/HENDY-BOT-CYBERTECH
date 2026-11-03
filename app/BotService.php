@@ -1011,7 +1011,8 @@ final class BotService
     private function showOtpCenter(string $chatId, string $userId): void
     {
         $nycBalance = (int) (Database::value('SELECT nyc_wallet FROM users WHERE user_id = ?', [$userId]) ?? 0);
-        $this->telegram->sendMessage($chatId, '⚙️ <b>OTP & PROXY CENTER</b>' . "\\nSố dư Ví NYC: <b>' . self::money($nycBalance) . '</b>\\nChọn dịch vụ. Sản phẩm/giá lấy từ kho PostgreSQL; kết nối nhà cung cấp OTP cần cấu hình riêng.", [
+        $message = "⚙️ <b>OTP & PROXY CENTER</b>\\nSố dư Ví NYC: <b>" . self::money($nycBalance) . "</b>\\nChọn dịch vụ. Sản phẩm/giá lấy từ kho PostgreSQL; kết nối nhà cung cấp OTP cần cấu hình riêng.";
+        $this->telegram->sendMessage($chatId, $message, [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🪙 NẠP VÍ NYC TỪ VÍ CHÍNH', 'callback_data' => 'member:nyc-transfer']],
                 [['text' => '📱 THUÊ OTP SMS', 'callback_data' => 'member:otp-catalog']],
