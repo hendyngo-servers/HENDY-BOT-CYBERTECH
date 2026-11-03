@@ -63,17 +63,24 @@ jobs:
       - name: Validate runtime config and safe sync dry-run
         env:
           BOT1_TOKEN: "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+          BOT2_TOKEN: "987654321:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
           ADMIN_ID: "12345678"
           APP_URL: "https://example.invalid"
           DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
           DATABASE_SSL: "false"
           TELEGRAM_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          TELEGRAM_SECOND_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
           WEBHOOK_AUTO_REGISTER: "true"
+          BANK_WEBHOOK_ENABLED: "false"
         run: |
           set -euo pipefail
           php bin/validate-config.php
           if env ADMIN_ID="12x" php bin/validate-config.php >/dev/null 2>&1; then
             echo "Validator đã chấp nhận ADMIN_ID sai định dạng." >&2
+            exit 1
+          fi
+          if env BANK_WEBHOOK_ENABLED="true" php bin/validate-config.php >/dev/null 2>&1; then
+            echo "Validator đã cho phép bank webhook chưa có adapter chữ ký." >&2
             exit 1
           fi
           bash scripts/sync-render-env.sh --dry-run
