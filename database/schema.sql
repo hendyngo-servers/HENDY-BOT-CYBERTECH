@@ -215,9 +215,15 @@ WHERE key = 'website_url' AND value = 'https://lethituanem.com';
 
 INSERT INTO app_settings (key, value, is_public)
 VALUES
-    ('GROUP_URL', 'https://t.me/lethituanem_nhomchat', TRUE),
-    ('bot_username', 'tuanem2027_bot', TRUE)
+    ('GROUP_URL', 'https://t.me/Hendy_Support_Group', TRUE),
+    ('bot_username', 'tuanem2027_bot', TRUE),
+    ('bot_display_name', 'HendyBot_Bot', TRUE)
 ON CONFLICT (key) DO NOTHING;
+
+-- Update the previous bundled default only; keep administrator-provided group URLs.
+UPDATE app_settings
+SET value = 'https://t.me/Hendy_Support_Group', updated_at = NOW()
+WHERE key = 'GROUP_URL' AND value = 'https://t.me/lethituanem_nhomchat';
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
