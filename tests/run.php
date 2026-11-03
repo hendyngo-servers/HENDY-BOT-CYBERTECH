@@ -12,6 +12,7 @@ require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
 
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
+use Hendy\WebServiceKernel;
 
 $checks = 0;
 $assert = static function (bool $condition, string $message) use (&$checks): void {
