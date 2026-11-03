@@ -188,6 +188,55 @@ CI chạy PHP 8.3, kiểm tra cú pháp tất cả file PHP, kiểm tra cú phá
 
 Scaffold feature bằng lệnh: php scripts/scaffold-feature.php --name order-history --category api --description "Lịch sử đơn hàng". Hoặc vào GitHub → Actions → Scaffold PHP feature. Feature được tạo ở trạng thái disabled; phải review phân quyền, migration, API và test trước khi tích hợp.
 
+## GitHub Actions: quét cấu hình, đồng bộ Render và xác minh Telegram
+
+File nguồn chuẩn của biến runtime là `config/env.schema.json`. Lệnh:
+
+```bash
+php scripts/audit-env.php --check --self-test
+```
+
+quét các tham chiếu tĩnh `Env::get/int/bool`, `getenv()`, `$_ENV`, `process.env` và shell expansion trong source PHP/JS/HTML/Shell; đối chiếu từng tên với manifest và chạy self-test các biểu thức regex. Biến được phát hiện nhưng chưa khai báo sẽ làm CI thất bại. Scanner tĩnh không thể suy ra tên biến được tạo động lúc runtime.
+
+### Thiết lập GitHub Environments
+
+Tạo Environment tên `production` (và `staging` nếu cần) trong **Settings → Environments**. Trong từng Environment, thêm:
+
+**Environment Secrets**
+- Bắt buộc: `BOT1_TOKEN`.
+- Nếu chạy bot thứ hai: `BOT2_TOKEN`.
+- Có thể đặt trước hoặc để workflow tự sinh: `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SECOND_WEBHOOK_SECRET`, `BANK_WEBHOOK_SECRET`, `LEGACY_SESSION_SECRET`.
+- Khi dùng VietQR: `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME`.
+- Hạ tầng CI: `RENDER_API_KEY`, `GH_CONFIG_SYNC_TOKEN`.
+- `DATABASE_URL` không được workflow ghi đè. Giữ biến này do Render PostgreSQL/Blueprint quản lý để tránh thay nhầm database.
+
+**Environment Variables**
+- Bắt buộc: `ADMIN_ID`, `APP_URL`, `RENDER_SERVICE_ID`.
+- Có thể thêm: `APP_ENV`, `PORT`, `WEBAPP_URL`, `ALLOWED_ORIGINS`, `BOT_USERNAME`, `DATABASE_SSL`, `DB_STARTUP_WAIT_SECONDS`, `RUN_MIGRATIONS_ON_START`, `WEBHOOK_AUTO_REGISTER`, `VIETQR_BANK_ID`, `GROUP_URL`, `CHANNEL_URL`, `TELEGRAM_INIT_DATA_MAX_AGE_SECONDS`, `WEBSOCKET_URL`, `WEBSOCKET_BIND`, `WEBSOCKET_PORT`.
+
+`GH_CONFIG_SYNC_TOKEN` cần quyền ghi GitHub Environment secrets/variables cho repository (fine-grained PAT hoặc GitHub App token với repository permission **Environments: write**). `RENDER_API_KEY` cần quyền cập nhật biến môi trường và trigger deploy cho service được chọn. Không dùng một token cá nhân có quyền rộng hơn mức cần thiết.
+
+### Chạy workflow theo từng giai đoạn
+
+Vào **Actions → Sync Runtime Config & Verify Telegram → Run workflow**:
+1. Chọn Environment đích.
+2. Lần đầu để `apply_changes=false`: chỉ audit, kiểm tra cấu hình và dry-run.
+3. Khi report hợp lệ, bật `apply_changes=true`: đồng bộ từng key đúng loại Secret/Variable lên GitHub Environment và Render.
+4. Chỉ bật `deploy_after_sync=true` sau khi đã bật `apply_changes=true`: trigger deploy, chờ trạng thái Render `live`, kiểm tra `/api/health` có `status=ok`, gọi Telegram `getMe` và đối chiếu `getWebhookInfo.result.url` cho từng bot.
+
+Workflow mặc định không ghi cấu hình và không deploy. Khóa nội bộ còn thiếu được tạo bằng `openssl rand -hex 32`, che khỏi log, lưu lại trong GitHub Environment và Render để không đổi ở các lần chạy tiếp theo. `BOT1_TOKEN`, `ADMIN_ID`, `DATABASE_URL` không bao giờ được tự sinh.
+
+Script dùng endpoint cập nhật **từng biến** của Render, không dùng PUT thay thế toàn bộ danh sách environment variables. Vì vậy biến khác không nằm trong manifest được giữ nguyên. Các biến do Render Blueprint/Environment Group quản lý có thể cần chỉnh tại đúng nguồn quản lý; riêng `DATABASE_URL` được bỏ qua có chủ đích.
+
+### Giới hạn của các tích hợp ngoài
+
+- Mini Game OAuth cần tên nhà cung cấp, authorization URL, token URL, profile URL, scope và client credentials hợp lệ.
+- Bank adapter production cần tài liệu chữ ký callback của ngân hàng/đơn vị trung gian (header, thuật toán, timestamp, payload canonicalization và cơ chế idempotency).
+- App Store Connect, Google Play và Microsoft Store cần quyền nhà phát hành, issuer/key hoặc service account, package/bundle ID và cấu hình upload theo từng store.
+- Ghép đôi hiện là queue FIFO; Elo/rating, kết quả có xác nhận và cơ chế thưởng chưa được kích hoạt.
+
+Không tự bật login, nạp tiền thật hoặc publish store chỉ bằng cách điền placeholder. Những API/credential bên ngoài chưa được cung cấp phải giữ trạng thái disabled đến khi có cấu hình chính thức và bộ kiểm thử sandbox.
+
 ## Lưu ý nghiệp vụ và bảo mật
 
 - Liên kết Mini Game Live hiện chỉ lưu thương hiệu và username do thành viên nhập; không tự đăng nhập vào dịch vụ bên thứ ba.
