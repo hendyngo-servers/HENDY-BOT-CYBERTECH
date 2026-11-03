@@ -820,12 +820,28 @@ final class BotService
 
     private function notifyAdmins(string $message, array $replyMarkup = []): void
     {
+        $botOrder = [$this->botKey, $this->botKey === 'primary' ? 'secondary' : 'primary'];
+        $options = $replyMarkup !== [] ? ['reply_markup' => $replyMarkup] : [];
+
         foreach (TelegramAuth::adminIds() as $adminId) {
-            try {
-                $options = $replyMarkup !== [] ? ['reply_markup' => $replyMarkup] : [];
-                $this->telegram->sendMessage($adminId, $message, $options);
-            } catch (Throwable $error) {
-                error_log('Không gửi được thông báo admin: ' . $error->getMessage());
+            $sent = false;
+            foreach ($botOrder as $botKey) {
+                $token = TelegramAuth::token($botKey);
+                if ($token === '') {
+                    continue;
+                }
+                try {
+                    (new TelegramApi($token))->sendMessage($adminId, $message, $options);
+                    $sent = true;
+                    break;
+                } catch (Throwable $error) {
+                    // An admin may have started only the other bot. Try it once
+                    // before leaving the notification for the admin dashboard.
+                    error_log('Không gửi được thông báo admin qua ' . $botKey . ': ' . $error->getMessage());
+                }
+            }
+            if (!$sent) {
+                error_log('Không gửi được thông báo admin ' . $adminId . ' qua bất kỳ bot Telegram nào.');
             }
         }
     }
