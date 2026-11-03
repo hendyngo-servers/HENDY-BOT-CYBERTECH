@@ -1037,6 +1037,12 @@
       } else if (form.id === 'admin-user-search') {
         state.adminData.users = (await api('/api/admin/users?search=' + encodeURIComponent(data.search || ''))).users;
         $('app').innerHTML = adminTabs() + adminUsers();
+      } else if (form.dataset.matchResolve) {
+        data.scoreOne = Number(data.scoreOne);
+        data.scoreTwo = Number(data.scoreTwo);
+        await api('/api/admin/matchmaking/' + form.dataset.matchResolve + '/resolve','POST',data);
+        toast('Đã xử lý tranh chấp và cập nhật Elo.');
+        await renderPage();
       } else if (form.dataset.orderForm) {
         await api('/api/admin/orders/' + form.dataset.orderForm,'PATCH',data);
         toast('Đã cập nhật đơn hàng và gửi thông báo.');
