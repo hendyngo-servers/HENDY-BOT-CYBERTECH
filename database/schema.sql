@@ -15,6 +15,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS total_deposited NUMERIC(18, 0) NOT NU
 ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_level INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_by TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS nyc_wallet NUMERIC(18, 0) NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS voucher_wallet NUMERIC(18, 0) NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS point_old BIGINT NOT NULL DEFAULT 0;
+
 
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL PRIMARY KEY,
@@ -25,6 +29,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     status TEXT NOT NULL DEFAULT 'paid',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS wallet_type TEXT NOT NULL DEFAULT 'MAIN';
 CREATE INDEX IF NOT EXISTS idx_transactions_user_created ON transactions (user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS deposit_events (
@@ -99,6 +104,8 @@ CREATE TABLE IF NOT EXISTS wallet_ledger (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE wallet_ledger ADD COLUMN IF NOT EXISTS wallet_type TEXT NOT NULL DEFAULT 'MAIN';
+
 CREATE TABLE IF NOT EXISTS support_tickets (
     id BIGSERIAL PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -110,6 +117,26 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS ticket_type TEXT NOT NULL DEFAULT 'support';
+CREATE INDEX IF NOT EXISTS idx_support_tickets_type_created ON support_tickets(ticket_type, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS voucher_requests (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    order_code TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    reward_amount NUMERIC(18, 0) NOT NULL DEFAULT 0 CHECK (reward_amount >= 0),
+    reviewed_by TEXT,
+    reviewed_at TIMESTAMPTZ,
+    admin_note TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_voucher_requests_status_created ON voucher_requests(status, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_voucher_requests_user_created ON voucher_requests(user_id, created_at DESC);
 
 -- PostgreSQL-backed queue for video subtitle jobs. The optional worker
 -- dispatches jobs to a configured provider; without a provider they stay queued.
