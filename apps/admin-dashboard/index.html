@@ -706,7 +706,7 @@
         '<p>' + escapeHtml(item.product_name) + ' · Đơn hàng ' + money(item.order_amount) + '<br>Lý do: ' + escapeHtml(item.reason) +
         '<br>Gửi lúc: ' + new Date(item.created_at).toLocaleString('vi-VN') + '</p>' +
         '<form class="form" data-voucher-form="' + escapeHtml(item.id) + '"><div class="field"><label>Thao tác</label><select name="action"><option value="approve">Duyệt voucher</option><option value="reject">Từ chối</option></select></div>' +
-        '<div class="field"><label>Số tiền Voucher (VNĐ, bắt buộc khi duyệt)</label><input name="rewardAmount" type="number" min="1" max="500000000" step="1" required></div>' +
+        '<div class="field"><label>Số tiền Voucher (VNĐ, bắt buộc khi duyệt)</label><input name="rewardAmount" type="number" min="1" max="500000000" step="1"></div>' +
         '<div class="field"><label>Ghi chú Admin</label><textarea name="adminNote" maxlength="1000"></textarea></div><button class="primary">Xác nhận xử lý</button></form></article>'
       ).join('') : empty('Không có yêu cầu Voucher chờ duyệt','Yêu cầu hợp lệ của khách hàng sẽ xuất hiện tại đây.'));
   }
