@@ -13,9 +13,29 @@ final class TelegramAuth
         return trim((string) Env::get($name, ''));
     }
 
+    public static function adminIds(): array
+    {
+        $configured = [
+            trim((string) Env::get('ADMIN_ID', '')),
+            ...array_map('trim', explode(',', (string) Env::get('ADMIN_IDS', ''))),
+        ];
+        $ids = [];
+        foreach ($configured as $id) {
+            if (preg_match('/^[0-9]{5,20}$/', $id) && !in_array($id, $ids, true)) {
+                $ids[] = $id;
+            }
+        }
+        return $ids;
+    }
+
     public static function adminId(): string
     {
-        return trim((string) Env::get('ADMIN_ID', ''));
+        return self::adminIds()[0] ?? '';
+    }
+
+    public static function isAdmin(string $telegramId): bool
+    {
+        return $telegramId !== '' && in_array($telegramId, self::adminIds(), true);
     }
 
     public static function safeEquals(string $left, string $right): bool
@@ -80,7 +100,7 @@ final class TelegramAuth
 
         $user = self::validateInitData($initData, $token);
         $user['_bot_key'] = $botKey;
-        $user['_is_admin'] = (string) ($user['id'] ?? '') === self::adminId();
+        $user['_is_admin'] = self::isAdmin((string) ($user['id'] ?? ''));
         return $user;
     }
 }
