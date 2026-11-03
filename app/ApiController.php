@@ -22,7 +22,7 @@ final class ApiController
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
-        'referral_commission_percent', 'support_message',
+        'referral_commission_percent', 'support_message', 'vip_checkin_points',
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
@@ -595,13 +595,23 @@ final class ApiController
         }
 
         if ($path === '/api/vip' && $method === 'GET') {
-            $user = $this->userRow();
-            $thresholds = [0, 500000, 2000000, 5000000];
             return self::response([
-                'currentLevel' => $user['vipLevel'],
-                'totalDeposited' => $user['totalDeposited'],
-                'nextThreshold' => $user['vipLevel'] >= 3 ? null : $thresholds[$user['vipLevel'] + 1],
+                ...VipService::status($userId),
                 'products' => $this->listProducts('vip', false),
+            ]);
+        }
+
+        if ($path === '/api/vip/checkin' && $method === 'POST') {
+            try {
+                $result = VipService::checkin($userId);
+            } catch (RuntimeException $error) {
+                throw new HttpException(409, $error->getMessage());
+            }
+            return self::response([
+                'checkin' => $result,
+                'message' => $result['alreadyCheckedIn']
+                    ? 'Bạn đã điểm danh hôm nay.'
+                    : 'Điểm danh thành công; điểm đã được cộng vào điểm thành viên.',
             ]);
         }
 
@@ -896,6 +906,13 @@ final class ApiController
             $values = [];
             foreach ($this->body as $key => $value) {
                 $text = $this->text($value, 500);
+                if ($key === 'vip_checkin_points') {
+                    $points = filter_var($text, FILTER_VALIDATE_INT);
+                    if ($points === false || $points < 0 || $points > 1000) {
+                        throw new HttpException(400, 'Điểm danh VIP phải là số nguyên từ 0 đến 1.000 điểm.');
+                    }
+                    $text = (string) $points;
+                }
                 if ($key === 'referral_commission_percent') {
                     $percent = (float) $text;
                     if (!is_finite($percent) || $percent < 0 || $percent > 30) {
@@ -1149,6 +1166,9 @@ final class ApiController
             'voucherWallet' => (int) $row['voucher_wallet'],
             'vipLevel' => (int) $row['vip_level'],
             'totalDeposited' => (int) $row['total_deposited'],
+            'totalRecharge' => (int) $row['total_deposited'],
+            'main_wallet' => (int) $row['balance'],
+            'total_recharge' => (int) $row['total_deposited'],
             'pointOld' => (int) $row['point_old'],
             'createdAt' => $row['created_at'],
         ];
