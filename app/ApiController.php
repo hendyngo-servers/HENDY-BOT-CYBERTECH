@@ -21,12 +21,12 @@ final class ApiController
     private const ORDER_STATUSES = ['pending', 'processing', 'completed', 'rejected', 'cancelled', 'refunded'];
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
-        'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL',
+        'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL', 'ABCVIP_CONNECT_URL',
         'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name',
     ];
     private const MENU_ACTIONS = [
         'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'duel',
-        'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin', 'vietsub', 'history', 'jobs',
+        'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin', 'vietsub', 'history', 'jobs', 'abcvip',
     ];
 
     private array $query;
