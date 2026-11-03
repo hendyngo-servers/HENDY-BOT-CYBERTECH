@@ -690,7 +690,7 @@
   function adminTickets() {
     const tickets = state.adminData.tickets || [];
     return tickets.length ? tickets.map(ticket =>
-      '<article class="record"><div class="record-top"><div><b>#' + ticket.id + ' · ' + escapeHtml(ticket.subject) + '</b><small class="muted">Telegram ' + escapeHtml(ticket.user_id) + '</small></div><span class="status ' + escapeHtml(ticket.status) + '">' + statusLabel(ticket.status) + '</span></div>' +
+      '<article class="record"><div class="record-top"><div><b>#' + ticket.id + ' · ' + escapeHtml(ticket.subject) + '</b><small class="muted">Telegram ' + escapeHtml(ticket.user_id) + ' · ' + (ticket.ticket_type === 'dinh_lam' ? 'Hỗ trợ dính lạm dụng (60%)' : 'Ticket hỗ trợ chung') + '</small></div><span class="status ' + escapeHtml(ticket.status) + '">' + statusLabel(ticket.status) + '</span></div>' +
       '<p>' + escapeHtml(ticket.message) + '</p><form class="form" data-ticket-form="' + ticket.id + '">' +
       '<div class="field"><label>Phản hồi (sẽ gửi tin nhắn Telegram)</label><textarea name="reply">' + escapeHtml(ticket.admin_reply || '') + '</textarea></div>' +
       '<div class="two-col"><div class="field"><label>Trạng thái</label><select name="status">' + ['open','processing','resolved','closed'].map(s => '<option value="' + s + '" ' + (ticket.status === s ? 'selected' : '') + '>' + statusLabel(s) + '</option>').join('') + '</select></div><button class="tiny-btn" style="align-self:end">Gửi phản hồi</button></div></form></article>'
