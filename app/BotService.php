@@ -1127,7 +1127,44 @@ final class BotService
         ])]);
     }
 
-    private function showBalance(    private function startVideoRequest(string $chatId, string $userId): void
+    private function showBalance(string $chatId, string $userId): void
+    {
+        $user = $this->getUser($userId);
+        $this->telegram->sendMessage($chatId, '💰 <b>SỐ DƯ VÍ HENDY</b>' . "\n" .
+            'Ví Chính: <b>' . self::money($user['balance'] ?? 0) . '</b>' . "\n" .
+            'Ví NYC: <b>' . self::money($user['nyc_wallet'] ?? 0) . '</b>' . "\n" .
+            'Ví Voucher: <b>' . self::money($user['voucher_wallet'] ?? 0) . '</b>', [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '＋ NẠP TIỀN', 'callback_data' => 'member:wallet']],
+                [['text' => '📜 LỊCH SỬ GIAO DỊCH', 'callback_data' => 'member:deposit-history']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function showWalletMenu(string $chatId, string $userId): void
+    {
+        $user = $this->getUser($userId);
+        $this->telegram->sendMessage($chatId, '💳 <b>NẠP TIỀN VÀO VÍ CHÍNH</b>' . "\n" .
+            'Số dư hiện tại: <b>' . self::money($user['balance'] ?? 0) . '</b>' . "\n" .
+            'Chọn nhanh số tiền hoặc nhập số tiền khác. Admin sẽ đối soát sao kê ngân hàng trước khi cộng ví.', [
+            'reply_markup' => $this->inlineMenu([
+                [
+                    ['text' => '10.000đ', 'callback_data' => 'member:deposit:10000'],
+                    ['text' => '20.000đ', 'callback_data' => 'member:deposit:20000'],
+                ],
+                [
+                    ['text' => '50.000đ', 'callback_data' => 'member:deposit:50000'],
+                    ['text' => '100.000đ', 'callback_data' => 'member:deposit:100000'],
+                ],
+                [['text' => '✏️ NHẬP SỐ TIỀN KHÁC', 'callback_data' => 'member:deposit:custom']],
+                [['text' => '📜 LỊCH SỬ NẠP', 'callback_data' => 'member:deposit-history']],
+                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+            ]),
+        ]);
+    }
+
+    private function startVideoRequest(string $chatId, string $userId): void
     {
         $this->setPending($userId, 'video_url');
         $this->telegram->sendMessage($chatId,
