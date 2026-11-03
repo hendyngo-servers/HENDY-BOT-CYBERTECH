@@ -224,16 +224,29 @@ Repository chưa được cung cấp một nhà cung cấp phụ đề, API endp
 
 Các API quản trị yêu cầu Telegram WebApp initData hợp lệ và tài khoản nằm trong `ADMIN_ID` hoặc `ADMIN_IDS`.
 
-## Realtime, module và kho ứng dụng\n\nDashboard Admin có tab Tệp & Module. Tệp tải lên (JSON/MD/TXT/CSS/HTML/ảnh, tối đa 2 MB) được lưu ở vùng cách ly riêng trong persistent disk, kiểm tra MIME và SHA-256, trạng thái ban đầu pending_review; không có chức năng thực thi code hoặc tự ghi đè production. Mọi thay đổi mã nguồn phải qua Pull Request và CI.\n\nRealtime dùng PHP Ratchet trong service Render riêng. Sau khi Blueprint tạo service `hendy-bot-tele-realtime`, đặt `WEBSOCKET_URL` ở service API thành URL `wss://...` của service realtime.\n\nCác adapter App Store Connect, Google Play và Microsoft Store mới là khung tích hợp. Chưa có credential/API permissions hoặc luồng upload/submit/publish hoạt động; cần thiết lập riêng theo tài khoản nhà phát hành. Xem `docs/REALTIME-MODULES-AND-STORES.md`.\n\n## Endpoint chính
+## Realtime, module và kho ứng dụng
+
+Dashboard Admin có tab Tệp & Module. Tệp tải lên (JSON/MD/TXT/CSS/HTML/ảnh, tối đa 2 MB) được lưu ở vùng cách ly riêng trong persistent disk, kiểm tra MIME và SHA-256, trạng thái ban đầu pending_review; không có chức năng thực thi code hoặc tự ghi đè production. Mọi thay đổi mã nguồn phải qua Pull Request và CI.
+
+Realtime dùng PHP Ratchet trong service Render riêng. Sau khi Blueprint tạo service `hendy-bot-tele-realtime`, đặt `WEBSOCKET_URL` ở service API thành URL `wss://...` của service realtime.
+
+Các adapter App Store Connect, Google Play và Microsoft Store mới là khung tích hợp. Chưa có credential/API permissions hoặc luồng upload/submit/publish hoạt động; cần thiết lập riêng theo tài khoản nhà phát hành. Xem `docs/REALTIME-MODULES-AND-STORES.md`.
+
+## Endpoint chính
 
 - GET /: Dashboard / Telegram Mini App.
 - GET /healthz: Health check cho Render.
 - GET /api/health: trạng thái database và cấu hình hai bot.
 - POST /webhook/telegram: webhook BOT1.
 - POST /webhook/telegram/secondary: webhook BOT2 (khi bật).
-- POST /webhook/bank: callback ngân hàng, yêu cầu header x-bank-webhook-secret.
-- /api/bootstrap, /api/products, /api/me, /api/orders, /api/wallet, /api/referrals, /api/giftcodes/redeem, /api/support/tickets, /api/matchmaking, /api/vip.
-- /api/admin/*: Dashboard quản trị; mọi yêu cầu phải có Telegram WebApp initData hợp lệ và trùng ADMIN_ID.\n- POST /api/admin/realtime-ticket: cấp ticket WebSocket ngắn hạn.\n- GET /api/admin/modules và POST /api/admin/modules/upload: quản lý tệp chờ kiểm duyệt.
+- POST /webhook/bank: callback ngân hàng (đang khóa an toàn, HTTP 503 cho đến khi có adapter chữ ký nhà cung cấp).
+- POST /webhook/video: callback HMAC từ nhà xử lý video đã cấu hình.
+- /api/bootstrap, /api/products, /api/me, /api/orders, /api/wallet, /api/wallet/payment-requests, /api/referrals, /api/giftcodes/redeem, /api/support/tickets, /api/matchmaking, /api/vip.
+- /api/admin/*: Dashboard quản trị; mọi yêu cầu phải có Telegram WebApp initData hợp lệ và thuộc `ADMIN_ID` hoặc `ADMIN_IDS`.
+- GET /api/admin/payments và POST /api/admin/payments/{paymentId}/approve|reject: đối soát yêu cầu nạp.
+- GET /api/admin/video-jobs và POST /api/admin/video-jobs/{uuid}/retry: quản lý hàng đợi Vietsub.
+- POST /api/admin/realtime-ticket: cấp ticket WebSocket ngắn hạn.
+- GET /api/admin/modules và POST /api/admin/modules/upload: quản lý tệp chờ kiểm duyệt.
 
 ## GitHub Actions / kiểm tra
 
