@@ -68,7 +68,7 @@ final class PaymentService
     {
         $limit = max(1, min(50, $limit));
         return Database::all(
-            "SELECT p.payment_id, p.user_id, p.amount, p.transfer_content, p.bank_id, p.account_number, p.account_holder, p.created_at, " .
+            "SELECT p.payment_id, p.user_id, p.amount, p.bot_key, p.transfer_content, p.bank_id, p.account_number, p.account_holder, p.created_at, " .
             "u.name, u.username FROM payment_requests p LEFT JOIN users u ON u.user_id = p.user_id " .
             "WHERE p.status = 'pending' ORDER BY p.created_at ASC LIMIT " . $limit
         );
@@ -87,7 +87,7 @@ final class PaymentService
     {
         $limit = max(1, min(30, $limit));
         return Database::all(
-            'SELECT payment_id, amount, status, transfer_content, admin_note, created_at, reviewed_at FROM payment_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT ' . $limit,
+            'SELECT payment_id, amount, status, bot_key, transfer_content, admin_note, created_at, reviewed_at FROM payment_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT ' . $limit,
             [$userId]
         );
     }
@@ -171,6 +171,7 @@ final class PaymentService
             return [
                 'paymentId' => $paymentId,
                 'telegramId' => $userId,
+                'botKey' => (string) $request['bot_key'],
                 'amountVnd' => $amount,
                 'newBalance' => (int) $user['balance'],
                 'vipLevel' => (int) $user['vip_level'],
@@ -196,6 +197,7 @@ final class PaymentService
             return [
                 'paymentId' => $paymentId,
                 'telegramId' => (string) $request['user_id'],
+                'botKey' => (string) $request['bot_key'],
                 'amountVnd' => (int) $request['amount'],
                 'status' => 'rejected',
             ];
