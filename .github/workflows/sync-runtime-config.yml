@@ -54,6 +54,10 @@ jobs:
       ADMIN_ID: ${{ vars.ADMIN_ID }}
       ADMIN_IDS: ${{ vars.ADMIN_IDS }}
       BOT_USERNAME: ${{ vars.BOT_USERNAME }}
+      BOT1_USERNAME: ${{ vars.BOT1_USERNAME || 'hendymono_bot' }}
+      BOT2_USERNAME: ${{ vars.BOT2_USERNAME || 'HendyBot_Bot' }}
+      BOT1_DISPLAY_NAME: ${{ vars.BOT1_DISPLAY_NAME || 'HENDY BOT 1' }}
+      BOT2_DISPLAY_NAME: ${{ vars.BOT2_DISPLAY_NAME || 'HENDY BOT 2' }}
       DATABASE_SSL: ${{ vars.DATABASE_SSL || 'false' }}
       DB_STARTUP_WAIT_SECONDS: ${{ vars.DB_STARTUP_WAIT_SECONDS || '120' }}
       RUN_MIGRATIONS_ON_START: ${{ vars.RUN_MIGRATIONS_ON_START || 'true' }}
