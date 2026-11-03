@@ -208,11 +208,11 @@ final class BotService
             return;
         }
         if (preg_match('/^\/otp(?:@\w+)?$/u', $text)) {
-            $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS');
+            $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS', $userId);
             return;
         }
         if (preg_match('/^\/proxy(?:@\w+)?$/u', $text)) {
-            $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY');
+            $this->showProducts($chatId, ['proxy'], '🌐 KHO PROXY', $userId);
             return;
         }
 
@@ -610,7 +610,7 @@ final class BotService
                 $this->showProducts($chatId, ['minigame'], '🎮 KHO SẢN PHẨM MINI GAME', $userId);
                 return;
             case 'otp-products':
-                $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS');
+                $this->showProducts($chatId, ['otp'], '📱 KHO OTP SMS', $userId);
                 return;
             case 'proxy-products':
             case 'proxy':
@@ -631,10 +631,10 @@ final class BotService
                 $this->showOtpHistory($chatId, $userId);
                 return;
             case 'tools':
-                $this->showProducts($chatId, ['tools'], '🧰 THUÊ TOOL');
+                $this->showProducts($chatId, ['tools'], '🧰 THUÊ TOOL', $userId);
                 return;
             case 'codes':
-                $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE');
+                $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE', $userId);
                 return;
             case 'otp':
                 $this->showOtpCenter($chatId);
@@ -643,7 +643,7 @@ final class BotService
                 $this->showProducts($chatId, ['otp'], '📱 KHO DỊCH VỤ OTP', $userId);
                 return;
             case 'viptools':
-                $this->showProducts($chatId, ['vip'], '🏆 KHO VIP');
+                $this->showProducts($chatId, ['vip'], '🏆 KHO VIP', $userId);
                 return;
             case 'wallet':
                 $this->showWalletMenu($chatId, $userId);
@@ -809,53 +809,52 @@ final class BotService
     {
         $order = Database::transaction(function () use ($userId, $productId): array {
             $product = Database::one('SELECT * FROM products WHERE id = ? AND is_active = TRUE FOR UPDATE', [$productId]);
-            if ($product === null) {
-                throw new RuntimeException('Sản phẩm không còn được bán.');
-            }
-            if ($product['stock'] !== null && (int) $product['stock'] <= 0) {
-                throw new RuntimeException('Sản phẩm đã hết hàng.');
-            }
-            $user = Database::one('SELECT balance, vip_level FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
-            if ($user === null) {
-                throw new RuntimeException('Không tìm thấy hồ sơ thành viên. Hãy gửi /start trước.');
-            }
+            if ($product === null) throw new RuntimeException('Sản phẩm không còn được bán.');
+            if ($product['stock'] !== null && (int) $product['stock'] <= 0) throw new RuntimeException('Sản phẩm đã hết hàng.');
+
+            $user = Database::one('SELECT balance, nyc_wallet, vip_level FROM users WHERE user_id = ? FOR UPDATE', [$userId]);
+            if ($user === null) throw new RuntimeException('Không tìm thấy hồ sơ thành viên. Hãy gửi /start trước.');
             if ((int) ($product['vip_level'] ?? 0) > (int) ($user['vip_level'] ?? 0)) {
                 throw new RuntimeException('Sản phẩm yêu cầu VIP ' . (int) $product['vip_level'] . '. Hãy nâng cấp hạng thành viên trước.');
             }
+
+            $walletType = in_array((string) $product['category'], ['otp', 'proxy'], true) ? 'NYC' : 'MAIN';
+            $walletColumn = $walletType === 'NYC' ? 'nyc_wallet' : 'balance';
+            $available = (int) ($user[$walletColumn] ?? 0);
             $price = (int) $product['price'];
-            if ((int) $user['balance'] < $price)
-                throw new RuntimeException('Số dư không đủ. Hãy chọn NẠP TIỀN trước khi mua.');
+            if ($available < $price) {
+                throw new RuntimeException('Số dư ví ' . $walletType . ' không đủ. Cần ' . self::money($price) . '.');
             }
 
             $orderCode = 'HD' . strtoupper(base_convert((string) time(), 10, 36)) . strtoupper(bin2hex(random_bytes(3)));
-            Database::run('UPDATE users SET balance = balance - ? WHERE user_id = ?', [$price, $userId]);
+            Database::run("UPDATE users SET {$walletColumn} = {$walletColumn} - ? WHERE user_id = ?", [$price, $userId]);
             $created = Database::one(
                 "INSERT INTO orders (order_code, user_id, product_id, product_name, category, amount, status) " .
                 "VALUES (?, ?, ?, ?, ?, ?, 'pending') RETURNING order_code, product_name, amount, status",
                 [$orderCode, $userId, $product['id'], $product['name'], $product['category'], $price]
             );
             Database::run(
-                "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description) VALUES (?, ?, ?, 'PURCHASE', ?)",
-                ['order:' . $orderCode, $userId, -$price, 'Thanh toán đơn ' . $orderCode]
+                "INSERT INTO wallet_ledger (reference_code, user_id, amount, transaction_type, description, wallet_type) VALUES (?, ?, ?, 'PURCHASE', ?, ?)",
+                ['order:' . $orderCode, $userId, -$price, 'Thanh toán đơn ' . $orderCode, $walletType]
             );
             Database::run(
-                "INSERT INTO transactions (user_id, amount, type, reference_code, status) VALUES (?, ?, 'PURCHASE', ?, 'paid')",
-                [$userId, $price, $orderCode]
+                "INSERT INTO transactions (user_id, amount, type, reference_code, status, wallet_type) VALUES (?, ?, 'PURCHASE', ?, 'paid', ?)",
+                [$userId, $price, $orderCode, $walletType]
             );
             if ($product['stock'] !== null) {
                 Database::run('UPDATE products SET stock = stock - 1, updated_at = NOW() WHERE id = ?', [$product['id']]);
             }
-            $balance = Database::value('SELECT balance FROM users WHERE user_id = ?', [$userId]);
-            return [...($created ?? []), 'balance' => (int) $balance];
+            $remaining = (int) Database::value("SELECT {$walletColumn} FROM users WHERE user_id = ?", [$userId]);
+            return [...($created ?? []), 'balance' => $remaining, 'wallet_type' => $walletType];
         });
 
         $this->telegram->sendMessage($chatId, implode("\n", [
             '✅ <b>ĐÃ TẠO ĐƠN HÀNG</b>',
             'Sản phẩm: <b>' . self::escape((string) $order['product_name']) . '</b>',
             'Mã đơn: <code>' . self::escape((string) $order['order_code']) . '</code>',
-            'Số tiền: ' . self::money($order['amount']),
+            'Số tiền: ' . self::money($order['amount']) . ' · Ví ' . self::escape((string) $order['wallet_type']),
             'Trạng thái: Chờ Admin xử lý.',
-            'Số dư còn lại: ' . self::money($order['balance']),
+            'Số dư ví còn lại: ' . self::money($order['balance']),
         ]), [
             'reply_markup' => $this->inlineMenu([
                 [['text' => '🧾 LỊCH SỬ ĐƠN HÀNG', 'callback_data' => 'member:orders']],
@@ -2061,11 +2060,10 @@ final class BotService
 
     private function webAppUrl(string $section): string
     {
-        $base = rtrim((string) (Env::get('WEBAPP_URL') ?: Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
-        if (!str_starts_with($base, 'https://')) {
-            return '';
-        }
-        return $base . '/?section=' . rawurlencode($section) . '&bot=' . rawurlencode($this->botKey);
+        $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        if (!str_starts_with($base, 'https://')) return '';
+        // The only Telegram Web App route retained is the admin-only dashboard.
+        return $base . '/admin?section=' . rawurlencode($section) . '&bot=' . rawurlencode($this->botKey);
     }
 
     private function setPending(string $userId, string $type, array $payload = []): void
