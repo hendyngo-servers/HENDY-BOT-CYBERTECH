@@ -358,29 +358,40 @@
   }
 
   async function renderWallet() {
-    const data = await api('/api/wallet');
+    const [data, requestData] = await Promise.all([
+      api('/api/wallet'),
+      api('/api/wallet/payment-requests')
+    ]);
     state.wallet = data;
+    const requests = requestData.requests || [];
     return '<section class="balance-card"><div class="balance-label">SỐ DƯ HIỆN TẠI</div><div class="balance-value">' + money(data.balance) + '</div></section>' +
-      '<div class="section-head"><h3>Nạp tiền qua VietQR</h3><span>Chuyển khoản đúng nội dung</span></div>' +
+      '<div class="section-head"><h3>Nạp tiền qua VietQR</h3><span>Admin đối soát thủ công</span></div>' +
       '<div class="two-col"><button class="secondary" data-amount="50000">50.000 VNĐ</button><button class="secondary" data-amount="100000">100.000 VNĐ</button><button class="secondary" data-amount="200000">200.000 VNĐ</button><button class="secondary" data-amount="500000">500.000 VNĐ</button></div>' +
-      '<form class="card form" id="custom-topup" style="margin-top:12px"><div class="field"><label>Số tiền khác (VNĐ)</label><input type="number" name="amount" min="10000" step="1000" placeholder="Ví dụ: 150000" required></div><button class="primary">Tạo mã QR</button></form>' +
-      '<div id="qr-result"></div><div class="section-head"><h3>Lịch sử biến động ví</h3><span>' + data.history.length + ' giao dịch gần đây</span></div>' +
+      '<form class="card form" id="custom-topup" style="margin-top:12px"><div class="field"><label>Số tiền khác (VNĐ)</label><input type="number" name="amount" min="10000" max="500000000" step="1000" placeholder="Ví dụ: 150000" required></div><button class="primary">Tạo yêu cầu nạp</button></form>' +
+      '<div id="qr-result"></div><div class="section-head"><h3>Yêu cầu nạp gần đây</h3><span>' + requests.length + ' yêu cầu</span></div>' +
+      (requests.length ? requests.map(item =>
+        '<div class="list-row"><div><b>' + escapeHtml(item.payment_id) + ' · ' + money(item.amount) + '</b><small>' + escapeHtml(item.transfer_content || '') + '<br>' + new Date(item.created_at).toLocaleString('vi-VN') + '</small></div>' +
+        '<span class="status ' + escapeHtml(item.status) + '">' + (item.status === 'pending' ? 'Chờ Admin duyệt' : item.status === 'approved' ? 'Đã duyệt' : item.status === 'rejected' ? 'Từ chối' : escapeHtml(item.status)) + '</span></div>'
+      ).join('') : empty('Chưa có yêu cầu nạp','Khi tạo mã VietQR, yêu cầu sẽ được lưu để Admin đối soát.')) +
+      '<div class="notice warn">Tạo QR không tự cộng tiền. Ví chỉ được ghi có sau khi Admin kiểm tra sao kê ngân hàng và xác nhận giao dịch.</div>' +
+      '<div class="section-head"><h3>Lịch sử biến động ví</h3><span>' + data.history.length + ' giao dịch gần đây</span></div>' +
       (data.history.length ? data.history.map(item =>
         '<div class="list-row"><div><b>' + escapeHtml(item.description || item.transaction_type) + '</b><small>' + new Date(item.created_at).toLocaleString('vi-VN') + '<br>' + escapeHtml(item.reference_code || '') + '</small></div>' +
         '<b class="' + (Number(item.amount) >= 0 ? 'price' : 'muted') + '">' + (Number(item.amount) > 0 ? '+' : '') + money(item.amount) + '</b></div>'
-      ).join('') : empty('Chưa có giao dịch','Các giao dịch nạp tiền và thanh toán sẽ hiển thị tại đây.'));
+      ).join('') : empty('Chưa có giao dịch','Giao dịch nạp đã duyệt và thanh toán sẽ hiển thị tại đây.'));
   }
 
   async function showQr(amount) {
     const target = $('qr-result');
-    target.innerHTML = '<div class="loading">Đang tạo thông tin thanh toán…</div>';
+    target.innerHTML = '<div class="loading">Đang tạo yêu cầu nạp…</div>';
     try {
-      const data = await api('/api/wallet/payment-info?amount=' + encodeURIComponent(amount));
+      const data = await api('/api/wallet/payment-requests','POST',{amount:Number(amount)});
       target.innerHTML = '<div class="qr-wrap"><b>Quét mã bằng ứng dụng ngân hàng</b><p class="muted small">' +
-        escapeHtml(data.accountName) + ' · ' + escapeHtml(data.accountNo) + '</p><img src="' + escapeHtml(data.qrUrl) + '" alt="Mã QR thanh toán">' +
-        '<div class="price" style="margin:8px 0 12px;font-size:18px">' + money(data.amount) + '</div>' +
-        '<div class="code-box"><span>' + escapeHtml(data.transferContent) + '</span><button class="tiny-btn" data-copy="' + escapeHtml(data.transferContent) + '">Sao chép</button></div>' +
-        '<p class="muted small">Chỉ ghi đúng nội dung chuyển khoản phía trên. Ví được cộng sau khi hệ thống nhận webhook ngân hàng hợp lệ.</p></div>';
+        escapeHtml(data.request.account_holder) + ' · ' + escapeHtml(data.request.account_number) + '</p><img src="' + escapeHtml(data.qrUrl) + '" alt="Mã QR thanh toán">' +
+        '<div class="price" style="margin:8px 0 12px;font-size:18px">' + money(data.request.amount) + '</div>' +
+        '<div class="code-box"><span>' + escapeHtml(data.request.transfer_content) + '</span><button class="tiny-btn" data-copy="' + escapeHtml(data.request.transfer_content) + '">Sao chép</button></div>' +
+        '<p class="muted small">Mã yêu cầu ' + escapeHtml(data.request.payment_id) + '. Sau khi chuyển khoản, Admin sẽ kiểm tra sao kê và duyệt; không tự động ghi có vào ví.</p></div>';
+      toast('Đã tạo yêu cầu nạp và gửi thông báo cho Admin.');
     } catch (error) {
       target.innerHTML = '<div class="notice warn">' + escapeHtml(error.message) + '</div>';
     }
@@ -536,10 +547,16 @@
     if (tab === 'giftcodes') state.adminData.giftcodes = (await api('/api/admin/giftcodes')).giftcodes;
     if (tab === 'users') state.adminData.users = (await api('/api/admin/users')).users;
     if (tab === 'matchmaking') state.adminData.matchDisputes = (await api('/api/admin/matchmaking/disputes')).disputes || [];
+    if (tab === 'payments') state.adminData.payments = (await api('/api/admin/payments')).payments || [];
+    if (tab === 'video-jobs') {
+      const result = await api('/api/admin/video-jobs');
+      state.adminData.videoJobs = result.jobs || [];
+      state.adminData.videoJobStats = result.stats || {};
+    }
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['matchmaking','Tranh chấp trận'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
@@ -560,7 +577,9 @@
     return '<div class="stat-grid"><div class="stat"><small>Tổng thành viên</small><b>' + (d.users || 0) + '</b></div>' +
       '<div class="stat"><small>Sản phẩm đang bán</small><b>' + (d.activeProducts || 0) + '</b></div>' +
       '<div class="stat"><small>Đơn hàng 30 ngày</small><b>' + (d.ordersLast30Days || 0) + '</b></div>' +
-      '<div class="stat"><small>Ticket cần xử lý</small><b>' + (d.openTickets || 0) + '</b></div></div>' +
+      '<div class="stat"><small>Ticket cần xử lý</small><b>' + (d.openTickets || 0) + '</b></div>' +
+      '<div class="stat"><small>Nạp chờ duyệt</small><b>' + (d.pendingPayments || 0) + '</b></div>' +
+      '<div class="stat"><small>Video đang chờ</small><b>' + (d.queuedVideoJobs || 0) + '</b></div></div>' +
       '<div class="card"><div class="list-row"><b>Giá trị đơn đã hoàn tất</b><strong class="price">' + money(d.completedOrderValue) + '</strong></div>' +
       '<div class="notice warn">Không nhập BOT1_TOKEN, DATABASE_URL hoặc secret vào biểu mẫu này. Secret hệ thống được quản lý tại Render Environment.</div></div>';
   }
@@ -678,6 +697,30 @@
       ).join('') : empty('Chưa có giftcode','Tạo giftcode và đặt hạn sử dụng trước khi chia sẻ.'));
   }
 
+  function adminPayments() {
+    const payments = state.adminData.payments || [];
+    return '<div class="notice warn">Yêu cầu nạp chỉ là thông tin do người dùng tạo. Admin phải kiểm tra sao kê ngân hàng, số tiền và nội dung chuyển khoản trước khi duyệt. Duyệt sẽ ghi có ví theo transaction idempotent; từ chối không thay đổi số dư.</div>' +
+      (payments.length ? payments.map(item =>
+        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(item.payment_id) + ' · ' + money(item.amount) + '</b><small>Telegram ' + escapeHtml(item.user_id) + ' · ' + escapeHtml(item.name || item.username || '') + '</small></div><span class="status pending">Chờ duyệt</span></div>' +
+        '<p>Nội dung CK: <code>' + escapeHtml(item.transfer_content) + '</code><br>' + escapeHtml(item.bank_id) + ' · ' + escapeHtml(item.account_number) + ' · ' + escapeHtml(item.account_holder) + '</p>' +
+        '<div class="two-col"><button class="primary" data-payment-action="approve" data-payment-id="' + escapeHtml(item.payment_id) + '">Đã đối soát · Duyệt</button><button class="danger" data-payment-action="reject" data-payment-id="' + escapeHtml(item.payment_id) + '">Từ chối</button></div></article>'
+      ).join('') : empty('Không có yêu cầu nạp chờ duyệt','Yêu cầu mới từ Telegram hoặc Mini App sẽ xuất hiện tại đây.'));
+  }
+
+  function adminVideoJobs() {
+    const jobs = state.adminData.videoJobs || [];
+    const stats = state.adminData.videoJobStats || {};
+    return '<div class="stat-grid"><div class="stat"><small>Chờ xử lý</small><b>' + Number(stats.queued || 0) + '</b></div><div class="stat"><small>Đang xử lý</small><b>' + Number(stats.processing || 0) + '</b></div><div class="stat"><small>Hoàn tất</small><b>' + Number(stats.completed || 0) + '</b></div><div class="stat"><small>Lỗi</small><b>' + Number(stats.failed || 0) + '</b></div></div>' +
+      '<div class="notice warn">Video job được lưu trong PostgreSQL. Muốn xử lý tự động cần chạy worker và cấu hình VIDEO_PROCESSOR_URL/VIDEO_PROCESSOR_SECRET của nhà cung cấp phụ đề.</div>' +
+      (jobs.length ? jobs.map(item =>
+        '<article class="record"><div class="record-top"><div><b>' + escapeHtml(String(item.id).slice(0,8)) + ' · User ' + escapeHtml(item.user_id) + '</b><small>' + escapeHtml(item.name || item.username || '') + ' · ' + new Date(item.created_at).toLocaleString('vi-VN') + '</small></div><span class="status ' + escapeHtml(item.status) + '">' + escapeHtml(item.status) + '</span></div>' +
+        '<p>Tiến độ: ' + Number(item.progress) + '%<br>Nguồn: ' + escapeHtml(item.source_url) + '</p>' +
+        (item.error_message ? '<p class="notice warn">' + escapeHtml(item.error_message) + '</p>' : '') +
+        (item.status === 'failed' ? '<button class="secondary" data-video-retry="' + escapeHtml(item.id) + '">Đưa lại vào hàng chờ</button>' : '') +
+        '</article>'
+      ).join('') : empty('Chưa có video job','Người dùng gửi link Vietsub từ Telegram hoặc Mini App sẽ được lưu ở đây.'));
+  }
+
   function adminMatchmaking() {
     const disputes = state.adminData.matchDisputes || [];
     return '<div class="notice warn">Chỉ xử lý sau khi đối chiếu bằng chứng. Tỷ số nhập theo thứ tự A (player_one) – B (player_two). Quyết định sẽ cập nhật Elo và điểm nội bộ cho cả hai người chơi.</div>' +
@@ -711,6 +754,8 @@
     if (state.adminTab === 'giftcodes') body = adminGiftcodes();
     if (state.adminTab === 'users') body = adminUsers();
     if (state.adminTab === 'matchmaking') body = adminMatchmaking();
+    if (state.adminTab === 'payments') body = adminPayments();
+    if (state.adminTab === 'video-jobs') body = adminVideoJobs();
     return '<div class="notice good">Đã xác thực quyền quản trị cho Telegram ID ' + escapeHtml(state.boot.user.id) + '.</div>' +
       adminTabs() + body;
   }
@@ -860,6 +905,32 @@
         toast(result.status === 'disputed' ? 'Đã báo tranh chấp. Elo chưa thay đổi.' : 'Đã xác nhận và cập nhật Elo, điểm xếp hạng.');
         await renderPage();
       } catch (error) { toast(error.message); confirmMatch.disabled = false; }
+      return;
+    }
+    const paymentAction = event.target.closest('[data-payment-action]');
+    if (paymentAction) {
+      const action = paymentAction.dataset.paymentAction;
+      const paymentId = paymentAction.dataset.paymentId;
+      const warning = action === 'approve'
+        ? 'Đã kiểm tra sao kê và xác nhận đúng mã, số tiền chuyển khoản?'
+        : 'Từ chối yêu cầu này? Ví sẽ không được cộng tiền.';
+      if (!window.confirm(warning)) return;
+      paymentAction.disabled = true;
+      try {
+        const result = await api('/api/admin/payments/' + encodeURIComponent(paymentId) + '/' + action,'POST',{});
+        toast(result.message);
+        await renderPage();
+      } catch (error) { toast(error.message); paymentAction.disabled = false; }
+      return;
+    }
+    const videoRetry = event.target.closest('[data-video-retry]');
+    if (videoRetry) {
+      videoRetry.disabled = true;
+      try {
+        await api('/api/admin/video-jobs/' + encodeURIComponent(videoRetry.dataset.videoRetry) + '/retry','POST',{});
+        toast('Đã đưa video job lại vào hàng chờ.');
+        await renderPage();
+      } catch (error) { toast(error.message); videoRetry.disabled = false; }
       return;
     }
     const deleteLinked = event.target.closest('[data-delete-linked-account]');
