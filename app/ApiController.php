@@ -575,10 +575,11 @@ final class ApiController
                     $this->notify((string) $result['telegramId'],
                         '🎉 Yêu cầu nạp ' . $paymentId . ' đã được Admin duyệt. Cộng +' .
                         number_format($result['amountVnd'], 0, ',', '.') . ' VNĐ. Số dư mới: ' .
-                        number_format($result['newBalance'], 0, ',', '.') . ' VNĐ.');
+                        number_format($result['newBalance'], 0, ',', '.') . ' VNĐ.',
+                        (string) ($result['botKey'] ?? $this->botKey));
                 } else {
                     $result = PaymentService::reject($paymentId, (string) $this->user['id'], $this->text($this->body['note'] ?? 'Admin từ chối sau khi đối soát.', 500));
-                    $this->notify((string) $result['telegramId'], 'Yêu cầu nạp ' . $paymentId . ' chưa được duyệt. Vui lòng liên hệ CSKH nếu cần hỗ trợ.');
+                    $this->notify((string) $result['telegramId'], 'Yêu cầu nạp ' . $paymentId . ' chưa được duyệt. Vui lòng liên hệ CSKH nếu cần hỗ trợ.', (string) ($result['botKey'] ?? $this->botKey));
                 }
             } catch (RuntimeException $error) {
                 throw new HttpException(409, $error->getMessage());
@@ -1086,9 +1087,9 @@ final class ApiController
         );
     }
 
-    private function notify(string $userId, string $message): void
+    private function notify(string $userId, string $message, ?string $botKey = null): void
     {
-        $token = TelegramAuth::token($this->botKey);
+        $token = TelegramAuth::token($botKey ?? $this->botKey);
         if ($token === '') {
             return;
         }
