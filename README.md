@@ -171,6 +171,59 @@ Khi thay Blueprint trên một service đã tồn tại, đừng giả định c
 
 Nếu dùng chính PostgreSQL hiện tại, giữ đúng database đang có dữ liệu; không tạo database mới thay thế trước khi sao lưu và đối soát. Mở database → Connect để lấy đúng URL: Render service cùng region/workspace dùng Internal Database URL; local/CI hoặc service khác region phải dùng External Database URL đầy đủ với `sslmode=require` và `DATABASE_SSL=true`. Blueprint mẫu tạo database `hendy-bot-tele-db` tại Singapore; nếu database hiện tại ở Oregon thì không áp dụng nguyên xi cấu hình này lên service đang chạy. Nếu Render báo xung đột resource, hãy ghép service với database hiện hữu thay vì xóa database.
 
+## Tích hợp Telegram Bot với Dashboard Admin
+
+Telegram BOT1 và BOT2 sử dụng cùng backend PHP/PostgreSQL và cùng dữ liệu của Mini App. Mỗi bot có cấu hình menu riêng trong `bot_menu_configs`; dashboard tab **Menu & Bot** có thể đổi Reply Keyboard/Inline Keyboard, số cột, nội dung giới thiệu, nhãn và mô tả. Telegram Bot API không hỗ trợ màu tùy chỉnh cho từng nút; các giá trị style trong Dashboard chỉ là metadata giao diện, không được gửi như thuộc tính không hợp lệ tới Telegram.
+
+### Lệnh Telegram
+
+| Lệnh | Tác vụ |
+|---|---|
+| `/start`, `/menu` | Đăng ký/cập nhật thành viên và mở menu chính |
+| `/balance` | Xem số dư ví |
+| `/deposit [số tiền]` | Tạo yêu cầu nạp và mã QR VietQR |
+| `/history` | Xem biến động ví, yêu cầu nạp và video jobs |
+| `/vietsub` | Gửi URL video HTTPS vào hàng đợi Vietsub |
+| `/jobs` | Xem trạng thái video jobs của tài khoản |
+| `/orders` | Xem đơn hàng và bàn giao |
+| `/admin` | Mở tổng quan quản trị |
+| `/admin_payments` | Liệt kê yêu cầu nạp chờ duyệt (Admin) |
+| `/admin_jobs` | Xem video jobs và đưa job lỗi về hàng chờ (Admin) |
+| `/addmoney <telegram_id> <amount>` | Điều chỉnh số dư thủ công, ghi ledger và audit (Admin) |
+
+Bot hỗ trợ một hoặc nhiều Admin: đặt `ADMIN_ID` và/hoặc `ADMIN_IDS` (Telegram ID dạng số, phân tách bằng dấu phẩy). Dùng ID được cấp bởi Telegram; không dùng username thay cho ID. Bot thứ hai cần `BOT2_TOKEN` và webhook secret riêng.
+
+### Nạp tiền và đối soát
+
+1. Thành viên chọn NẠP TIỀN hoặc gửi `/deposit 50000`.
+2. Backend kiểm tra cấu hình VietQR và tạo bản ghi `payment_requests` với mã HD riêng cùng nội dung chuyển khoản duy nhất.
+3. Bot gửi QR/thông tin chuyển khoản cho thành viên và thông báo tất cả Admin đã cấu hình.
+4. Admin mở `/admin_payments` hoặc Dashboard → **Duyệt nạp**. Chỉ sau khi đối chiếu sao kê ngân hàng, Admin mới chọn Duyệt/Từ chối.
+5. Duyệt ghi một ledger reference duy nhất `payment:<payment_id>`, cập nhật balance/total_deposited/VIP và thông báo thành viên. Unique reference + transaction giúp chặn cộng ví hai lần. Từ chối không đổi số dư.
+
+Tạo QR/yêu cầu nạp không phải bằng chứng ngân hàng đã nhận tiền. Không cộng ví từ ảnh chụp màn hình hoặc nội dung người dùng tự khai. `/webhook/bank` vẫn trả HTTP 503 vì chưa có adapter chữ ký callback theo nhà cung cấp; không bật `BANK_WEBHOOK_ENABLED` trong bản hiện tại.
+
+### Vietsub và video jobs
+
+- `/vietsub` hoặc nút DỊCH VỤ VIETSUB ghi job vào bảng PostgreSQL `video_jobs` với trạng thái `queued`.
+- Link đầu vào phải HTTPS và host nằm trong `MEDIA_ALLOWED_HOSTS`. Mặc định cho phép YouTube, TikTok, Facebook và fb.watch; có thể điều chỉnh allowlist.
+- Thành viên xem tiến độ bằng `/jobs`; Admin dùng `/admin_jobs` hoặc Dashboard → **Video Jobs**.
+- Job lỗi có thể được Admin đưa lại vào hàng chờ. Giới hạn mặc định: tối đa 3 job đang hoạt động và 10 job mới mỗi giờ cho một user.
+- Có CLI worker `php bin/video-worker.php` (hoặc `composer video-worker`). Worker chỉ dispatch khi đã cấu hình một nhà xử lý video thực tế và callback HTTPS. Nếu thiếu cấu hình, worker fail-fast; jobs vẫn được giữ trong PostgreSQL, không tự đánh dấu hoàn tất.
+
+**Hợp đồng tích hợp nhà xử lý video:** cấu hình `VIDEO_PROCESSOR_URL` (HTTPS) và `VIDEO_PROCESSOR_SECRET` (tối thiểu 32 ký tự) ở Render Environment. Worker gửi POST JSON gồm `jobId`, `telegramId`, `sourceUrl`, `callbackUrl`; header `X-Hendy-Video-Signature: sha256=<HMAC-SHA256 của raw request body>`. Nhà xử lý gọi callback `POST /webhook/video` với cùng header và payload JSON: `jobId`, `status` (`processing`, `completed`, `failed`), `progress`, `outputUrl`, `error`, `providerJobId`. Callback hoàn tất phải cung cấp `outputUrl` HTTPS. Backend xác minh chữ ký HMAC trước khi cập nhật job; khi completed/failed sẽ gửi thông báo Telegram cho thành viên.
+
+Repository chưa được cung cấp một nhà cung cấp phụ đề, API endpoint hay credential thực tế. Vì vậy worker và callback contract đã có trong source, nhưng chức năng tải video/chuyển giọng/tạo phụ đề thực tế **chưa thể chạy** cho đến khi kết nối provider hợp lệ. Có thể chạy worker bằng Render Background Worker với Start Command `php bin/video-worker.php`; tạo thêm Background Worker có thể phát sinh chi phí Render. Không bật service worker khi chưa có provider.
+
+### API mới
+
+- `GET /api/wallet/payment-requests`, `POST /api/wallet/payment-requests`: xem/tạo yêu cầu nạp dùng chung với Telegram.
+- `GET /api/admin/payments`, `POST /api/admin/payments/{paymentId}/approve|reject`: admin đối soát yêu cầu nạp.
+- `GET /api/admin/video-jobs`, `POST /api/admin/video-jobs/{uuid}/retry`: quản lý hàng đợi video.
+- `POST /webhook/video`: callback có xác minh HMAC từ video processor.
+
+Các API quản trị yêu cầu Telegram WebApp initData hợp lệ và tài khoản nằm trong `ADMIN_ID` hoặc `ADMIN_IDS`.
+
 ## Realtime, module và kho ứng dụng\n\nDashboard Admin có tab Tệp & Module. Tệp tải lên (JSON/MD/TXT/CSS/HTML/ảnh, tối đa 2 MB) được lưu ở vùng cách ly riêng trong persistent disk, kiểm tra MIME và SHA-256, trạng thái ban đầu pending_review; không có chức năng thực thi code hoặc tự ghi đè production. Mọi thay đổi mã nguồn phải qua Pull Request và CI.\n\nRealtime dùng PHP Ratchet trong service Render riêng. Sau khi Blueprint tạo service `hendy-bot-tele-realtime`, đặt `WEBSOCKET_URL` ở service API thành URL `wss://...` của service realtime.\n\nCác adapter App Store Connect, Google Play và Microsoft Store mới là khung tích hợp. Chưa có credential/API permissions hoặc luồng upload/submit/publish hoạt động; cần thiết lập riêng theo tài khoản nhà phát hành. Xem `docs/REALTIME-MODULES-AND-STORES.md`.\n\n## Endpoint chính
 
 - GET /: Dashboard / Telegram Mini App.
@@ -211,8 +264,8 @@ Tạo Environment tên `production` (và `staging` nếu cần) trong **Settings
 - `DATABASE_URL` không được workflow ghi đè. Giữ biến này do Render PostgreSQL/Blueprint quản lý để tránh thay nhầm database.
 
 **Environment Variables**
-- Bắt buộc: `ADMIN_ID`, `APP_URL`, `RENDER_SERVICE_ID`.
-- Có thể thêm: `APP_ENV`, `PORT`, `WEBAPP_URL`, `ALLOWED_ORIGINS`, `BOT_USERNAME`, `DATABASE_SSL`, `DB_STARTUP_WAIT_SECONDS`, `RUN_MIGRATIONS_ON_START`, `WEBHOOK_AUTO_REGISTER`, `BANK_WEBHOOK_ENABLED` (mặc định `false` và không được bật ở bản hiện tại), `VIETQR_BANK_ID`, `GROUP_URL`, `CHANNEL_URL`, `TELEGRAM_INIT_DATA_MAX_AGE_SECONDS`, `WEBSOCKET_URL`, `WEBSOCKET_BIND`, `WEBSOCKET_PORT`.
+- Bắt buộc: `APP_URL`, `RENDER_SERVICE_ID` và ít nhất một trong `ADMIN_ID` hoặc `ADMIN_IDS`.
+- Có thể thêm: `APP_ENV`, `PORT`, `WEBAPP_URL`, `ALLOWED_ORIGINS`, `BOT_USERNAME`, `DATABASE_SSL`, `DB_STARTUP_WAIT_SECONDS`, `RUN_MIGRATIONS_ON_START`, `WEBHOOK_AUTO_REGISTER`, `ADMIN_IDS`, `MEDIA_ALLOWED_HOSTS`, `VIDEO_PROCESSOR_URL`, `VIDEO_WORKER_POLL_SECONDS`, `BANK_WEBHOOK_ENABLED` (mặc định `false` và không được bật ở bản hiện tại), `VIETQR_BANK_ID`, `GROUP_URL`, `CHANNEL_URL`, `TELEGRAM_INIT_DATA_MAX_AGE_SECONDS`, `WEBSOCKET_URL`, `WEBSOCKET_BIND`, `WEBSOCKET_PORT`.
 
 `GH_CONFIG_SYNC_TOKEN` cần quyền ghi GitHub Environment secrets/variables cho repository (fine-grained PAT hoặc GitHub App token với repository permission **Environments: write**). `RENDER_API_KEY` cần quyền cập nhật biến môi trường và trigger deploy cho service được chọn. Không dùng một token cá nhân có quyền rộng hơn mức cần thiết.
 
@@ -241,7 +294,7 @@ Không tự bật login, nạp tiền thật hoặc publish store chỉ bằng c
 
 - Liên kết Mini Game Live hiện chỉ lưu thương hiệu và username do thành viên nhập; không tự đăng nhập vào dịch vụ bên thứ ba.
 - Nút Ghép đôi trong Telegram mở Mini App xếp hạng. Queue, Elo, xác nhận tỷ số, dispute và bảng xếp hạng nằm trong API/Mini App; đây không phải engine game trực tiếp và chưa có tích hợp xác minh kết quả từ game bên ngoài.
-- VietQR chỉ tạo mã thanh toán. Endpoint POST /webhook/bank đang bị khóa và không ghi có ví. Đừng bật nạp tiền thật cho tới khi adapter chữ ký callback theo ngân hàng được cài đặt và kiểm thử.
+- VietQR tạo yêu cầu có mã riêng và được Admin đối soát/duyệt thủ công qua Telegram hoặc Dashboard. Tạo QR không tự cộng ví. Endpoint POST /webhook/bank đang bị khóa và không ghi có ví. Chỉ bật nạp tự động sau khi adapter chữ ký callback theo ngân hàng được cài đặt và kiểm thử.
 - Các token bot và webhook secrets không hiển thị hoặc lưu trong Dashboard. Chúng được quản lý tại Render Environment.
 - Migration chỉ tạo bảng/index/setting còn thiếu. Trước khi deploy với dữ liệu hiện hữu, hãy backup PostgreSQL và thử trên staging.
 - Thay đổi code không tự chuyển dữ liệu đang ở Cloudflare D1 hoặc database khác. Hãy export, mapping, import, đối soát số dư/ledger/đơn hàng/referral trước khi ngừng nguồn dữ liệu cũ.
