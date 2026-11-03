@@ -356,19 +356,8 @@ final class BotService
             return;
         }
 
-        if (preg_match('/^duel-finish:(\d{1,18})$/', $action, $matches)) {
-            $this->finishMatch($chatId, $userId, $matches[1]);
-            return;
-        }
-
-        if ($action === 'duel-join' || $action === 'duel-join:quick' || $action === 'duel-join:practice') {
-            $mode = str_contains($action, 'practice') ? 'practice' : 'quick';
-            $this->joinMatch($chatId, $userId, $mode);
-            return;
-        }
-
-        if ($action === 'duel-leave') {
-            $this->leaveMatch($chatId, $userId);
+        if (str_starts_with($action, 'duel-finish:') || str_starts_with($action, 'duel-join') || $action === 'duel-leave') {
+            $this->showMatchmaking($chatId, $userId);
             return;
         }
 
@@ -707,34 +696,26 @@ final class BotService
 
     private function showMatchmaking(string $chatId, string $userId): void
     {
-        $match = Database::one(
-            "SELECT * FROM matchmaking_matches WHERE status = 'matched' AND (player_one = ? OR player_two = ?) ORDER BY created_at DESC LIMIT 1",
-            [$userId, $userId]
+        // The Mini App owns the ranked queue, Elo, result confirmation and
+        // dispute flow. Do not leave legacy FIFO callbacks able to finalize
+        // a match without bilateral result confirmation.
+        $url = $this->webAppUrl('matchmaking');
+        if ($url === '') {
+            $this->telegram->sendMessage($chatId, 'Ghép đôi xếp hạng cần WEBAPP_URL hoặc APP_URL HTTPS. Vui lòng liên hệ quản trị viên.');
+            return;
+        }
+
+        $this->telegram->sendMessage(
+            $chatId,
+            '⚔️ <b>HENDY MATCH — GHÉP ĐÔI XẾP HẠNG</b>' .
+            "\nTìm đối thủ theo Elo, gửi tỷ số, xác nhận kết quả hai phía và theo dõi bảng xếp hạng." .
+            "\nĐiểm thưởng là điểm nội bộ, không quy đổi thành tiền.",
+            [
+                'reply_markup' => $this->inlineMenu([
+                    [['text' => '🚀 MỞ HỆ THỐNG GHÉP ĐÔI', 'web_app' => ['url' => $url]]],
+                ]),
+            ]
         );
-        if ($match !== null) {
-            $opponentId = $match['player_one'] === $userId ? $match['player_two'] : $match['player_one'];
-            $opponent = Database::one('SELECT name, username FROM users WHERE user_id = ?', [$opponentId]);
-            $this->telegram->sendMessage($chatId, '🤝 Đã ghép đôi với <b>' . self::escape($opponent['name'] ?: ($opponent['username'] ?: 'Thành viên Hendy')) . '</b>.' . "\nMã ghép: <code>" . $match['id'] . '</code>', [
-                'reply_markup' => $this->inlineMenu([[['text' => 'KẾT THÚC LƯỢT GHÉP', 'callback_data' => 'member:duel-finish:' . $match['id']]]]),
-            ]);
-            return;
-        }
-
-        $waiting = Database::one("SELECT id, mode, created_at FROM matchmaking_queue WHERE user_id = ? AND status = 'waiting' ORDER BY created_at DESC LIMIT 1", [$userId]);
-        if ($waiting !== null) {
-            $this->telegram->sendMessage($chatId, '⏳ Bạn đang ở hàng chờ ghép đôi (' . self::escape($waiting['mode']) . ').', [
-                'reply_markup' => $this->inlineMenu([[['text' => 'RỜI HÀNG CHỜ', 'callback_data' => 'member:duel-leave']]]),
-            ]);
-            return;
-        }
-
-        $this->telegram->sendMessage($chatId, '⚔️ <b>HỆ THỐNG GHÉP ĐÔI</b>' . "\nChọn chế độ để tìm người chơi đang chờ.", [
-            'reply_markup' => $this->inlineMenu([
-                [['text' => '🤝 GHÉP NHANH', 'callback_data' => 'member:duel-join:quick']],
-                [['text' => '🎯 LUYỆN TẬP', 'callback_data' => 'member:duel-join:practice']],
-                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
-            ]),
-        ]);
     }
 
     private function joinMatch(string $chatId, string $userId, string $mode): void
