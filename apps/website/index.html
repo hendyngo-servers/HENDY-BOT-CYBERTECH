@@ -449,6 +449,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       <div class="panel"><h3>VIDEO SUBTITLE SERVICE</h3><p class="muted small">Để giữ một luồng xử lý thống nhất giữa hai bot, hãy gửi URL video bằng lệnh /vietsub trong đúng bot này. Job sẽ gắn với BOT ${botKey==='secondary'?'2':'1'}.</p><button class="btn primary" data-action="open-bot">MỞ CUỘC TRÒ CHUYỆN TELEGRAM</button></div>`);
   }
   async function openSection(section){
+    state.section=section;
     try {
       if(section==='home'){renderHome();return;}
       if(section!=='services'){
