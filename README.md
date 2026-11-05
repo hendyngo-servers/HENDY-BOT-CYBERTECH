@@ -8,7 +8,7 @@ Nền tảng Telegram Bot bằng PHP 8.3, PostgreSQL và giao diện web quản 
 - Mini App/website, xác thực Telegram Web App initData, trung tâm khách hàng và Dashboard Admin.
 - Ví, lịch sử giao dịch, yêu cầu nạp, sản phẩm/đơn hàng, mã giảm giá, VIP, giới thiệu và ticket CSKH.
 - Các khu vực dịch vụ Mini Game, Tool, Code, OTP, Proxy và VIP.
-- Vietsub/video job worker, callback HMAC và WebSocket realtime (tắt mặc định; bật khi đã cấu hình).
+- Vietsub/video job worker, callback HMAC và WebSocket realtime (Render Blueprint có thể bật; đặt WEBSOCKET_ENABLED=false nếu không sử dụng).
 - PostgreSQL schema/migration, Docker và Render Blueprint.
 
 > Không có token mẫu được lưu trong repository. Tất cả credential phải được cấu hình bằng Render Environment hoặc GitHub Secrets; không nhập chúng vào source code, log, issue hoặc commit.

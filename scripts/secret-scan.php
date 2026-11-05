@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 $root = dirname(__DIR__);
 $excludedDirs = ['.git', 'vendor', 'node_modules', 'storage', 'dist'];
-$extensions = ['php', 'js', 'mjs', 'cjs', 'html', 'sh', 'yml', 'yaml', 'json', 'md', 'sql', 'env', 'txt', 'conf'];
+$extensions = ['php', 'js', 'mjs', 'cjs', 'html', 'sh', 'yml', 'yaml', 'json', 'md', 'sql', 'env', 'txt', 'conf', 'ini', 'cfg', 'toml', 'xml', 'pem', 'key', 'crt'];
 $patterns = [
     'Telegram bot token' => '~(?<![A-Za-z0-9_])[0-9]{8,12}:[A-Za-z0-9_-]{30,}(?![A-Za-z0-9_-])~',
     'Private key' => '~-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----~',
@@ -28,7 +28,9 @@ foreach ($iterator as $file) {
     if (array_intersect($segments, $excludedDirs) !== []) {
         continue;
     }
-    if (!in_array(strtolower($file->getExtension()), $extensions, true)) {
+    $baseName = basename($relative);
+    $isEnvFile = str_starts_with($baseName, '.env');
+    if (!$isEnvFile && !in_array(strtolower($file->getExtension()), $extensions, true)) {
         continue;
     }
     $contents = file_get_contents($file->getPathname());
