@@ -8,6 +8,7 @@ use Hendy\Env;
 use Hendy\HttpException;
 use Hendy\TelegramApi;
 use Hendy\TelegramAuth;
+use Hendy\WebhookSecurity;
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';

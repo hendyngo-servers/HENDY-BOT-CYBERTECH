@@ -49,7 +49,7 @@ services:
       - key: WEBHOOK_AUTO_REGISTER
         value: "true"
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
-        value: "86400"
+        value: "3600"
       - key: BOT_USERNAME
         value: HendyBot_Bot
       - key: BOT1_USERNAME
