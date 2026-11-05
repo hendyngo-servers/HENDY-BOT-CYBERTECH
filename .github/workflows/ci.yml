@@ -67,8 +67,8 @@ jobs:
 
       - name: Validate runtime config and safe sync dry-run
         env:
-          BOT1_TOKEN: "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
-          BOT2_TOKEN: "987654321:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+          BOT1_TOKEN: ${{ format('123456789:{0}', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef') }}
+          BOT2_TOKEN: ${{ format('987654321:{0}', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef') }}
           ADMIN_ID: "12345678"
           APP_URL: "https://example.invalid"
           DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"

@@ -57,7 +57,7 @@ final class TelegramAuth
 
         $authDate = filter_var($params['auth_date'] ?? null, FILTER_VALIDATE_INT);
         $now = time();
-        $maxAge = max(60, min(604800, Env::int('TELEGRAM_INIT_DATA_MAX_AGE_SECONDS', 86400)));
+        $maxAge = max(60, min(86400, Env::int('TELEGRAM_INIT_DATA_MAX_AGE_SECONDS', 3600)));
         if ($authDate === false || $authDate > $now + 60 || $now - $authDate > $maxAge) {
             throw new RuntimeException('Phiên Telegram đã hết hạn.');
         }
