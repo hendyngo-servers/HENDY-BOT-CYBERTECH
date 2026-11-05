@@ -44,8 +44,8 @@ foreach ($bots as $key => $config) {
         continue;
     }
 
-    $secret = (string) preg_replace('/[^A-Za-z0-9_-]/', '', $config['secret']);
-    if ($secret === '') {
+    $secret = (string) $config['secret'];
+    if (!preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $secret)) {
         $failed[] = 'Thiếu webhook secret cho bot ' . $key . '.';
         continue;
     }

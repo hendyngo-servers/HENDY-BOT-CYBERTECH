@@ -8,6 +8,7 @@ use Hendy\Env;
 use Hendy\HttpException;
 use Hendy\TelegramApi;
 use Hendy\TelegramAuth;
+use Hendy\WebhookSecurity;
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
@@ -34,11 +35,6 @@ function respond(array $payload, int $status = 200): never
     header('Cache-Control: no-store');
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
-}
-
-function normalizedSecret(string $secret): string
-{
-    return substr((string) preg_replace('/[^A-Za-z0-9_-]/', '', $secret), 0, 256);
 }
 
 function processBankDeposit(array $body): array
@@ -129,6 +125,11 @@ try {
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('X-Frame-Options: SAMEORIGIN');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
+        || strtolower((string) ($_SERVER['HTTPS'] ?? '')) === 'on') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 
     $origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
     $allowedOrigins = array_filter(array_map(

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/WebhookSecurity.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
@@ -12,6 +13,7 @@ require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
 
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
+use Hendy\WebhookSecurity;
 use Hendy\WebServiceKernel;
 
 $checks = 0;
@@ -25,6 +27,14 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 $assert(TelegramAuth::safeEquals('same-secret', 'same-secret'), 'so sánh chuỗi đúng');
 $assert(!TelegramAuth::safeEquals('different', 'same-secret'), 'so sánh chuỗi khác');
 $assert(!TelegramAuth::safeEquals('', ''), 'secret rỗng bị từ chối');
+$webhookSecret = 'sample-webhook-secret-for-tests-000001';
+$assert(WebhookSecurity::verifySecret($webhookSecret, $webhookSecret), 'webhook secret đúng được chấp nhận');
+$assert(!WebhookSecurity::verifySecret($webhookSecret, 'wrong-webhook-secret-for-tests-000001'), 'webhook secret sai bị từ chối');
+$hmacBody = '{"update_id":123,"message":{"text":"hello"}}';
+$hmac = 'sha256=' . hash_hmac('sha256', $hmacBody, $webhookSecret);
+$assert(WebhookSecurity::verifyHmac($hmacBody, $hmac, $webhookSecret), 'HMAC callback hợp lệ được chấp nhận');
+$assert(!WebhookSecurity::verifyHmac($hmacBody, 'sha256=' . str_repeat('0', 64), $webhookSecret), 'HMAC callback sai bị từ chối');
+$assert(WebhookSecurity::decodeJson($hmacBody, 1024)['update_id'] === 123, 'JSON webhook được giải mã');
 
 $previousAdminId = getenv('ADMIN_ID');
 $previousAdminIds = getenv('ADMIN_IDS');
@@ -53,7 +63,7 @@ $assert(!VideoJobService::isAllowedMediaUrl('http://youtube.com/watch?v=abc'), '
 $assert(!VideoJobService::isAllowedMediaUrl('https://youtube.com.evil.example/watch?v=abc'), 'từ chối domain giả mạo');
 $assert(!VideoJobService::isAllowedMediaUrl('https://127.0.0.1/admin'), 'từ chối IP nội bộ thay vì domain video');
 
-$token = '123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi';
+$token = sprintf('123456789:%s', str_repeat('A', 40));
 $authDate = time();
 $user = json_encode(['id' => 12345678, 'first_name' => 'Hendy'], JSON_UNESCAPED_UNICODE);
 $params = [

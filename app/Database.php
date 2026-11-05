@@ -25,27 +25,36 @@ final class Database
         }
 
         $parts = parse_url($url);
-        if (!is_array($parts) || empty($parts['host']) || empty($parts['path'])) {
+        if (!is_array($parts)
+            || !in_array(strtolower((string) ($parts['scheme'] ?? '')), ['postgres', 'postgresql'], true)
+            || empty($parts['host'])
+            || empty($parts['path'])) {
             throw new RuntimeException('DATABASE_URL không đúng định dạng PostgreSQL URL.');
         }
 
-        parse_str((string) ($parts['query'] ?? ''), $query);
-        $host = $parts['host'];
+        $host = (string) $parts['host'];
         $port = (int) ($parts['port'] ?? 5432);
-        $database = ltrim($parts['path'], '/');
+        $database = rawurldecode(ltrim((string) $parts['path'], '/'));
         $username = rawurldecode((string) ($parts['user'] ?? ''));
         $password = rawurldecode((string) ($parts['pass'] ?? ''));
+
+        if ($port < 1 || $port > 65535
+            || !preg_match('/\A[A-Za-z0-9.-]+\z/D', $host)
+            || !preg_match('/\A[A-Za-z0-9_.-]+\z/D', $database)
+            || $username === '') {
+            throw new RuntimeException('Thông tin host, port hoặc database trong DATABASE_URL không hợp lệ.');
+        }
+
+        parse_str((string) ($parts['query'] ?? ''), $query);
         $sslMode = Env::bool('DATABASE_SSL', true)
             ? (string) ($query['sslmode'] ?? 'require')
             : 'disable';
+        $allowedSslModes = ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'];
+        if (!in_array($sslMode, $allowedSslModes, true)) {
+            $sslMode = 'require';
+        }
 
-        $dsn = sprintf(
-            'pgsql:host=%s;port=%d;dbname=%s;sslmode=%s',
-            $host,
-            $port,
-            $database,
-            $sslMode
-        );
+        $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s;sslmode=%s', $host, $port, $database, $sslMode);
 
         try {
             self::$connection = new PDO($dsn, $username, $password, [
@@ -53,10 +62,11 @@ final class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::ATTR_TIMEOUT => 10,
+                PDO::ATTR_PERSISTENT => false,
             ]);
             self::$connection->exec("SET TIME ZONE 'UTC'");
         } catch (PDOException $error) {
-            throw new RuntimeException('Không thể kết nối PostgreSQL: ' . $error->getMessage(), 0, $error);
+            throw new RuntimeException('Không thể kết nối PostgreSQL. Hãy kiểm tra DATABASE_URL và quyền truy cập.', 0, $error);
         }
 
         return self::$connection;
@@ -90,7 +100,6 @@ final class Database
     {
         $pdo = self::connection();
         $pdo->beginTransaction();
-
         try {
             $result = $callback($pdo);
             $pdo->commit();
@@ -106,14 +115,13 @@ final class Database
     public static function migrate(): void
     {
         $schema = dirname(__DIR__) . '/database/schema.sql';
-        if (!is_file($schema)) {
+        if (!is_file($schema) || !is_readable($schema)) {
             throw new RuntimeException('Không tìm thấy database/schema.sql.');
         }
 
         $pdo = self::connection();
-        $lockKey = 'hendy-bot-tele-schema';
+        $lockKey = 'hendy-bot-cybertech-schema';
         self::run('SELECT pg_advisory_lock(hashtext(?))', [$lockKey]);
-
         try {
             $pdo->exec((string) file_get_contents($schema));
         } finally {

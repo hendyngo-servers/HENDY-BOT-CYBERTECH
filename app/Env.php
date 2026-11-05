@@ -5,18 +5,27 @@ namespace Hendy;
 
 final class Env
 {
+    private static bool $loaded = false;
+
     public static function load(string $file): void
     {
-        if (!is_file($file) || !is_readable($file)) {
+        if (self::$loaded || !is_file($file) || !is_readable($file)) {
             return;
         }
 
-        foreach (file($file, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return;
+        }
+
+        foreach ($lines as $line) {
             $line = trim($line);
             if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
-
+            if (str_starts_with($line, 'export ')) {
+                $line = trim(substr($line, 7));
+            }
             if (!str_contains($line, '=')) {
                 continue;
             }
@@ -24,39 +33,43 @@ final class Env
             [$key, $value] = explode('=', $line, 2);
             $key = trim($key);
             $value = trim($value);
-
-            if ($key === '' || getenv($key) !== false) {
+            if (!preg_match('/\A[A-Z][A-Z0-9_]{0,127}\z/D', $key) || getenv($key) !== false) {
                 continue;
             }
 
             if (strlen($value) >= 2) {
                 $first = $value[0];
                 $last = $value[strlen($value) - 1];
-                if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                if ($first === '"' && $last === '"') {
+                    $value = stripcslashes(substr($value, 1, -1));
+                } elseif ($first === "'" && $last === "'") {
                     $value = substr($value, 1, -1);
                 }
+            } else {
+                $value = preg_replace('/\s+#.*$/', '', $value) ?? $value;
             }
 
-            $value = preg_replace_callback('/\\\\n/', static fn (): string => "\n", $value) ?? $value;
             putenv($key . '=' . $value);
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
         }
+
+        self::$loaded = true;
     }
 
     public static function get(string $key, ?string $default = null): ?string
     {
-        $value = getenv($key);
-        if ($value === false || $value === '') {
+        if (!preg_match('/\A[A-Z][A-Z0-9_]{0,127}\z/D', $key)) {
             return $default;
         }
-        return (string) $value;
+        $value = getenv($key);
+        return $value === false || $value === '' ? $default : (string) $value;
     }
 
     public static function int(string $key, int $default): int
     {
         $value = self::get($key);
-        if ($value === null || !preg_match('/^-?\d+$/', $value)) {
+        if ($value === null || !preg_match('/\A-?\d{1,12}\z/D', $value)) {
             return $default;
         }
         return (int) $value;
