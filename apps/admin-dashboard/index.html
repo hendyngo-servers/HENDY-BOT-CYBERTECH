@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101b43">
-  <meta name="description" content="Hendy Bot - Trung tâm dịch vụ, ví điện tử và chăm sóc khách hàng">
-  <title>Hendy Bot | Trung tâm dịch vụ</title>
+  <meta name="theme-color" content="#05050a">
+  <meta name="description" content="HENDY CYBERTECH — Bảng điều khiển quản trị hệ thống">
+  <title>HENDY ADMIN DASHBOARD PRO</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -141,36 +141,178 @@
       .stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
       .bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(720px,calc(100% - 40px));border:1px solid #dfe7fa;border-radius:20px 20px 0 0}
     }
-  </style>
+  
+    /* HENDY ADMIN DASHBOARD PRO — dark neon glass theme */
+    :root{color-scheme:dark;--bg-color:#05050a;--panel-bg:rgba(15,15,25,.78);--panel-border:rgba(255,255,255,.09);--primary:#00e7f5;--secondary:#4f8cff;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--text-main:#f7f8ff;--text-muted:#93a0bd}
+    html,body{min-height:100%;background:#05050a;color:var(--text-main)}
+    body{display:block;min-height:100vh;margin:0;padding:0;overflow-x:hidden;background:radial-gradient(circle at 12% 35%,rgba(0,242,254,.08),transparent 27%),radial-gradient(circle at 85% 12%,rgba(118,75,162,.12),transparent 28%),#05050a;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    body:before{content:"";position:fixed;inset:0;background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.018) 1px,transparent 1px);pointer-events:none;z-index:0;mask-image:radial-gradient(circle at center,#000 55%,transparent 100%)}
+    .sidebar{width:260px;height:100vh;position:fixed;z-index:100;inset:0 auto 0 0;display:flex;flex-direction:column;background:rgba(8,10,18,.94);backdrop-filter:blur(20px);border-right:1px solid var(--panel-border);transition:transform .28s ease}
+    .sidebar-header{padding:23px 20px;display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--panel-border)}
+    .logo-icon{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#041018;font-size:21px;box-shadow:0 0 22px rgba(0,231,245,.22);transform:rotate(45deg)}
+    .logo-icon span{transform:rotate(-45deg)}
+    .sidebar-header h2{font-size:16px;font-weight:900;letter-spacing:.08em;margin:0}
+    .sidebar-header h2 span{background:linear-gradient(120deg,var(--primary),#8e91ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .sidebar-header small{display:block;color:var(--text-muted);font-size:9px;letter-spacing:.16em;margin-top:5px}
+    .sidebar-menu{padding:18px 0;flex:1;overflow-y:auto}
+    .menu-title{padding:0 22px;color:#71809f;font-size:10px;font-weight:850;letter-spacing:.16em;margin:15px 0 8px;text-transform:uppercase}
+    .menu-item{width:100%;padding:11px 20px;display:flex;align-items:center;gap:12px;border:0;border-left:3px solid transparent;background:transparent;color:#9aa7c2;text-align:left;font-size:12px;font-weight:650;cursor:pointer;transition:all .18s}
+    .menu-item .menu-icon{width:22px;text-align:center;font-size:16px}
+    .menu-item:hover,.menu-item.active{color:#fff;background:rgba(0,231,245,.065);border-left-color:var(--primary)}
+    .menu-item.active .menu-icon{color:var(--primary);filter:drop-shadow(0 0 7px rgba(0,231,245,.42))}
+    .sidebar-footer{display:grid;gap:8px;padding:16px 18px;border-top:1px solid var(--panel-border)}
+    .sidebar-footer a{padding:9px 11px;border:1px solid var(--panel-border);border-radius:10px;color:#b9c4dc;text-decoration:none;font-size:11px}
+    .sidebar-footer a:hover{border-color:var(--primary);color:#fff}
+    .main-content{position:relative;z-index:1;margin-left:260px;min-height:100vh;display:flex;flex-direction:column}
+    .top-header{height:72px;position:sticky;top:0;z-index:80;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 28px;background:rgba(5,7,14,.78);backdrop-filter:blur(16px);border-bottom:1px solid var(--panel-border)}
+    .top-header-left{display:flex;align-items:center;gap:14px;min-width:0}
+    .top-header-title{font-size:13px;font-weight:800;color:var(--primary);letter-spacing:.035em}
+    .top-header-subtitle{display:block;color:#73809d;font-size:10px;margin-top:3px}
+    .menu-toggle{display:none;width:40px;height:40px;border:1px solid var(--panel-border);border-radius:12px;background:#111827;color:#e7f4ff;font-size:18px}
+    .admin-profile{display:flex;align-items:center;gap:10px;padding-left:18px;border-left:1px solid var(--panel-border)}
+    .admin-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(135deg,#a855f7,#ec4899);font-size:13px;font-weight:900;color:white}
+    .admin-info strong{display:block;font-size:11px}
+    .admin-info small{display:block;color:var(--success);font-size:10px;margin-top:3px}
+    .content-body{width:min(100%,1500px);margin:0 auto;padding:28px 30px 60px}
+    .page-title{margin:0 0 7px}
+    .page-title h1{font-size:23px;font-weight:850;letter-spacing:-.035em;margin:0}
+    .page-title p{font-size:12px;color:var(--text-muted);margin:7px 0 0;line-height:1.6}
+    #app{min-height:280px;margin-top:18px}
+    .live-indicator{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;margin-top:13px;border:1px solid rgba(16,185,129,.25);border-radius:30px;background:rgba(16,185,129,.07);color:#7ee7bc;font-size:10px}
+    .admin-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:20px 22px;margin-bottom:17px;border:1px solid var(--panel-border);border-radius:19px;background:linear-gradient(125deg,rgba(25,33,59,.92),rgba(32,20,48,.8));box-shadow:0 14px 36px rgba(0,0,0,.22)}
+    .admin-heading h2{font-size:17px;margin:0 0 6px;color:#f5f7ff}
+    .admin-heading p{font-size:11px;color:var(--text-muted);margin:0}
+    .admin-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+    .admin-shortcut{min-height:64px;padding:12px;border:1px solid var(--panel-border);border-radius:14px;background:rgba(17,24,39,.82);color:#dbe8ff;text-align:left;font-size:11px;font-weight:750}
+    .admin-shortcut span{font-size:18px;margin-right:7px}
+    .admin-shortcut:hover{border-color:var(--primary);background:rgba(0,231,245,.06)}
+    .admin-tabs{display:none}
+    .stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+    .stat,.card,.record{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:16px;color:var(--text-main);box-shadow:0 12px 30px rgba(0,0,0,.22);backdrop-filter:blur(10px)}
+    .stat{padding:16px}
+    .stat small{display:block;color:var(--text-muted);font-size:10px}
+    .stat b{display:block;color:#fff;font-size:20px;margin-top:7px}
+    .card{padding:18px;margin:0 0 14px}
+    .record{padding:16px;margin:0 0 12px}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 2px 12px;color:#f1f5ff}
+    .section-head h3{font-size:14px;margin:0}
+    .section-head span{font-size:10px;color:var(--text-muted)}
+    .record-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .record b,.card b{color:#f3f6ff}
+    .record p{color:#aebad2;font-size:12px;line-height:1.55}
+    .record small,.muted{color:var(--text-muted)}
+    .form{display:grid;gap:12px}
+    .field{display:grid;gap:6px}
+    .field label{font-size:10px;font-weight:750;color:#aab7d0}
+    .field input,.field select,.field textarea{width:100%;min-width:0;border:1px solid #303d59;border-radius:11px;background:rgba(4,8,17,.86);color:#f7f8ff;padding:11px 12px;font-size:12px;outline:none}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,231,245,.12)}
+    .field textarea{min-height:88px}
+    .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .primary,.secondary,.danger,.tiny-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:10px;padding:10px 13px;font-size:11px;font-weight:800;cursor:pointer;transition:filter .18s,transform .18s}
+    .primary{border:0;background:linear-gradient(120deg,var(--primary),var(--secondary));color:#06121c;box-shadow:0 0 16px rgba(0,231,245,.16)}
+    .secondary,.tiny-btn{border:1px solid #34435f;background:rgba(255,255,255,.05);color:#d6e4ff}
+    .danger{border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.12);color:#ff8d9a}
+    .primary:hover,.secondary:hover,.danger:hover,.tiny-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .notice{padding:12px 14px;border:1px solid rgba(79,140,255,.22);border-radius:12px;background:rgba(39,85,145,.13);color:#c5d6f3;font-size:11px;line-height:1.6;margin:0 0 13px}
+    .notice.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:#f6d18a}
+    .notice.good{border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.08);color:#9ce9c2}
+    .notice.error{border-color:rgba(239,68,68,.32);background:rgba(239,68,68,.08);color:#ffabb3}
+    .empty{padding:22px;border:1px dashed #394968;border-radius:14px;background:rgba(7,12,24,.6);color:var(--text-muted);text-align:center;font-size:11px;line-height:1.7}
+    .empty b{display:block;margin-bottom:5px;color:#eaf1ff;font-size:13px}
+    .status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:30px;background:rgba(148,163,184,.12);color:#c0cbe0;font-size:9px;font-weight:850;white-space:nowrap}
+    .status.pending{background:rgba(245,158,11,.13);color:#ffd27c}
+    .status.processing{background:rgba(79,140,255,.15);color:#9cc3ff}
+    .status.completed,.status.resolved{background:rgba(16,185,129,.13);color:#8ce6b9}
+    .status.rejected,.status.cancelled,.status.closed{background:rgba(239,68,68,.13);color:#ff9ca6}
+    .vip-pill{display:inline-flex;align-items:center;padding:7px 10px;border-radius:30px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.22);color:#ffd37d;font-size:10px;font-weight:850}
+    .app-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;margin-bottom:15px;border:1px solid var(--panel-border);border-radius:15px;background:linear-gradient(125deg,rgba(0,231,245,.075),rgba(79,140,255,.07),rgba(168,85,247,.08))}
+    .app-banner b{display:block;font-size:13px}
+    .app-banner small{display:block;color:var(--text-muted);font-size:10px;margin-top:4px}
+    .banner-icon{font-size:24px}
+    .price{color:#6ee7df;font-weight:900}
+    .list-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .list-row:last-child{border-bottom:0}
+    .list-row b{font-size:11px}
+    .list-row small{display:block;color:var(--text-muted);font-size:10px;margin-top:4px}
+    .audit-event{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .audit-dot{width:8px;height:8px;flex:none;border-radius:50%;margin-top:5px;background:var(--primary);box-shadow:0 0 10px rgba(0,231,245,.45)}
+    .json-help{color:var(--text-muted);font-size:10px;line-height:1.5}
+    .bottom-nav,#bottom-navigation{display:none!important}
+    #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300;max-width:min(94vw,520px);padding:11px 16px;border:1px solid var(--panel-border);border-radius:12px;background:#101a2c;color:#fff;box-shadow:0 12px 35px #0009}
+    #toast:not(.show){opacity:0;pointer-events:none}
+    @media(max-width:1050px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.sidebar{transform:translateX(-102%);box-shadow:24px 0 60px #0008}.main-content{margin-left:0}.menu-toggle{display:grid;place-items:center}.top-header{padding:0 15px}.content-body{padding:22px 15px 48px}.admin-profile{padding-left:10px}.admin-info small{font-size:9px}.admin-heading{align-items:flex-start;flex-direction:column}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.sidebar-open .sidebar{transform:translateX(0)}body.sidebar-open:after{content:"";position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:90}}
+    @media(max-width:430px){.top-header-title{font-size:11px}.content-body{padding-left:12px;padding-right:12px}.stat-grid{gap:8px}.stat{padding:12px}.stat b{font-size:17px}.two-col{grid-template-columns:1fr}.admin-shortcuts{grid-template-columns:1fr 1fr}.record-top{flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
   <link rel="stylesheet" href="/styles/buttons.css">
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">H</div>
-        <div><b id="brand-name">Hendy Bot</b><small>Trung tâm dịch vụ · Hỗ trợ 24/7</small></div>
+  <aside class="sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị HENDY">
+    <div class="sidebar-header">
+      <div class="logo-icon" aria-hidden="true"><span>🤖</span></div>
+      <div><h2>HENDY <span>ADMIN</span></h2><small>PRO CONTROL CENTER</small></div>
+    </div>
+    <nav class="sidebar-menu">
+      <div class="menu-title">Bảng điều khiển</div>
+      <button class="menu-item active" type="button" data-admin-tab="overview"><span class="menu-icon">📊</span>Tổng quan</button>
+
+      <div class="menu-title">Quản lý dữ liệu</div>
+      <button class="menu-item" type="button" data-admin-tab="users"><span class="menu-icon">👥</span>User & tài khoản liên kết</button>
+      <button class="menu-item" type="button" data-admin-tab="orders"><span class="menu-icon">🧾</span>Duyệt & xử lý đơn hàng</button>
+      <button class="menu-item" type="button" data-admin-tab="payments"><span class="menu-icon">💳</span>Duyệt nạp tiền</button>
+      <button class="menu-item" type="button" data-admin-tab="products"><span class="menu-icon">📦</span>Dịch vụ & sản phẩm</button>
+      <button class="menu-item" type="button" data-admin-tab="tickets"><span class="menu-icon">🎧</span>Ticket khách hàng</button>
+      <button class="menu-item" type="button" data-admin-tab="vouchers"><span class="menu-icon">🎟️</span>Voucher 72H</button>
+      <button class="menu-item" type="button" data-admin-tab="giftcodes"><span class="menu-icon">🎁</span>Giftcode</button>
+
+      <div class="menu-title">Hệ thống Bot</div>
+      <button class="menu-item" type="button" data-admin-tab="bot-menus"><span class="menu-icon">🎛️</span>Trình tạo Menu Bot</button>
+      <button class="menu-item" type="button" data-admin-tab="runtime"><span class="menu-icon">🛰️</span>Trạng thái hệ thống</button>
+      <button class="menu-item" type="button" data-admin-tab="modules"><span class="menu-icon">🧩</span>Tệp & module</button>
+      <button class="menu-item" type="button" data-admin-tab="video-jobs"><span class="menu-icon">🎬</span>Video Jobs</button>
+      <button class="menu-item" type="button" data-admin-tab="settings"><span class="menu-icon">⚙️</span>Cấu hình chung</button>
+      <button class="menu-item" type="button" data-admin-tab="audit"><span class="menu-icon">🧾</span>Nhật ký quản trị</button>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/">↗ Trang chủ HENDY</a>
+      <a href="/customer">💠 Trung tâm khách hàng</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <div class="top-header-left">
+        <button class="menu-toggle" id="menu-button" type="button" aria-label="Mở menu quản trị">☰</button>
+        <div>
+          <div class="top-header-title">Hệ sinh thái HENDY CYBERTECH</div>
+          <small class="top-header-subtitle" id="brand-name">HENDY ADMIN DASHBOARD PRO</small>
+        </div>
       </div>
-      <div class="top-actions">
-        <div class="profile-chip" id="profile-chip"><span class="avatar">?</span><span id="profile-name">Đang tải</span></div>
-        <button class="icon-btn" id="menu-button" aria-label="Mở menu">☰</button>
+      <div class="admin-profile" id="profile-chip">
+        <div class="admin-avatar avatar">AD</div>
+        <div class="admin-info">
+          <strong id="profile-name">Đang xác thực</strong>
+          <small>Quyền quản trị · Telegram</small>
+        </div>
       </div>
     </header>
-    <div id="page-title">Đang tải ứng dụng</div>
-    <p id="page-subtitle">Đang xác thực phiên Telegram…</p>
-    <div class="live-indicator" id="live-indicator" aria-live="polite">● Realtime chưa xác thực</div>
-    <main id="app"><div class="loading">Đang kết nối máy chủ…</div></main>
-  </div>
-  <nav class="bottom-nav" aria-label="Điều hướng chính">
-    <div class="nav-inner" id="bottom-navigation">
-      <button class="nav-btn active" data-page="home"><span>🏠</span>Trang chủ</button>
-      <button class="nav-btn" data-page="orders"><span>🧾</span>Đơn hàng</button>
-      <button class="nav-btn" data-page="customer"><span>💎</span>Khách hàng</button>
-      <button class="nav-btn" data-page="support"><span>🎧</span>CSKH</button>
-      <button class="nav-btn hidden" id="admin-nav" data-page="admin"><span>🛡️</span>Quản trị</button>
-    </div>
+
+    <section class="content-body">
+      <div class="page-title">
+        <h1 id="page-title">Bảng điều khiển quản trị</h1>
+        <p id="page-subtitle">Đang xác thực phiên Telegram và quyền Admin phía máy chủ…</p>
+      </div>
+      <div class="live-indicator" id="live-indicator" aria-live="polite">● Realtime chưa xác thực</div>
+      <div id="app"><div class="empty">Đang kết nối máy chủ quản trị…</div></div>
+    </section>
+  </main>
+
+  <nav id="bottom-navigation" aria-hidden="true">
+    <button id="admin-nav" class="nav-btn hidden" data-page="admin" type="button">Quản trị</button>
   </nav>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function(){
@@ -376,7 +518,7 @@
     const memberStatus = Number(user.vipLevel || 0) > 0 ? 'VIP ' + Number(user.vipLevel) : 'Bình thường';
     const website = settings.website_url || 'https://hendy-bot-tele.onrender.com';
     const group = settings.GROUP_URL || 'https://t.me/Hendy_Support_Group';
-    const botUsername = String(state.boot.botUsername || '').replace(/^@/,'');
+    const botUrl = typeof state.boot.botUrl === 'string' ? state.boot.botUrl : '';
     const services = [
       ['minigame','🎮','Mini Game Live','Chơi game · Nhận quà','g-violet'],
       ['tools','🗂️','App / Tool','Công cụ chuyên nghiệp','g-blue'],
@@ -407,7 +549,7 @@
       '<button class="card" data-page="customer" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid #e1e9fb"><b style="font-size:13px">💎 Quản lý tài khoản và hỗ trợ</b><span class="price">Mở trung tâm →</span></button>' +
       '<div class="card"><div class="list-row"><b>🌟 Website chính thức</b><a class="price" href="' + escapeHtml(website) + '" target="_blank" rel="noopener noreferrer">Mở website ↗</a></div>' +
       '<div class="list-row"><b>💥 Cộng đồng HENDY</b><a class="price" href="' + escapeHtml(group) + '" target="_blank" rel="noopener noreferrer">Tham gia nhóm ↗</a></div>' +
-      (botUsername ? '<div class="list-row"><b>🤖 Bot Telegram</b><a class="price" href="https://t.me/' + encodeURIComponent(botUsername) + '" target="_blank" rel="noopener noreferrer">@' + escapeHtml(botUsername) + '</a></div>' : '') + '</div>' +
+      (botUrl ? '<div class="list-row"><b>🤖 Telegram Bot</b><a class="price" href="' + escapeHtml(botUrl) + '" target="_blank" rel="noopener noreferrer">Mở liên kết Bot ↗</a></div>' : '') + '</div>' +
       (state.boot.isAdmin ? '<div class="notice good" style="margin-top:12px">Tài khoản quản trị đã được xác thực. Mục Quản trị chỉ hiển thị với Admin.</div>' : '');
   }
 
@@ -674,10 +816,10 @@
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot'],['runtime','Hệ thống'],['audit','Nhật ký']];
-    return '<div class="admin-tabs">' + tabs.map(tab =>
-      '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
-    ).join('') + '</div>';
+    document.querySelectorAll('.sidebar .menu-item[data-admin-tab]').forEach(item => {
+      item.classList.toggle('active', item.dataset.adminTab === state.adminTab);
+    });
+    return '';
   }
 
   function adminRuntime() {
@@ -1039,6 +1181,7 @@
     const adminTab = event.target.closest('[data-admin-tab]');
     if (adminTab) {
       state.adminTab=adminTab.dataset.adminTab;
+      document.body.classList.remove('sidebar-open');
       await renderPage();
       return;
     }
@@ -1297,18 +1440,7 @@
   });
 
   $('menu-button').addEventListener('click',()=>{
-    if (tg && tg.showPopup) {
-      tg.showPopup({
-        title:'Menu Hendy Bot',
-        buttons:[
-          {id:'home',type:'default',text:'Trang chủ'},
-          {id:'wallet',type:'default',text:'Ví điện tử'},
-          {id:'orders',type:'default',text:'Đơn hàng'}
-        ]
-      }, id=>{if(id) navigate(id);});
-    } else {
-      navigate(state.boot && state.boot.isAdmin ? 'admin' : 'customer');
-    }
+    document.body.classList.toggle('sidebar-open');
   });
 
   async function start() {
