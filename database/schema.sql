@@ -407,6 +407,36 @@ VALUES
     ('secondary', 'inline_keyboard', 'Chào mừng bạn đến với HENDY BOT. Chọn một chức năng để tiếp tục.', 2, TRUE, TRUE)
 ON CONFLICT (bot_key) DO NOTHING;
 
+-- Re-apply the selected layout after seeding so a fresh database receives it too.
+UPDATE bot_menu_configs
+SET menu_mode = 'reply_keyboard',
+    menu_columns = 2,
+    persistent_keyboard = TRUE,
+    resize_keyboard = TRUE,
+    button_labels = COALESCE(button_labels, '{}'::jsonb) || '{
+        "live": "🚀 MINIGAME LIVE",
+        "otp": "📲 OTP & PROXY",
+        "wallet": "💳 NẠP TIỀN",
+        "vip": "👑 TRUNG TÂM VIP",
+        "codes": "🎁 MUA LÌ XÌ - CODE MÀN - CODE TELE",
+        "customer": "💠 TRUNG TÂM KHÁCH HÀNG",
+        "group": "🗣️ NHÓM CHAT ↗",
+        "news": "📢 KÊNH THÔNG BÁO ↗",
+        "vip-coming-soon": "👑 VIP DỊCH VỤ SẮP TRIỂN KHAI"
+    }'::jsonb,
+    button_styles = COALESCE(button_styles, '{}'::jsonb) || '{
+        "live": "danger",
+        "otp": "primary",
+        "wallet": "danger",
+        "vip": "primary",
+        "codes": "success",
+        "customer": "primary",
+        "group": "primary",
+        "news": "primary",
+        "vip-coming-soon": "primary"
+    }'::jsonb,
+    updated_at = NOW();
+
 
 -- Durable event stream and one-time WebSocket authentication tickets.
 CREATE TABLE IF NOT EXISTS realtime_events (
