@@ -34,9 +34,6 @@ final class TelegramAuth
             : 'TELEGRAM_WEBHOOK_SECRET';
         $configured = trim((string) Env::get($name, ''));
 
-        if ($configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1) {
-            return $configured;
-        }
         if ($configured !== '') {
             error_log($name . ' không hợp lệ; backend sẽ tạo webhook secret ngẫu nhiên riêng cho bot.');
         }
@@ -44,57 +41,47 @@ final class TelegramAuth
         $fingerprint = hash('sha256', $token);
         $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
         $overrideFingerprint = $overrideIsValid ? hash('sha256', $configured) : '';
-        $existing = Database::one(
-            'SELECT token_fingerprint, secret_value, override_fingerprint FROM telegram_webhook_secrets WHERE bot_key = ?',
-            [$key]
-        );
-        $existingFingerprint = trim((string) ($existing['token_fingerprint'] ?? ''));
-        $existingSecret = trim((string) ($existing['secret_value'] ?? ''));
-        $existingOverrideFingerprint = trim((string) ($existing['override_fingerprint'] ?? ''));
-        $existingIsValid = preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $existingSecret) === 1;
-        $overrideChanged = !hash_equals($existingOverrideFingerprint, $overrideFingerprint);
 
-        if ($existing !== null && hash_equals($fingerprint, $existingFingerprint) && $existingIsValid) {
-            if ($overrideChanged) {
-                if ($overrideIsValid) {
-                    Database::run(
-                        'UPDATE telegram_webhook_secrets SET secret_value = ?, override_fingerprint = ?, updated_at = NOW() ' .
-                        'WHERE bot_key = ? AND token_fingerprint = ?',
-                        [$configured, $overrideFingerprint, $key, $fingerprint]
-                    );
-                } else {
-                    Database::run(
-                        "UPDATE telegram_webhook_secrets SET override_fingerprint = '', updated_at = NOW() " .
-                        'WHERE bot_key = ? AND token_fingerprint = ?',
-                        [$key, $fingerprint]
-                    );
-                }
+        return Database::transaction(static function () use ($key, $fingerprint, $configured, $overrideIsValid, $overrideFingerprint): string {
+            // Serialize startup requests for this bot so concurrent instances cannot
+            // race with different random values and register mismatched webhooks.
+            Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-webhook-secret:' . $key]);
+            $existing = Database::one(
+                'SELECT token_fingerprint, secret_value, override_fingerprint FROM telegram_webhook_secrets WHERE bot_key = ?',
+                [$key]
+            );
+            $existingFingerprint = trim((string) ($existing['token_fingerprint'] ?? ''));
+            $existingSecret = trim((string) ($existing['secret_value'] ?? ''));
+            $existingOverrideFingerprint = trim((string) ($existing['override_fingerprint'] ?? ''));
+            $existingIsValid = preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $existingSecret) === 1;
+            $sameToken = $existing !== null && hash_equals($fingerprint, $existingFingerprint);
+            $overrideChanged = !hash_equals($existingOverrideFingerprint, $overrideFingerprint);
+
+            if ($sameToken && $existingIsValid && !$overrideChanged) {
+                return $existingSecret;
             }
-            return $overrideChanged && $overrideIsValid ? $configured : $existingSecret;
-        }
 
-        // Preserve a newly supplied override on first provisioning or after an
-        // intentional override change. An unchanged old override never prevents
-        // automatic random rotation when the bot token fingerprint changes.
-        $candidate = $overrideIsValid && ($existing === null || $overrideChanged)
-            ? $configured
-            : bin2hex(random_bytes(32));
+            // First setup may accept an explicit override. A changed override is
+            // applied deliberately. Otherwise generate a fresh random secret on
+            // first setup, token rotation, override removal, or corrupted storage.
+            $useOverride = $overrideIsValid && ($existing === null || $overrideChanged);
+            $candidate = $useOverride ? $configured : bin2hex(random_bytes(32));
+            $secret = Database::value(
+                'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value, override_fingerprint) ' .
+                'VALUES (?, ?, ?, ?) ' .
+                'ON CONFLICT (bot_key) DO UPDATE SET ' .
+                'token_fingerprint = EXCLUDED.token_fingerprint, ' .
+                'secret_value = EXCLUDED.secret_value, ' .
+                'override_fingerprint = EXCLUDED.override_fingerprint, updated_at = NOW() ' .
+                'RETURNING secret_value',
+                [$key, $fingerprint, $candidate, $overrideFingerprint]
+            );
 
-        $secret = Database::value(
-            'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value, override_fingerprint) ' .
-            'VALUES (?, ?, ?, ?) ' .
-            'ON CONFLICT (bot_key) DO UPDATE SET ' .
-            'token_fingerprint = EXCLUDED.token_fingerprint, ' .
-            'secret_value = EXCLUDED.secret_value, ' .
-            'override_fingerprint = EXCLUDED.override_fingerprint, updated_at = NOW() ' .
-            'RETURNING secret_value',
-            [$key, $fingerprint, $candidate, $overrideFingerprint]
-        );
-
-        if (!is_string($secret) || preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $secret) !== 1) {
-            throw new RuntimeException('Không thể tạo webhook secret an toàn cho ' . $key . '.');
-        }
-        return $secret;
+            if (!is_string($secret) || preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $secret) !== 1) {
+                throw new RuntimeException('Không thể tạo webhook secret an toàn cho ' . $key . '.');
+            }
+            return $secret;
+        });
     }
 
     public static function adminIds(): array
