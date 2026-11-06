@@ -247,7 +247,7 @@ ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NUL
 CREATE TABLE IF NOT EXISTS telegram_webhook_secrets (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
     token_fingerprint CHAR(64) NOT NULL CHECK (token_fingerprint ~ '^[a-f0-9]{64}$'),
-    secret_value VARCHAR(256) NOT NULL CHECK (secret_value ~ '^[A-Za-z0-9_-]{32,256}$'),
+    secret_value VARCHAR(256) NOT NULL CHECK (char_length(secret_value) BETWEEN 32 AND 256 AND secret_value !~ '[^A-Za-z0-9_-]'),
     override_fingerprint CHAR(64) NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -261,7 +261,9 @@ ALTER TABLE telegram_webhook_secrets
     DROP CONSTRAINT IF EXISTS telegram_webhook_secrets_secret_value_check;
 ALTER TABLE telegram_webhook_secrets
     ADD CONSTRAINT telegram_webhook_secrets_secret_value_check
-    CHECK (secret_value ~ '^[A-Za-z0-9_-]{32,256}
+    CHECK (char_length(secret_value) BETWEEN 32 AND 256 AND secret_value !~ '[^A-Za-z0-9_-]');
+
+-- Apply the approved persistent keyboard layout while preserving unrelated settings.
 UPDATE bot_menu_configs
 SET menu_mode = 'reply_keyboard',
     menu_columns = 2,
