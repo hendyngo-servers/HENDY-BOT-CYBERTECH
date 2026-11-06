@@ -33,8 +33,9 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 $assert(Database::check(), 'PostgreSQL connection');
 
 
-// Webhook secrets are generated randomly per bot, persisted across process restarts,
-// and rotated only for a bot whose token fingerprint changes.
+// Webhook secrets are generated randomly per bot, persist across calls, and rotate
+// independently on token changes. Explicit overrides are supported but cannot block
+// automatic rotation when the bot token changes.
 $previousBot1Token = getenv('BOT1_TOKEN');
 $previousBot2Token = getenv('BOT2_TOKEN');
 $previousPrimaryWebhookSecret = getenv('TELEGRAM_WEBHOOK_SECRET');
@@ -54,17 +55,33 @@ $assert(!hash_equals($primarySecret, $secondarySecret), 'each bot receives a dif
 $assert(TelegramAuth::webhookSecret('primary') === $primarySecret, 'primary webhook secret persists across calls');
 $assert(TelegramAuth::webhookSecret('secondary') === $secondarySecret, 'secondary webhook secret persists across calls');
 
+// A stale explicit override must not prevent token-bound random rotation.
+$manualOverride = 'manual-primary-override-012345678901234567890123456789';
+putenv('TELEGRAM_WEBHOOK_SECRET=' . $manualOverride);
+$appliedOverride = TelegramAuth::webhookSecret('primary');
+$assert($appliedOverride === $manualOverride, 'a newly configured primary override is applied');
+$assert(TelegramAuth::webhookSecret('primary') === $manualOverride, 'primary override stays stable across calls');
 putenv('BOT1_TOKEN=123456789:' . bin2hex(random_bytes(24)));
 $rotatedPrimarySecret = TelegramAuth::webhookSecret('primary');
-$assert($rotatedPrimarySecret !== $primarySecret, 'primary secret rotates automatically when its bot token changes');
+$assert($rotatedPrimarySecret !== $manualOverride, 'an unchanged old override cannot block automatic primary token rotation');
+$assert((bool) preg_match('/^[a-f0-9]{64}$/D', $rotatedPrimarySecret), 'rotated primary secret is independently random');
+$assert(TelegramAuth::webhookSecret('primary') === $rotatedPrimarySecret, 'rotated primary secret persists after restart-style re-read');
 $assert(TelegramAuth::webhookSecret('secondary') === $secondarySecret, 'rotating primary does not change secondary secret');
+
+// Changing the override intentionally rotates the secret; clearing it falls back to a random value.
+$newManualOverride = 'manual-primary-override-abcdefghijklmnopqrstuvwxyz0123456789';
+putenv('TELEGRAM_WEBHOOK_SECRET=' . $newManualOverride);
+$assert(TelegramAuth::webhookSecret('primary') === $newManualOverride, 'changing the explicit override intentionally rotates the primary secret');
+putenv('TELEGRAM_WEBHOOK_SECRET');
+$clearedOverrideSecret = TelegramAuth::webhookSecret('primary');
+$assert($clearedOverrideSecret !== $newManualOverride && (bool) preg_match('/^[a-f0-9]{64}$/D', $clearedOverrideSecret), 'removing an explicit override rotates back to a random secret');
+$assert(TelegramAuth::webhookSecret('primary') === $clearedOverrideSecret, 'random secret persists after override removal');
 
 Database::run('DELETE FROM telegram_webhook_secrets WHERE bot_key IN (?, ?)', ['primary', 'secondary']);
 if ($previousBot1Token === false) putenv('BOT1_TOKEN'); else putenv('BOT1_TOKEN=' . $previousBot1Token);
 if ($previousBot2Token === false) putenv('BOT2_TOKEN'); else putenv('BOT2_TOKEN=' . $previousBot2Token);
 if ($previousPrimaryWebhookSecret === false) putenv('TELEGRAM_WEBHOOK_SECRET'); else putenv('TELEGRAM_WEBHOOK_SECRET=' . $previousPrimaryWebhookSecret);
 if ($previousSecondaryWebhookSecret === false) putenv('TELEGRAM_SECOND_WEBHOOK_SECRET'); else putenv('TELEGRAM_SECOND_WEBHOOK_SECRET=' . $previousSecondaryWebhookSecret);
-
 
 $previousAdminId = getenv('ADMIN_ID');
 $previousAdminIds = getenv('ADMIN_IDS');
