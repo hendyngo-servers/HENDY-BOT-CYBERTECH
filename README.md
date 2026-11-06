@@ -58,6 +58,36 @@ Với Render PostgreSQL nội bộ, đặt DATABASE_SSL=false nếu connection s
 
 Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin. Giao diện giới thiệu dùng CSS/JS tự host trong `public/assets/`, không phụ thuộc Tailwind CDN, Font Awesome CDN hoặc Google Fonts CDN. `/customer` tiếp tục phục vụ Trung tâm khách hàng; `/admin` dùng Dashboard Pro mới. Liên kết bot được khai báo thủ công bằng `BOT1_PUBLIC_URL`/`BOT2_PUBLIC_URL`; trình duyệt không nhận Bot Token.
 
+### Trải nghiệm Telegram Mini App
+
+- Trung tâm khách hàng và Dashboard Admin nạp Telegram WebApp SDK, gọi `ready()`/`expand()` và gửi `initData` nguyên bản lên backend để xác minh chữ ký HMAC; không dùng `initDataUnsafe` làm dữ liệu xác thực.
+- Giao diện đọc `themeParams`, `safeAreaInset`, `contentSafeAreaInset` và `viewportStableHeight` để thích ứng theme, thiết bị và vùng an toàn; cập nhật khi Telegram phát sự kiện thay đổi theme/viewport.
+- Trung tâm khách hàng dùng `BackButton`, `MainButton` (tạo yêu cầu VietQR ở màn nạp tiền) và `HapticFeedback` cho thao tác, trạng thái thành công/thất bại. Trình duyệt ngoài Telegram vẫn có điều hướng web dự phòng.
+- Dashboard Admin dùng cùng SDK cho theme, safe-area, BackButton và phản hồi xúc giác. Xác thực Telegram không thay thế quyền quản trị: mọi API `/api/admin/*` vẫn gọi kiểm tra allowlist Admin tại backend.
+
+### Dashboard Admin — các phân hệ hiện có
+
+| Phân hệ | Hành động chính |
+|---|---|
+| Tổng quan | Đọc thống kê hệ thống và ví |
+| Thành viên | Tìm kiếm hồ sơ, điều chỉnh số dư theo sổ cái |
+| Đơn hàng | Xem, cập nhật trạng thái và ghi chú |
+| Duyệt nạp | Duyệt/từ chối yêu cầu nạp; ghi nhận giao dịch idempotent |
+| Sản phẩm | Tạo, sửa, ẩn/hiện và quản lý tồn kho |
+| Ticket CSKH | Xem, phản hồi, đổi trạng thái |
+| Voucher 72H | Duyệt/từ chối yêu cầu và phần thưởng |
+| Giftcode | Tạo và khóa/mở mã |
+| Menu Bot | Quản lý Reply/Inline Keyboard riêng từng bot |
+| Runtime | Xem trạng thái cấu hình công khai/an toàn, không đọc secret |
+| Tệp & Module | Tải tệp vào vùng cách ly để kiểm duyệt |
+| Video Jobs | Xem trạng thái và đưa job lỗi trở lại hàng chờ |
+| Cấu hình chung | Cập nhật các thiết lập nghiệp vụ được allowlist |
+| Nhật ký | Xem audit log |
+
+Các màn hình nạp, đơn hàng, người dùng, menu, sản phẩm, CSKH và hệ thống dùng dữ liệu PostgreSQL/API hiện có; giao diện không dùng số liệu demo. Quyền Admin được kiểm tra phía máy chủ cho từng yêu cầu.
+
+Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin. Giao diện giới thiệu dùng CSS/JS tự host trong `public/assets/`, không phụ thuộc Tailwind CDN, Font Awesome CDN hoặc Google Fonts CDN. `/customer` tiếp tục phục vụ Trung tâm khách hàng; `/admin` dùng Dashboard Pro mới. Liên kết bot được khai báo thủ công bằng `BOT1_PUBLIC_URL`/`BOT2_PUBLIC_URL`; trình duyệt không nhận Bot Token.
+
 | Mục đích | Đường dẫn |
 |---|---|
 | Trang chủ giới thiệu | `/` |
