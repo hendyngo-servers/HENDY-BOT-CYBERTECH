@@ -32,6 +32,40 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 
 $assert(Database::check(), 'PostgreSQL connection');
 
+
+// Webhook secrets are generated randomly per bot, persisted across process restarts,
+// and rotated only for a bot whose token fingerprint changes.
+$previousBot1Token = getenv('BOT1_TOKEN');
+$previousBot2Token = getenv('BOT2_TOKEN');
+$previousPrimaryWebhookSecret = getenv('TELEGRAM_WEBHOOK_SECRET');
+$previousSecondaryWebhookSecret = getenv('TELEGRAM_SECOND_WEBHOOK_SECRET');
+$testBot1Token = '123456789:' . bin2hex(random_bytes(24));
+$testBot2Token = '987654321:' . bin2hex(random_bytes(24));
+putenv('BOT1_TOKEN=' . $testBot1Token);
+putenv('BOT2_TOKEN=' . $testBot2Token);
+putenv('TELEGRAM_WEBHOOK_SECRET');
+putenv('TELEGRAM_SECOND_WEBHOOK_SECRET');
+
+$primarySecret = TelegramAuth::webhookSecret('primary');
+$secondarySecret = TelegramAuth::webhookSecret('secondary');
+$assert((bool) preg_match('/^[a-f0-9]{64}$/D', $primarySecret), 'primary random webhook secret is 256-bit hex');
+$assert((bool) preg_match('/^[a-f0-9]{64}$/D', $secondarySecret), 'secondary random webhook secret is 256-bit hex');
+$assert(!hash_equals($primarySecret, $secondarySecret), 'each bot receives a different random webhook secret');
+$assert(TelegramAuth::webhookSecret('primary') === $primarySecret, 'primary webhook secret persists across calls');
+$assert(TelegramAuth::webhookSecret('secondary') === $secondarySecret, 'secondary webhook secret persists across calls');
+
+putenv('BOT1_TOKEN=123456789:' . bin2hex(random_bytes(24)));
+$rotatedPrimarySecret = TelegramAuth::webhookSecret('primary');
+$assert($rotatedPrimarySecret !== $primarySecret, 'primary secret rotates automatically when its bot token changes');
+$assert(TelegramAuth::webhookSecret('secondary') === $secondarySecret, 'rotating primary does not change secondary secret');
+
+Database::run('DELETE FROM telegram_webhook_secrets WHERE bot_key IN (?, ?)', ['primary', 'secondary']);
+if ($previousBot1Token === false) putenv('BOT1_TOKEN'); else putenv('BOT1_TOKEN=' . $previousBot1Token);
+if ($previousBot2Token === false) putenv('BOT2_TOKEN'); else putenv('BOT2_TOKEN=' . $previousBot2Token);
+if ($previousPrimaryWebhookSecret === false) putenv('TELEGRAM_WEBHOOK_SECRET'); else putenv('TELEGRAM_WEBHOOK_SECRET=' . $previousPrimaryWebhookSecret);
+if ($previousSecondaryWebhookSecret === false) putenv('TELEGRAM_SECOND_WEBHOOK_SECRET'); else putenv('TELEGRAM_SECOND_WEBHOOK_SECRET=' . $previousSecondaryWebhookSecret);
+
+
 $previousAdminId = getenv('ADMIN_ID');
 $previousAdminIds = getenv('ADMIN_IDS');
 $realtimeAdminOne = '9500000001';
