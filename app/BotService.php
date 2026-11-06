@@ -411,7 +411,7 @@ final class BotService
             $action = $item['action'];
             $items[] = [
                 ...$item,
-                'label' => self::truncate((string) ($labels[$action] ?? $item['label']), 60),
+                'label' => self::truncate((string) ($labels[$action] ?? $item['label']) === '💠 TRUNG TÂM KHÁCH HÀNG' ? '💠 TRUNG TÂM QUẢN LÝ TÀI KHOẢN' : (string) ($labels[$action] ?? $item['label']), 60),
                 'description' => self::truncate((string) ($descriptions[$action] ?? $item['description']), 160),
                 'style' => in_array($styles[$action] ?? '', ['primary', 'success', 'danger'], true) ? $styles[$action] : ($item['style'] ?? 'primary'),
                 'iconCustomEmojiId' => preg_match('/^[0-9]{5,32}$/', (string) ($icons[$action] ?? '')) ? (string) $icons[$action] : '',
@@ -1185,8 +1185,34 @@ final class BotService
         ) ?? [];
         $ticketCount = (int) Database::value('SELECT COUNT(*) FROM support_tickets WHERE user_id = ?', [$userId]);
         $linkedCount = (int) Database::value('SELECT COUNT(*) FROM linked_accounts WHERE user_id = ?', [$userId]);
-        $this->telegram->sendMessage($chatId, implode("\n", [
-            '💎 <b>TRUNG TÂM KHÁCH HÀNG HENDY</b>',
+
+        $miniAppUrl = $this->miniAppUrl();
+        $legacyUrl = '';
+        try {
+            $legacyUrl = $this->createWebsiteLoginUrl($userId);
+        } catch (Throwable $error) {
+            error_log('[customer-center] Không tạo được link web cũ: ' . $error->getMessage());
+        }
+
+        $rows = [];
+        if ($miniAppUrl !== '') {
+            $rows[] = [[
+                'text' => '🚀 MINI APP BẢN MỚI | CHỈ MOBILE',
+                'web_app' => ['url' => $miniAppUrl . '&view=customer'],
+            ]];
+        }
+        if ($legacyUrl !== '') {
+            $rows[] = [['text' => '🔑 PHIÊN BẢN WEB CŨ', 'url' => $legacyUrl]];
+        }
+        $rows[] = [['text' => '↩️ TRỞ VỀ MENU CHÍNH', 'callback_data' => 'member:home']];
+
+        $lines = [
+            '💠 <b>TRUNG TÂM QUẢN LÝ TÀI KHOẢN</b>',
+            '',
+            'Chọn một trong hai cách truy cập bên dưới:',
+            '• <b>Mini App:</b> Trải nghiệm mới, mượt mà hơn (khuyến nghị).',
+            '• <b>Đăng nhập truyền thống:</b> Link có hiệu lực 5 phút.',
+            '',
             '━━━━━━━━━━━━━━━━━━━━',
             '👤 Thành viên: <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>',
             '🆔 Telegram ID: <code>' . self::escape($userId) . '</code>',
@@ -1199,18 +1225,18 @@ final class BotService
             '🧾 Đơn hàng: <b>' . (int) ($stats['total_orders'] ?? 0) . '</b> · Đang xử lý: <b>' . (int) ($stats['processing_orders'] ?? 0) . '</b>',
             '✅ Hoàn tất: <b>' . (int) ($stats['completed_orders'] ?? 0) . '</b> · Đã hủy: <b>' . (int) ($stats['cancelled_orders'] ?? 0) . '</b>',
             '🎧 Ticket CSKH: <b>' . $ticketCount . '</b>',
-            '',
-            'Bạn có thể thao tác ngay trong Telegram hoặc mở Website HENDY để xem hồ sơ, lịch sử đơn hàng, giao dịch, ticket và Voucher 72H.',
-        ]), [
-            'reply_markup' => $this->inlineMenu([
-                [['text' => '💳 LỊCH SỬ GIAO DỊCH / NẠP TIỀN', 'callback_data' => 'member:deposit-history']],
-                [['text' => '🚀 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT', 'callback_data' => 'member:linked-accounts']],
-                [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']],
-                [['text' => '🎟️ YÊU CẦU VOUCHER 72H', 'callback_data' => 'member:voucher72']],
-                [['text' => '🎧 TICKET HỖ TRỢ CSKH', 'callback_data' => 'member:support']],
-                [['text' => '🌐 MỞ WEBSITE · TRUNG TÂM KHÁCH HÀNG', 'url' => $this->createWebsiteLoginUrl($userId)]],
-                [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
-            ]),
+        ];
+        if ($miniAppUrl === '') {
+            $lines[] = '';
+            $lines[] = '⚠️ Mini App chưa khả dụng: cần cấu hình APP_URL HTTPS hoặc RENDER_EXTERNAL_URL.';
+        }
+        if ($legacyUrl === '') {
+            $lines[] = '';
+            $lines[] = '⚠️ Phiên bản web cũ hiện chưa tạo được liên kết đăng nhập. Vui lòng dùng Mini App hoặc liên hệ CSKH.';
+        }
+        $this->telegram->sendMessage($chatId, implode("\\n", $lines), [
+            'reply_markup' => $this->inlineMenu($rows),
+            'disable_web_page_preview' => true,
         ]);
     }
 
