@@ -276,6 +276,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     if(tg.MainButton && typeof tg.MainButton.onClick==='function'){
       tg.MainButton.onClick(async()=>{
         try{
+          tg.MainButton.disable?.();
           tg.MainButton.showProgress?.();
           await createDeposit();
           hapticNotification('success');
@@ -283,6 +284,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
           showToast(error.message||'Không thể tạo yêu cầu nạp.','error');
         }finally{
           tg.MainButton.hideProgress?.();
+          tg.MainButton.enable?.();
         }
       });
     }
@@ -727,7 +729,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       if(categories[section]){await loadProducts(...categories[section]);return;}
       if(section==='viptools'){await loadProducts('vip','💎 KHO VIP');return;}
       throw new Error('Mục chức năng chưa được triển khai.');
-    } catch(error) { showToast(error.message || 'Không thể tải dữ liệu.'); }
+    } catch(error) { showToast(error.message || 'Không thể tải dữ liệu.','error'); }
   }
   async function createOrder(id){
     const result=await api('/api/orders',{method:'POST',body:{productId:String(id)}});
