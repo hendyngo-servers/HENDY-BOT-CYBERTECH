@@ -112,9 +112,17 @@ jobs:
           grep -q "apps/website/landing.html" public/index.php
           grep -q "'/admin'" public/index.php
           grep -q "'/customer'" public/index.php
+          grep -q "'/privacy'" public/index.php
+          grep -q "'/terms'" public/index.php
+          grep -q "'/health'" public/index.php
           grep -q "'/miniapp'" public/index.php
           grep -q "'/api/v1/public/config'" public/index.php
-          grep -q "BotIdentity::username('primary')" public/index.php
+          grep -q "BOT1_PUBLIC_URL" public/index.php
+          grep -q "BOT1_PUBLIC_URL=" .env.example
+          grep -q "BOT2_PUBLIC_URL=" .env.example
+          grep -q '"BOT1_PUBLIC_URL"' config/env.schema.json
+          ! grep -Eq 'BotIdentity|->getMe|function getMe' public/index.php app/BotService.php app/ApiController.php app/TelegramApi.php bin/register-webhooks.php
+          ! grep -q 'getMe()' apps/website/landing.html apps/website/index.html
           grep -q "TelegramLink::normalize" public/index.php
           grep -q "'/privacy'" public/index.php
           grep -q "'/terms'" public/index.php
@@ -150,6 +158,9 @@ jobs:
           grep -q -- 'button.is-loading' apps/admin-dashboard/styles/buttons.css
           grep -q -- 'button.is-success' apps/admin-dashboard/styles/buttons.css
           grep -q -- 'installVisualEffects();' apps/admin-dashboard/index.html
+          grep -q 'class="sidebar"' apps/admin-dashboard/index.html
+          grep -q 'data-admin-tab="bot-menus"' apps/admin-dashboard/index.html
+          grep -q "document.body.classList.toggle('sidebar-open')" apps/admin-dashboard/index.html
           grep -q -- 'unzip' Dockerfile
 
       - name: Run PostgreSQL migration and smoke tests
@@ -186,7 +197,7 @@ jobs:
           test -s scripts/deploy-verify-render.sh
           test -s .github/workflows/sync-runtime-config.yml
           grep -q 'deploy-verify-render.sh' .github/workflows/sync-runtime-config.yml
-          grep -q 'getMe()' bin/register-webhooks.php
+          ! grep -Eq 'getMe|BotIdentity' bin/register-webhooks.php scripts/deploy-verify-render.sh
           grep -q '401 Unauthorized' bin/register-webhooks.php
           grep -q 'apache2-foreground' docker/start.sh
           grep -q 'php bin/websocket.php' docker/start.sh
