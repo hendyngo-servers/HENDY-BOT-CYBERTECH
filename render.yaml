@@ -56,6 +56,8 @@ services:
         sync: false
       - key: CHANNEL_URL
         sync: false
+      - key: SUPPORT_URL
+        sync: false
       - key: LEGACY_SESSION_SECRET
         generateValue: true
       - key: WEBSOCKET_ENABLED
