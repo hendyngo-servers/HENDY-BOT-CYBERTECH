@@ -12,7 +12,7 @@ final class BotMenuDefinition
         ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo yêu cầu nạp và xem trạng thái VietQR.', 'style' => 'danger'],
         ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Xem cấp VIP, quyền lợi và điểm danh.', 'style' => 'primary'],
         ['action' => 'codes', 'label' => '🎁 MUA LÌ XÌ - CODE MÀN - CODE TELE', 'description' => 'Mở kho lì xì, mã màn hình và mã Telegram.', 'style' => 'success'],
-        ['action' => 'customer', 'label' => '💠 TRUNG TÂM QUẢN LÝ TÀI KHOẢN', 'description' => 'Hồ sơ, ví, đơn hàng và hỗ trợ khách hàng.', 'style' => 'primary'],
+        ['action' => 'customer', 'label' => '💠 TRUNG TÂM KHÁCH HÀNG HENDY', 'description' => 'Hồ sơ, ví, đơn hàng và hỗ trợ khách hàng.', 'style' => 'primary'],
         ['action' => 'group', 'label' => '🗣️ NHÓM CHAT ↗', 'description' => 'Mở liên kết nhóm chat HENDY.', 'style' => 'primary'],
         ['action' => 'news', 'label' => '📢 KÊNH THÔNG BÁO ↗', 'description' => 'Mở kênh thông báo HENDY.', 'style' => 'primary'],
         ['action' => 'vip-coming-soon', 'label' => '👑 VIP DỊCH VỤ SẮP TRIỂN KHAI', 'description' => 'Thông báo các gói VIP dịch vụ đang được hoàn thiện.', 'style' => 'primary'],
