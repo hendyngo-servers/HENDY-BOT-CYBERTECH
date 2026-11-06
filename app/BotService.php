@@ -330,8 +330,9 @@ final class BotService
         $items = $this->menuItems($config, $userId);
 
         $settings = $this->settings(['website_url', 'GROUP_URL']);
-        $websiteUrl = trim((string) ($settings['website_url'] ?? 'https://hendy-bot-tele.onrender.com'));
-        if (!self::isHttpsUrl($websiteUrl)) $websiteUrl = 'https://hendy-bot-tele.onrender.com';
+        $appBaseUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
+        $websiteUrl = trim((string) ($settings['website_url'] ?? ''));
+        if (!self::isHttpsUrl($websiteUrl)) $websiteUrl = self::isHttpsUrl($appBaseUrl) ? $appBaseUrl . '/' : 'https://hendy-bot-cybertech.onrender.com/';
         $groupUrl = trim((string) ($settings['GROUP_URL'] ?? Env::get('GROUP_URL', 'https://t.me/Hendy_Support_Group')));
         if (!self::isHttpsUrl($groupUrl)) $groupUrl = 'https://t.me/Hendy_Support_Group';
 
@@ -377,9 +378,16 @@ final class BotService
         }
         $lines[] = implode(' · ', $links);
 
-        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
-            'reply_markup' => $this->menuMarkup($items, $config),
-        ]);
+        $caption = implode("\n", $lines);
+        $replyMarkup = ['reply_markup' => $this->menuMarkup($items, $config)];
+        $homePhoto = trim((string) Env::get('BOT_HOME_PHOTO', ''));
+        $validPhoto = self::isHttpsUrl($homePhoto)
+            || preg_match('/\\A[A-Za-z0-9_-]{30,512}\\z/D', $homePhoto) === 1;
+        if ($validPhoto && mb_strlen($caption, 'UTF-8') <= 1000) {
+            $this->telegram->sendPhoto($chatId, $homePhoto, $caption, $replyMarkup);
+            return;
+        }
+        $this->telegram->sendMessage($chatId, $caption, $replyMarkup);
     }
 
     private function menuConfig(): array
@@ -410,7 +418,7 @@ final class BotService
         foreach (BotMenuDefinition::ITEMS as $item) {
             $action = $item['action'];
             $configuredLabel = (string) ($labels[$action] ?? $item['label']);
-            if ($action === 'customer' && str_contains($configuredLabel, 'TRUNG TÂM KHÁCH HÀNG')) {
+            if ($action === 'customer' && (str_contains($configuredLabel, 'TRUNG TÂM KHÁCH HÀNG') || str_contains($configuredLabel, 'TRUNG TÂM QUẢN LÝ TÀI KHOẢN'))) {
                 $configuredLabel = '💠 TRUNG TÂM KHÁCH HÀNG HENDY';
             }
             $items[] = [
