@@ -208,6 +208,24 @@ try {
         exit;
     }
 
+    if ($method === 'GET' && in_array($path, ['/api/v1', '/api/v1/'], true)) {
+        respond([
+            'name' => 'HENDY CYBERTECH API',
+            'version' => 'v1',
+            'routes' => [
+                'publicConfig' => '/api/v1/public/config',
+                'health' => '/api/v1/health',
+                'bootstrap' => '/api/v1/bootstrap',
+                'customerCenter' => '/api/v1/customer-center',
+                'products' => '/api/v1/products',
+                'orders' => '/api/v1/orders',
+                'wallet' => '/api/v1/wallet',
+                'admin' => '/api/v1/admin/*',
+            ],
+            'web' => ['home' => '/', 'admin' => '/admin', 'customer' => '/customer', 'miniapp' => '/miniapp'],
+        ]);
+    }
+
     // Public, non-secret runtime identity. Usernames originate from getMe() sync;
     // tokens and numeric internal identifiers are never returned to the browser.
     if ($method === 'GET' && $path === '/api/v1/public/config') {
@@ -245,7 +263,7 @@ try {
         readfile(dirname(__DIR__) . '/apps/admin-dashboard/styles/buttons.css');
         exit;
     }
-    if ($method === 'GET' && in_array($path, ['/healthz', '/api/health'], true)) {
+    if ($method === 'GET' && in_array($path, ['/health', '/healthz', '/api/health'], true)) {
         Database::check();
         respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
     }
