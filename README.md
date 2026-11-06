@@ -19,6 +19,12 @@ Menu cố định dùng Reply Keyboard hai cột theo ảnh mẫu: MiniGame/OTP 
 
 Không cần khai báo BOT_USERNAME, BOT1_USERNAME, BOT2_USERNAME hoặc DISPLAY_NAME. Khi Render khởi động, backend gọi Telegram getMe() bằng BOT1_TOKEN (và BOT2_TOKEN nếu được cấu hình), lưu username cùng fingerprint SHA-256 của token vào PostgreSQL. Khi token đổi, username cache cũ bị xem là không hợp lệ và lần khởi động sẽ lấy username mới. Token gốc không được lưu trong bảng danh tính.
 
+## URL công khai tự động trên Render
+
+Với Render Web Service, nền tảng tự cấp `RENDER_EXTERNAL_URL`. Có thể để trống `APP_URL` để backend tự dùng URL đó cho Telegram webhook và Mini App; không cần đoán hoặc nhập hostname. Chỉ đặt `APP_URL` khi muốn dùng custom domain HTTPS. Không khai báo URL service khác (ví dụ service thử nghiệm) làm URL chính.
+
+`.env.example` chỉ chứa placeholder rỗng. Không điền token, mật khẩu cơ sở dữ liệu, Telegram admin ID hoặc secret vào file mẫu/commit. Production credential chỉ cấu hình tại Render Environment.
+
 ## Chạy local
 
 Yêu cầu PHP 8.3+, Composer, PostgreSQL và extensions curl, mbstring, pdo_pgsql.
