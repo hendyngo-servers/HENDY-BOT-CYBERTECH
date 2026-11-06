@@ -1276,7 +1276,7 @@
         toast(result.message);
         await renderPage();
       } catch (error) {
-        toast(error.message);
+        toast(error.message,'error');
         vipCheckin.disabled = false;
       }
       return;
