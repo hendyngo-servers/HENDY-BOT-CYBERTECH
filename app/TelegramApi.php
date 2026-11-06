@@ -148,8 +148,4 @@ final class TelegramApi
         return array_is_list($result) ? $result : [];
     }
 
-    public function getMe(): array
-    {
-        return $this->call('getMe');
-    }
 }
