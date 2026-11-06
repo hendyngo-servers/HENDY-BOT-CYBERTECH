@@ -11,7 +11,7 @@ require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/WebServiceContract.php';
 require dirname(__DIR__) . '/app/WebServiceKernel.php';
-require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
+require dirname(__DIR__) . '/app/SystemWebService.php';
 
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;

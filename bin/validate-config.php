@@ -12,7 +12,7 @@ $bot2 = Hendy\TelegramAuth::token('secondary');
 $admin = trim((string) Hendy\Env::get('ADMIN_ID', ''));
 $adminList = trim((string) Hendy\Env::get('ADMIN_IDS', ''));
 
-$botTokenPattern = '~\A[0-9]+:[A-Za-z0-9_-]{20,}\z~D';
+$botTokenPattern = '~\\A[0-9]{5,12}:[A-Za-z0-9_-]{30,}\\z~D';
 $adminPattern = '~\A[0-9]{5,20}\z~D';
 $secretPattern = '~\A[A-Za-z0-9_-]{32,256}\z~D';
 
