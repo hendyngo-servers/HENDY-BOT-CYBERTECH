@@ -14,9 +14,12 @@ final class TelegramAuth
     }
 
     /**
-     * Resolve one stable webhook secret for each bot.
-     * An explicit valid override wins; otherwise derive it from that bot's token.
-     * Rotating a bot token automatically rotates its derived webhook secret.
+     * Return a persistent random 256-bit Telegram webhook secret.
+     *
+     * An explicitly configured secret remains supported as an operator override.
+     * Otherwise one random secret is kept in PostgreSQL per bot. It is regenerated
+     * automatically when that bot's token fingerprint changes. The raw secret is
+     * only read by the backend for setWebhook() and request verification.
      */
     public static function webhookSecret(string $botKey = 'primary'): string
     {
@@ -35,10 +38,30 @@ final class TelegramAuth
             return $configured;
         }
         if ($configured !== '') {
-            error_log($name . ' không hợp lệ; backend dùng webhook secret dẫn xuất theo token bot.');
+            error_log($name . ' không hợp lệ; backend sẽ tạo webhook secret ngẫu nhiên riêng cho bot.');
         }
 
-        return hash_hmac('sha256', 'hendy:telegram-webhook:v1:' . $key, $token);
+        $fingerprint = hash('sha256', $token);
+        $candidate = bin2hex(random_bytes(32));
+        $secret = Database::value(
+            'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value) ' .
+            'VALUES (?, ?, ?) ' .
+            'ON CONFLICT (bot_key) DO UPDATE SET ' .
+            'token_fingerprint = EXCLUDED.token_fingerprint, ' .
+            'secret_value = CASE ' .
+            'WHEN telegram_webhook_secrets.token_fingerprint = EXCLUDED.token_fingerprint ' .
+            'THEN telegram_webhook_secrets.secret_value ELSE EXCLUDED.secret_value END, ' .
+            'updated_at = CASE ' .
+            'WHEN telegram_webhook_secrets.token_fingerprint = EXCLUDED.token_fingerprint ' .
+            'THEN telegram_webhook_secrets.updated_at ELSE NOW() END ' .
+            'RETURNING secret_value',
+            [$key, $fingerprint, $candidate]
+        );
+
+        if (!is_string($secret) || preg_match('~^[a-f0-9]{64}$~D', $secret) !== 1) {
+            throw new RuntimeException('Không thể tạo webhook secret an toàn cho ' . $key . '.');
+        }
+        return $secret;
     }
 
     public static function adminIds(): array
