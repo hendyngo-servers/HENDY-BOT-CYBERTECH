@@ -83,6 +83,46 @@ final class TelegramAuth
         });
     }
 
+    /**
+     * Return an independent persistent signing key for each bot's browser sessions.
+     * LEGACY_SESSION_SECRET remains an optional operator override; when set, it is
+     * domain-separated by bot key so the two bots never share the same derived key.
+     */
+    public static function websiteSessionSecret(string $botKey = 'primary'): string
+    {
+        $key = $botKey === 'secondary' ? 'secondary' : 'primary';
+        $override = trim((string) Env::get('LEGACY_SESSION_SECRET', ''));
+        if ($override !== '') {
+            if (strlen($override) < 32) {
+                throw new RuntimeException('LEGACY_SESSION_SECRET phải có ít nhất 32 ký tự.');
+            }
+            return hash_hmac('sha256', 'hendy-website-session:' . $key, $override);
+        }
+
+        return Database::transaction(static function () use ($key): string {
+            Database::run('SELECT pg_advisory_xact_lock(hashtext(?))', ['hendy-website-session:' . $key]);
+            $existing = Database::value(
+                'SELECT secret_value FROM website_session_secrets WHERE bot_key = ?',
+                [$key]
+            );
+            if (is_string($existing) && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $existing) === 1) {
+                return $existing;
+            }
+
+            $candidate = bin2hex(random_bytes(32));
+            $stored = Database::value(
+                'INSERT INTO website_session_secrets (bot_key, secret_value) VALUES (?, ?) ' .
+                'ON CONFLICT (bot_key) DO UPDATE SET secret_value = EXCLUDED.secret_value, updated_at = NOW() ' .
+                'RETURNING secret_value',
+                [$key, $candidate]
+            );
+            if (!is_string($stored) || preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $stored) !== 1) {
+                throw new RuntimeException('Không thể tạo khóa phiên website riêng cho bot ' . $key . '.');
+            }
+            return $stored;
+        });
+    }
+
     public static function adminIds(): array
     {
         $configured = [
@@ -157,9 +197,9 @@ final class TelegramAuth
 
     private static function decodeWebsiteSession(string $token, string $requestedBotKey): array
     {
-        $secret = (string) Env::get('LEGACY_SESSION_SECRET', '');
-        if (strlen($secret) < 32 || strlen($token) > 4096) {
-            throw new RuntimeException('Phiên website chưa được cấu hình hoặc không hợp lệ.');
+        $secret = self::websiteSessionSecret($requestedBotKey);
+        if (strlen($token) > 4096) {
+            throw new RuntimeException('Phiên website không hợp lệ.');
         }
         $parts = explode('.', $token);
         if (count($parts) !== 3) {
