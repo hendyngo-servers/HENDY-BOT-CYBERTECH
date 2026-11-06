@@ -26,6 +26,10 @@ services:
         sync: false
       - key: BOT2_TOKEN
         sync: false
+      - key: BOT1_PUBLIC_URL
+        sync: false
+      - key: BOT2_PUBLIC_URL
+        sync: false
       - key: ADMIN_ID
         sync: false
       - key: ADMIN_IDS
