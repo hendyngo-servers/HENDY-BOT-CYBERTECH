@@ -42,43 +42,53 @@ final class TelegramAuth
         }
 
         $fingerprint = hash('sha256', $token);
+        $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
+        $overrideFingerprint = $overrideIsValid ? hash('sha256', $configured) : '';
         $existing = Database::one(
-            'SELECT token_fingerprint, secret_value FROM telegram_webhook_secrets WHERE bot_key = ?',
+            'SELECT token_fingerprint, secret_value, override_fingerprint FROM telegram_webhook_secrets WHERE bot_key = ?',
             [$key]
         );
         $existingFingerprint = trim((string) ($existing['token_fingerprint'] ?? ''));
         $existingSecret = trim((string) ($existing['secret_value'] ?? ''));
-        $existingIsValid = preg_match('~^[a-f0-9]{64}$~D', $existingSecret) === 1;
-        $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
+        $existingOverrideFingerprint = trim((string) ($existing['override_fingerprint'] ?? ''));
+        $existingIsValid = preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $existingSecret) === 1;
+        $overrideChanged = !hash_equals($existingOverrideFingerprint, $overrideFingerprint);
 
         if ($existing !== null && hash_equals($fingerprint, $existingFingerprint) && $existingIsValid) {
-            // An operator may still rotate the secret by changing the explicit override.
-            if ($overrideIsValid && !hash_equals($existingSecret, $configured)) {
-                Database::run(
-                    'UPDATE telegram_webhook_secrets SET secret_value = ?, updated_at = NOW() ' .
-                    'WHERE bot_key = ? AND token_fingerprint = ?',
-                    [$configured, $key, $fingerprint]
-                );
-                return $configured;
+            if ($overrideChanged) {
+                if ($overrideIsValid) {
+                    Database::run(
+                        'UPDATE telegram_webhook_secrets SET secret_value = ?, override_fingerprint = ?, updated_at = NOW() ' .
+                        'WHERE bot_key = ? AND token_fingerprint = ?',
+                        [$configured, $overrideFingerprint, $key, $fingerprint]
+                    );
+                } else {
+                    Database::run(
+                        "UPDATE telegram_webhook_secrets SET override_fingerprint = '', updated_at = NOW() " .
+                        'WHERE bot_key = ? AND token_fingerprint = ?',
+                        [$key, $fingerprint]
+                    );
+                }
             }
-            return $existingSecret;
+            return $overrideChanged && $overrideIsValid ? $configured : $existingSecret;
         }
 
-        // Preserve an explicit override on first provisioning. If a token changes
-        // and the old override remains unchanged, create a fresh random value.
-        $candidate = $overrideIsValid
-            && ($existing === null || !hash_equals($existingSecret, $configured))
+        // Preserve a newly supplied override on first provisioning or after an
+        // intentional override change. An unchanged old override never prevents
+        // automatic random rotation when the bot token fingerprint changes.
+        $candidate = $overrideIsValid && ($existing === null || $overrideChanged)
             ? $configured
             : bin2hex(random_bytes(32));
 
         $secret = Database::value(
-            'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value) ' .
-            'VALUES (?, ?, ?) ' .
+            'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value, override_fingerprint) ' .
+            'VALUES (?, ?, ?, ?) ' .
             'ON CONFLICT (bot_key) DO UPDATE SET ' .
             'token_fingerprint = EXCLUDED.token_fingerprint, ' .
-            'secret_value = EXCLUDED.secret_value, updated_at = NOW() ' .
+            'secret_value = EXCLUDED.secret_value, ' .
+            'override_fingerprint = EXCLUDED.override_fingerprint, updated_at = NOW() ' .
             'RETURNING secret_value',
-            [$key, $fingerprint, $candidate]
+            [$key, $fingerprint, $candidate, $overrideFingerprint]
         );
 
         if (!is_string($secret) || preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $secret) !== 1) {
