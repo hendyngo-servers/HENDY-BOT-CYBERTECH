@@ -54,18 +54,27 @@ Mỗi bot phải có token và webhook secret riêng. Không sử dụng cùng m
 
 Với Render PostgreSQL nội bộ, đặt DATABASE_SSL=false nếu connection string nội bộ của Render yêu cầu. Với Neon hoặc database ngoài, bật TLS (DATABASE_SSL=true) và dùng URL do nhà cung cấp cấp.
 
-## Các tuyến chính
+## Website, Mini App và API
+
+Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin. Giao diện giới thiệu dùng CSS/JS tự host trong `public/assets/`, không phụ thuộc Tailwind CDN, Font Awesome CDN hoặc Google Fonts CDN. Username bot được lấy từ API public config sau khi backend gọi Telegram `getMe()`; trình duyệt không nhận Bot Token.
 
 | Mục đích | Đường dẫn |
 |---|---|
-| Website / Mini App | / |
-| Dashboard quản trị | /admin |
-| Trung tâm khách hàng | /KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php |
-| Health check | /healthz |
-| Webhook bot chính | /webhook/telegram |
-| Webhook bot thử nghiệm | /webhook/telegram/secondary |
-| Video provider callback | /webhook/video |
-| Bank callback | /webhook/bank (đang khóa mặc định) |
+| Trang chủ giới thiệu | `/` |
+| Dashboard quản trị (xác thực Admin ở backend) | `/admin` |
+| Trung tâm khách hàng | `/customer` |
+| Telegram Mini App | `/miniapp` |
+| API discovery | `/api/v1` |
+| Cấu hình công khai an toàn | `/api/v1/public/config` |
+| Health check | `/health` hoặc `/healthz` |
+| Chính sách bảo mật | `/privacy` |
+| Điều khoản sử dụng | `/terms` |
+| Webhook bot chính | `/webhook/telegram` |
+| Webhook bot thử nghiệm | `/webhook/telegram/secondary` |
+| Video provider callback | `/webhook/video` |
+| Bank callback (mặc định khóa) | `/webhook/bank` |
+
+Liên kết cộng đồng, kênh và hỗ trợ được đọc từ `GROUP_URL`, `CHANNEL_URL`, `SUPPORT_URL`. Backend chỉ công khai URL HTTPS thuộc Telegram (`t.me`/`telegram.me`); URL khác bị loại bỏ.
 
 ## Kiểm tra trước khi deploy
 
