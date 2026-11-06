@@ -5,17 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b18">
 <title>HENDY WEBSITE</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
 <style>
 :root{
   color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --bg:#080b18;--panel:#10162a;--muted:#9ba8c6;--text:#f7f8ff;--line:#26314d;
   --c1:#ff4d6d;--c2:#ff8a3d;--c3:#ffd447;--c4:#4fdb8b;--c5:#35c8ef;--c6:#7b7cff;--c7:#d66bff;
-  --safe-bottom:env(safe-area-inset-bottom,0px)
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --tg-safe-top:0px;--tg-safe-bottom:0px;--tg-content-safe-top:0px;--tg-content-safe-bottom:0px;
+  --tg-viewport-stable-height:100dvh;
+  --tg-accent:#35c8ef;
 }
-*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(ellipse at 8% -10%,#39204a 0,transparent 34%),radial-gradient(ellipse at 100% 10%,#123d54 0,transparent 30%),var(--bg);padding:0 0 calc(82px + var(--safe-bottom))}
+*{box-sizing:border-box}html{background:var(--bg);min-height:100%;overscroll-behavior-y:contain}body{margin:0;min-height:var(--tg-viewport-stable-height,100dvh);color:var(--text);background:radial-gradient(ellipse at 8% -10%,#39204a 0,transparent 34%),radial-gradient(ellipse at 100% 10%,#123d54 0,transparent 30%),var(--bg);padding:calc(var(--safe-top) + var(--tg-safe-top) + var(--tg-content-safe-top)) 0 calc(82px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));overscroll-behavior-y:contain;transition:background-color .18s,color .18s}
 button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
-.shell{width:min(100%,980px);margin:auto;padding:16px 14px 32px}
+.shell{width:min(100%,980px);margin:auto;padding:16px 14px 32px;min-height:calc(var(--tg-viewport-stable-height,100dvh) - var(--tg-safe-top) - var(--tg-content-safe-top) - var(--tg-safe-bottom) - var(--tg-content-safe-bottom))}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 18px}
 .brand{display:flex;align-items:center;gap:11px;min-width:0}
 .brand-mark{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-size:25px;background:linear-gradient(135deg,var(--c1),var(--c5),var(--c7));box-shadow:0 0 32px #b35cff55;animation:brand-glow 4s ease-in-out infinite}
@@ -87,12 +91,12 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 .notice.error{border-color:#864653;background:#311a26;color:#ffd8dc}
 .notice.success{border-color:#267450;background:#122b25;color:#c6ffdf}
 .back{margin:0 0 12px;background:transparent;border:0;color:#c7d8ff;font-size:12px;font-weight:850}
-.bottom-nav{position:fixed;z-index:9;left:0;right:0;bottom:0;padding:10px 14px calc(10px + var(--safe-bottom));background:#0a1023eF;border-top:1px solid #293756;backdrop-filter:blur(18px)}
+.bottom-nav{position:fixed;z-index:9;left:0;right:0;bottom:0;padding:10px 14px calc(10px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));background:#0a1023eF;border-top:1px solid #293756;backdrop-filter:blur(18px)}
 .nav-inner{display:flex;max-width:760px;margin:auto;justify-content:space-around;gap:8px}
 .nav-btn{border:0;background:transparent;color:#9aa9c6;border-radius:12px;padding:7px 9px;min-width:64px;font-size:10px;font-weight:850}
 .nav-btn span{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:white;background:#202d4c}
 .loading{padding:22px;text-align:center;color:var(--muted)}
-.toast{position:fixed;z-index:20;bottom:calc(88px + var(--safe-bottom));left:50%;transform:translate(-50%,14px);opacity:0;pointer-events:none;background:#f1f4ff;color:#10152a;padding:11px 16px;border-radius:13px;font-size:12px;font-weight:900;box-shadow:0 10px 30px #0008;transition:.2s;max-width:90vw;text-align:center}
+.toast{position:fixed;z-index:20;bottom:calc(88px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));left:50%;transform:translate(-50%,14px);opacity:0;pointer-events:none;background:#f1f4ff;color:#10152a;padding:11px 16px;border-radius:13px;font-size:12px;font-weight:900;box-shadow:0 10px 30px #0008;transition:.2s;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @keyframes rocket{0%,100%{transform:translate(0,0) rotate(-7deg)}45%{transform:translate(3px,-7px) rotate(5deg)}60%{transform:translate(-1px,-4px) rotate(0)}}
 @keyframes tool{0%,100%{transform:rotate(0)}30%{transform:rotate(-17deg)}60%{transform:rotate(17deg)}}
@@ -184,8 +188,109 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   const $ = (selector, root=document) => root.querySelector(selector);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
-  const showToast = message => {
+
+  function hapticImpact(style='light'){
+    try{if(typeof tg?.HapticFeedback?.impactOccurred==='function')tg.HapticFeedback.impactOccurred(style);}catch(_){}
+  }
+  function hapticSelection(){
+    try{if(typeof tg?.HapticFeedback?.selectionChanged==='function')tg.HapticFeedback.selectionChanged();}catch(_){}
+  }
+  function hapticNotification(kind='success'){
+    try{
+      if(typeof tg?.HapticFeedback?.notificationOccurred==='function')tg.HapticFeedback.notificationOccurred(kind);
+      else hapticImpact(kind==='error'?'heavy':'light');
+    }catch(_){}
+  }
+  const safeColor = value => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value : '';
+  function applyTelegramTheme(){
+    if(!tg)return;
+    const theme=tg.themeParams||{};
+    const root=document.documentElement;
+    const map={
+      '--bg':theme.bg_color,
+      '--panel':theme.secondary_bg_color,
+      '--text':theme.text_color,
+      '--muted':theme.hint_color,
+      '--line':theme.section_separator_color,
+      '--tg-accent':theme.button_color
+    };
+    for(const [name,value] of Object.entries(map)){
+      const color=safeColor(value);if(color)root.style.setProperty(name,color);
+    }
+    if(tg.colorScheme)root.dataset.telegramTheme=tg.colorScheme;
+    if(tg.platform)root.dataset.telegramPlatform=tg.platform;
+    try{
+      tg.setHeaderColor(safeColor(theme.header_bg_color)||safeColor(theme.bg_color)||'#080b18');
+      tg.setBackgroundColor(safeColor(theme.bg_color)||'#080b18');
+      if(typeof tg.setBottomBarColor==='function' && safeColor(theme.bottom_bar_bg_color))tg.setBottomBarColor(theme.bottom_bar_bg_color);
+    }catch(_){}
+  }
+  function applyTelegramViewport(){
+    if(!tg)return;
+    const root=document.documentElement;
+    const safe=tg.safeAreaInset||{};
+    const content=tg.contentSafeAreaInset||{};
+    const pairs=[
+      ['--tg-safe-top',safe.top],['--tg-safe-bottom',safe.bottom],
+      ['--tg-content-safe-top',content.top],['--tg-content-safe-bottom',content.bottom]
+    ];
+    for(const [name,value] of pairs){
+      const number=Number(value);if(Number.isFinite(number)&&number>=0)root.style.setProperty(name,number+'px');
+    }
+    const stable=Number(tg.viewportStableHeight||tg.viewportHeight||0);
+    if(Number.isFinite(stable)&&stable>200)root.style.setProperty('--tg-viewport-stable-height',stable+'px');
+    document.body?.classList.toggle('telegram-mini-app',Boolean(tg.initData));
+  }
+  function syncMiniAppControls(){
+    if(!tg?.initData)return;
+    const back=tg.BackButton;
+    if(back){
+      if(state.section && state.section!=='home' && state.section!=='website-login')back.show();
+      else back.hide();
+    }
+    const main=tg.MainButton;
+    if(!main)return;
+    const wantsDeposit=state.section==='wallet' || (state.section==='customer' && state.customerTab==='deposit');
+    if(wantsDeposit){
+      main.setText('TẠO QR VIETQR');
+      main.show();
+      if(typeof main.enable==='function')main.enable();
+    }else{
+      main.hide();
+    }
+  }
+  function initTelegramMiniApp(){
+    if(!tg?.initData)return;
+    try{tg.ready();tg.expand();}catch(_){}
+    applyTelegramTheme();
+    applyTelegramViewport();
+    if(typeof tg.onEvent==='function'){
+      tg.onEvent('themeChanged',applyTelegramTheme);
+      tg.onEvent('viewportChanged',applyTelegramViewport);
+      tg.onEvent('safeAreaChanged',applyTelegramViewport);
+      tg.onEvent('contentSafeAreaChanged',applyTelegramViewport);
+    }
+    if(tg.BackButton && typeof tg.BackButton.onClick==='function'){
+      tg.BackButton.onClick(()=>{hapticImpact('light');openSection('home');});
+    }
+    if(tg.MainButton && typeof tg.MainButton.onClick==='function'){
+      tg.MainButton.onClick(async()=>{
+        try{
+          tg.MainButton.showProgress?.();
+          await createDeposit();
+          hapticNotification('success');
+        }catch(error){
+          showToast(error.message||'Không thể tạo yêu cầu nạp.','error');
+        }finally{
+          tg.MainButton.hideProgress?.();
+        }
+      });
+    }
+    syncMiniAppControls();
+  }
+  const showToast = (message,kind='success') => {
     const toast = $('#toast'); toast.textContent = message; toast.classList.add('show');
+    hapticNotification(kind);
     window.setTimeout(() => toast.classList.remove('show'), 2600);
   };
   async function api(path, options={}) {
@@ -335,6 +440,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
         <div class="row-card"><span class="muted small">Bot đang kết nối</span><b>HENDY ${botKey==='secondary'?'BOT 2':'BOT 1'}</b></div>
       </section>`;
     setNav('home');
+    syncMiniAppControls();
   }
   function setNav(nav){
     document.querySelectorAll('[data-nav]').forEach(btn=>btn.classList.toggle('active',btn.dataset.nav===nav));
@@ -342,6 +448,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   function pageFrame(title,subtitle,body){
     $('#app').innerHTML = `<button class="back" data-open="home">← TRỞ VỀ HENDY</button>
       <div class="section-heading"><h2>${title}</h2><span>${subtitle||''}</span></div>${body}`;
+    syncMiniAppControls();
   }
   async function loadProducts(category,title){
     state.section=category; setNav('services');
@@ -501,6 +608,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       </div>
       <section class="customer-tab-content">${tabContent}</section>
       <div class="customer-footer">💠 HENDY DIGITAL ECOSYSTEM · Công nghệ kết nối giá trị thật</div>`;
+    syncMiniAppControls();
   }
 
   async function openCustomerSupport(type){
@@ -578,6 +686,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   }
   async function openSection(section){
     state.section=section;
+    syncMiniAppControls();
     try {
       if(section==='home'){renderHome();return;}
       if(section!=='services'){
@@ -667,6 +776,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     if(customerTab){
       document.querySelectorAll('[data-customer-tab]').forEach(button=>button.classList.toggle('active',button===customerTab));
       state.customerTab=customerTab.dataset.customerTab;
+      hapticSelection();
       renderCustomer();
       return;
     }
@@ -675,9 +785,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const open=event.target.closest('[data-open]');
     const action=event.target.closest('[data-action]');
     const pressed=event.target.closest('button:not(:disabled)');
-    if(pressed && tg?.HapticFeedback){
-      try{tg.HapticFeedback.impactOccurred('light');}catch(_){}
-    }
+    if(pressed)hapticImpact('light');
     const originalBuyText=buy?.textContent||'';
     const originalActionText=action?.textContent||'';
     try{
@@ -685,7 +793,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       if(del){del.disabled=true;del.textContent='ĐANG XÓA…';await deleteAccount(del.dataset.deleteAccount);return;}
       if(open){await openSection(open.dataset.open);return;}
       if(action){action.disabled=true;action.textContent='ĐANG XỬ LÝ…';await handleAction(action.dataset.action);}
-    }catch(error){showToast(error.message||'Thao tác thất bại.');}
+    }catch(error){showToast(error.message||'Thao tác thất bại.','error');}
     finally{
       if(buy && buy.isConnected){buy.disabled=false;buy.textContent=originalBuyText;}
       if(del && del.isConnected){del.disabled=false;del.textContent='XÓA';}
@@ -736,11 +844,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   }
 
   async function start(){
-    if(tg && tg.initData){
-      tg.ready();tg.expand();
-      try{tg.setHeaderColor('#080b18');tg.setBackgroundColor('#080b18');}catch(_){}
-    }
-    $('#bot-chip').textContent = tg && tg.initData ? (botKey==='secondary'?'BOT 2 · WEBSITE':'BOT 1 · WEBSITE') : 'HENDY WEBSITE';
+    initTelegramMiniApp();
+    $('#bot-chip').textContent = tg && tg.initData ? (botKey==='secondary'?'BOT 2 · MINI APP':'BOT 1 · MINI APP') : 'HENDY WEBSITE';
     try{
       state.boot=await api('/api/bootstrap');
       localStorage.setItem('hendy_bot_key', botKey);
@@ -753,7 +858,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       connectWebsiteRealtime();
     }catch(error){
       if(!tg || !tg.initData){renderWebsiteLogin();return;}
-      $('#app').innerHTML='<div class="notice error">Không thể xác thực tài khoản Telegram: '+escapeHtml(error.message)+'<br>Hãy mở lại website từ đúng bot HENDY.</div>';
+      $('#app').innerHTML='<div class="notice error">Không thể xác thực tài khoản Telegram: '+escapeHtml(error.message)+'<br>Hãy mở lại Mini App HENDY từ đúng bot.</div>';
+      syncMiniAppControls();
     }
   }
   window.addEventListener('beforeunload',()=>{
