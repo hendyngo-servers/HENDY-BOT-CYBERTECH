@@ -104,14 +104,12 @@ verify_bot() {
   local token="$2"
   local expected_url="$3"
 
-  local me info actual_url
-  me="$(telegram_call "$token" getMe)"
-  if [[ "$(jq -r '.ok // false' <<<"$me")" != true ]]; then
-    echo "$label: Telegram getMe thất bại; kiểm tra token trong GitHub Environment/Render." >&2
+  local info actual_url
+  info="$(telegram_call "$token" getWebhookInfo)"
+  if [[ "$(jq -r '.ok // false' <<<"$info")" != true ]]; then
+    echo "$label: Telegram từ chối token hoặc không thể đọc webhook info. Kiểm tra credential trong Render Environment." >&2
     return 1
   fi
-
-  info="$(telegram_call "$token" getWebhookInfo)"
   actual_url="$(jq -r '.result.url // ""' <<<"$info")"
   if [[ "$(jq -r '.ok // false' <<<"$info")" != true || "$actual_url" != "$expected_url" ]]; then
     echo "$label: webhook chưa trỏ đúng endpoint dự kiến." >&2
