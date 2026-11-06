@@ -35,20 +35,20 @@ Yêu cầu PHP 8.3+, Composer, PostgreSQL và extensions curl, mbstring, pdo_pgs
     php bin/migrate.php
     php -S 127.0.0.1:8080 -t public
 
-Điền .env bằng credential riêng của bạn. BOT1_TOKEN, ADMIN_ID/ADMIN_IDS và DATABASE_URL là các giá trị cần thiết. TELEGRAM_WEBHOOK_SECRET và TELEGRAM_SECOND_WEBHOOK_SECRET là override tùy chọn; nếu để trống hoặc sai định dạng, backend tự dẫn xuất secret riêng từ token từng bot.
+Điền .env bằng credential riêng của bạn. BOT1_TOKEN, ADMIN_ID/ADMIN_IDS và DATABASE_URL là các giá trị cần thiết. `TELEGRAM_WEBHOOK_SECRET` và `TELEGRAM_SECOND_WEBHOOK_SECRET` là override tùy chọn; để trống thì backend tự tạo khóa ngẫu nhiên 256-bit riêng cho từng bot, lưu trong bảng riêng ở PostgreSQL. Giá trị thô không được đưa vào API hoặc log. Khi fingerprint của một bot token thay đổi, backend tự tạo secret mới cho bot đó và đăng ký lại Telegram webhook khi khởi động.
 
 Tạo secret ngẫu nhiên:
 
     php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
 
-Mỗi bot phải có token và webhook secret riêng. Không sử dụng cùng một secret cho hai endpoint.
+Mỗi bot phải có token và webhook secret riêng. Secret tự sinh được lưu bền vững để dùng lại sau restart; việc xoay vòng BOT1 không thay đổi secret BOT2. Có thể cấu hình override thủ công trong Render Environment nhưng không bắt buộc.
 
 ## Triển khai Render
 
 1. Kết nối repository này với Render Web Service `HENDY-BOT-CYBERTECH`, nhánh `main`, vùng Singapore.
 2. Giữ `DATABASE_URL` trỏ tới PostgreSQL riêng của dự án; không dùng database của ứng dụng khác. Đặt `DATABASE_SSL=true` cho Neon/database ngoài hoặc `false` chỉ khi dùng Internal URL của Render.
 3. Cấu hình `BOT1_TOKEN`, `ADMIN_ID` hoặc `ADMIN_IDS`; nhập `BOT1_PUBLIC_URL=https://t.me/ten_bot_chinh` trong Render Environment. Để `APP_URL` trống để tự dùng `RENDER_EXTERNAL_URL`, hoặc khai báo custom domain HTTPS.
-4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN` và `BOT2_PUBLIC_URL=https://t.me/ten_bot_thu_nghiem`; webhook secret có thể để trống vì backend tự dẫn xuất secret riêng cho mỗi bot.
+4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN` và `BOT2_PUBLIC_URL=https://t.me/ten_bot_thu_nghiem`; webhook secret có thể để trống vì backend tự tạo, lưu và quản lý khóa ngẫu nhiên riêng cho từng bot.
 5. Giữ `BANK_WEBHOOK_ENABLED=false` đến khi tích hợp adapter xác minh chữ ký của ngân hàng.
 6. Deploy. Container kiểm tra cấu hình, chờ PostgreSQL, chạy migration và đăng ký webhook nếu `WEBHOOK_AUTO_REGISTER=true`; không lấy username bằng `getMe()`.
 
@@ -89,7 +89,7 @@ GitHub Actions kiểm tra cú pháp PHP, test logic, quét credential bị commi
 ## Bảo mật và vận hành
 
 - Token Telegram chỉ được đọc từ environment; .env bị ignore.
-- Telegram webhook kiểm tra X-Telegram-Bot-Api-Secret-Token bằng so sánh hằng thời gian và giới hạn kích thước payload.
+- Telegram webhook kiểm tra X-Telegram-Bot-Api-Secret-Token bằng so sánh hằng thời gian và giới hạn kích thước payload. Mỗi bot có secret ngẫu nhiên 256-bit được lưu trong PostgreSQL; fingerprint token thay đổi sẽ tự xoay vòng và đăng ký lại webhook.
 - Telegram Mini App dùng chữ ký HMAC của Telegram; admin được xác định từ allowlist ADMIN_ID/ADMIN_IDS phía máy chủ.
 - SQL dùng PDO prepared statements; thay đổi số dư cần transaction và idempotency key phù hợp.
 - Bank callback vẫn bị khóa nếu chưa có xác minh chữ ký đặc thù nhà cung cấp.
@@ -100,7 +100,7 @@ GitHub Actions kiểm tra cú pháp PHP, test logic, quét credential bị commi
 
 1. Mở @BotFather, thu hồi token cũ và tạo token mới cho từng bot.
 2. Cập nhật BOT1_TOKEN/BOT2_TOKEN trong Render Environment và GitHub Secrets (nếu workflow cần).
-3. Tạo lại hai webhook secret và cập nhật tương ứng.
+3. Khi token bot bị lộ hoặc thay đổi, xoay vòng token trong BotFather và cập nhật `BOT1_TOKEN`/`BOT2_TOKEN`. Ứng dụng tự tạo secret webhook ngẫu nhiên mới cho bot tương ứng và gọi `setWebhook`; không cần sao chép secret vào source code.
 4. Xem xét làm sạch lịch sử Git bằng git-filter-repo/BFG sau khi phối hợp với mọi collaborator; force-push có thể ảnh hưởng các clone đang tồn tại.
 5. Kiểm tra lại repo và log; không coi việc xóa token khỏi file mới là đã xóa khỏi Git history.
 
