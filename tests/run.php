@@ -4,6 +4,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/BotIdentity.php';
+require dirname(__DIR__) . '/app/TelegramLink.php';
 require dirname(__DIR__) . '/app/BotMenuDefinition.php';
 require dirname(__DIR__) . '/app/WebhookSecurity.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
@@ -16,6 +17,7 @@ require dirname(__DIR__) . '/app/SystemWebService.php';
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
 use Hendy\BotIdentity;
+use Hendy\TelegramLink;
 use Hendy\BotMenuDefinition;
 use Hendy\WebhookSecurity;
 use Hendy\WebServiceKernel;
@@ -58,6 +60,12 @@ $assert(BotIdentity::normalizeUsername('@HendyCyber_Bot') === 'HendyCyber_Bot', 
 $assert(BotIdentity::normalizeUsername('not a username') === '', 'username bot sai định dạng bị loại');
 $assert(BotIdentity::tokenFingerprintMatches(hash('sha256', 'sample-token-for-tests'), 'sample-token-for-tests'), 'token fingerprint khớp');
 $assert(!BotIdentity::tokenFingerprintMatches(hash('sha256', 'old-token'), 'new-token'), 'token mới không dùng identity cache của token cũ');
+$assert(TelegramLink::normalize('https://t.me/HendySupportGroup') === 'https://t.me/HendySupportGroup', 'chấp nhận liên kết Telegram HTTPS hợp lệ');
+$assert(TelegramLink::normalize('https://t.me/+Invite_Code-123') === 'https://t.me/+Invite_Code-123', 'chấp nhận liên kết mời Telegram');
+$assert(TelegramLink::normalize('http://t.me/HendySupportGroup') === '', 'từ chối liên kết Telegram không HTTPS');
+$assert(TelegramLink::normalize('https://t.me.evil.example/HendySupportGroup') === '', 'từ chối domain Telegram giả mạo');
+$assert(TelegramLink::normalize('https://user@t.me/HendySupportGroup') === '', 'từ chối URL Telegram có userinfo');
+
 $assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','otp','wallet','vip','codes','customer','group','news','vip-coming-soon'], 'menu chứa đủ chín chức năng mới');
 $assert(BotMenuDefinition::LAYOUT === [['live','otp'],['wallet','vip'],['codes'],['customer'],['group','news'],['vip-coming-soon']], 'layout đúng sáu hàng theo mẫu');
 $webhookSecret = 'sample-webhook-secret-for-tests-000001';
