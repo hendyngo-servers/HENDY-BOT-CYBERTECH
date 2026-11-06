@@ -652,10 +652,12 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       return;
     }
     if(action==='open-bot'){
-      const link=state.boot.botUsername?'https://t.me/'+state.boot.botUsername:'';
+      const link=typeof state.boot.botUrl==='string'?state.boot.botUrl:'';
       if(link){
         if(tg?.openTelegramLink)tg.openTelegramLink(link);
         else window.open(link,'_blank','noopener');
+      } else {
+        showToast('Chưa cấu hình liên kết Telegram Bot công khai.');
       }
       return;
     }
@@ -697,17 +699,18 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       const response = await fetch('/api/v1/public/config', {headers:{Accept:'application/json'},cache:'no-store'});
       if (response.ok) identities = await response.json();
     } catch (_) {}
-    const primaryUsername = String(identities.botUsername || '');
-    const secondaryUsername = String(identities.secondaryBotUsername || '');
-    const primaryUrl = primaryUsername ? 'https://t.me/' + encodeURIComponent(primaryUsername) + '?start=web_login' : '';
-    const secondaryUrl = secondaryUsername ? 'https://t.me/' + encodeURIComponent(secondaryUsername) + '?start=web_login' : '';
+    const primaryBotUrl = typeof identities.botUrl === 'string' ? identities.botUrl.trim() : '';
+    const secondaryBotUrl = typeof identities.secondaryBotUrl === 'string' ? identities.secondaryBotUrl.trim() : '';
+    const withLoginStart = url => url ? url + (url.includes('?') ? '&' : '?') + 'start=web_login' : '';
+    const primaryUrl = withLoginStart(primaryBotUrl);
+    const secondaryUrl = withLoginStart(secondaryBotUrl);
     const selectedUrl = botKey === 'secondary' ? secondaryUrl : primaryUrl;
-    const selectedLabel = botKey === 'secondary' ? 'BOT 2' : 'BOT 1';
+    const selectedLabel = botKey === 'secondary' ? 'BOT DỰ PHÒNG' : 'BOT CHÍNH';
     const otherUrl = botKey === 'secondary' ? primaryUrl : secondaryUrl;
-    const otherLabel = botKey === 'secondary' ? 'BOT 1' : 'BOT 2';
+    const otherLabel = botKey === 'secondary' ? 'BOT CHÍNH' : 'BOT DỰ PHÒNG';
     const loginButtons = [
-      selectedUrl ? '<a class="btn primary" href="' + escapeHtml(selectedUrl) + '" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA ' + selectedLabel + ' · @' + escapeHtml(botKey === 'secondary' ? secondaryUsername : primaryUsername) + '</a>' : '',
-      otherUrl ? '<a class="btn" href="' + escapeHtml(otherUrl) + '" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA ' + otherLabel + ' · @' + escapeHtml(botKey === 'secondary' ? primaryUsername : secondaryUsername) + '</a>' : ''
+      selectedUrl ? '<a class="btn primary" href="' + escapeHtml(selectedUrl) + '" target="_blank" rel="noopener noreferrer">🔐 ĐĂNG NHẬP QUA ' + selectedLabel + '</a>' : '',
+      otherUrl ? '<a class="btn" href="' + escapeHtml(otherUrl) + '" target="_blank" rel="noopener noreferrer">↗ ĐĂNG NHẬP QUA ' + otherLabel + '</a>' : ''
     ].filter(Boolean).join('');
     $('#bot-chip').textContent = 'HENDY WEBSITE · ĐĂNG NHẬP';
     $('#app').innerHTML = `
@@ -716,8 +719,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
           <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
           <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
           <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
-          <div class="hero-actions">${loginButtons || '<span class="notice error">Bot chưa sẵn sàng. Vui lòng thử lại sau khi máy chủ đồng bộ danh tính Telegram.</span>'}</div>
-          <div class="notice">Username được máy chủ tự động lấy từ Telegram getMe() bằng BOT1_TOKEN/BOT2_TOKEN. Không cần khai báo BOT_USERNAME, BOT1_USERNAME, BOT2_USERNAME hoặc DISPLAY_NAME.</div>
+          <div class="hero-actions">${loginButtons || '<span class="notice error">Đường dẫn đăng nhập Telegram chưa được cấu hình. Vui lòng liên hệ CSKH.</span>'}</div>
           <div class="notice">Quy trình: mở bot → Telegram gửi link đăng nhập riêng → mở link trong 5 phút. Link chỉ dùng một lần; website nhận cookie bảo mật sau khi máy chủ xác minh.</div>
         </div>
         <div class="orbit-stage" aria-hidden="true">
