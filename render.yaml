@@ -26,6 +26,8 @@ services:
         sync: false
       - key: BOT2_TOKEN
         sync: false
+      - key: BOT_HOME_PHOTO
+        sync: false
       - key: BOT1_PUBLIC_URL
         sync: false
       - key: BOT2_PUBLIC_URL
