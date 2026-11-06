@@ -13,11 +13,11 @@ Nền tảng Telegram Bot bằng PHP 8.3, PostgreSQL và giao diện web quản 
 
 > Không có token mẫu được lưu trong repository. Tất cả credential phải được cấu hình bằng Render Environment hoặc GitHub Secrets; không nhập chúng vào source code, log, issue hoặc commit.
 
-## Menu Telegram và đồng bộ username
+## Menu Telegram và liên kết bot công khai
 
 Menu cố định dùng Reply Keyboard hai cột theo ảnh mẫu: MiniGame/OTP & Proxy; Nạp tiền/Trung tâm VIP; Mua Lì Xì - Code Màn - Code Tele; Trung tâm khách hàng; Nhóm chat/Kênh thông báo; VIP dịch vụ sắp triển khai. Các nút đều có action định danh; nhóm và kênh sẽ mở liên kết đã cấu hình, còn nút VIP sắp triển khai chỉ hiển thị thông báo và nút quay lại.
 
-Không cần khai báo BOT_USERNAME, BOT1_USERNAME, BOT2_USERNAME hoặc DISPLAY_NAME. Khi Render khởi động, backend gọi Telegram getMe() bằng BOT1_TOKEN (và BOT2_TOKEN nếu được cấu hình), lưu username cùng fingerprint SHA-256 của token vào PostgreSQL. Khi token đổi, username cache cũ bị xem là không hợp lệ và lần khởi động sẽ lấy username mới. Token gốc không được lưu trong bảng danh tính.
+Liên kết Telegram công khai được khai báo tường minh bằng `BOT1_PUBLIC_URL` và tùy chọn `BOT2_PUBLIC_URL`, ví dụ `https://t.me/your_bot_username`. Backend chỉ chấp nhận URL HTTPS thuộc `t.me`/`telegram.me`; không suy đoán username, không gọi Telegram `getMe()` để tạo URL và không gửi Bot Token ra trình duyệt. Nếu chưa khai báo URL, website hiển thị hướng dẫn liên hệ CSKH thay vì thông báo đồng bộ giả.
 
 ## URL công khai tự động trên Render
 
@@ -47,16 +47,16 @@ Mỗi bot phải có token và webhook secret riêng. Không sử dụng cùng m
 
 1. Kết nối repository này với Render Web Service `HENDY-BOT-CYBERTECH`, nhánh `main`, vùng Singapore.
 2. Giữ `DATABASE_URL` trỏ tới PostgreSQL riêng của dự án; không dùng database của ứng dụng khác. Đặt `DATABASE_SSL=true` cho Neon/database ngoài hoặc `false` chỉ khi dùng Internal URL của Render.
-3. Cấu hình `BOT1_TOKEN`, `ADMIN_ID` hoặc `ADMIN_IDS`; để `APP_URL` trống để tự dùng `RENDER_EXTERNAL_URL`, hoặc khai báo custom domain HTTPS.
-4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN`; webhook secret có thể để trống vì backend tự dẫn xuất secret riêng cho mỗi bot.
+3. Cấu hình `BOT1_TOKEN`, `ADMIN_ID` hoặc `ADMIN_IDS`; nhập `BOT1_PUBLIC_URL=https://t.me/ten_bot_chinh` trong Render Environment. Để `APP_URL` trống để tự dùng `RENDER_EXTERNAL_URL`, hoặc khai báo custom domain HTTPS.
+4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN` và `BOT2_PUBLIC_URL=https://t.me/ten_bot_thu_nghiem`; webhook secret có thể để trống vì backend tự dẫn xuất secret riêng cho mỗi bot.
 5. Giữ `BANK_WEBHOOK_ENABLED=false` đến khi tích hợp adapter xác minh chữ ký của ngân hàng.
-6. Deploy. Container kiểm tra cấu hình, chờ PostgreSQL, chạy migration, gọi `getMe()` và đăng ký webhook nếu `WEBHOOK_AUTO_REGISTER=true`.
+6. Deploy. Container kiểm tra cấu hình, chờ PostgreSQL, chạy migration và đăng ký webhook nếu `WEBHOOK_AUTO_REGISTER=true`; không lấy username bằng `getMe()`.
 
 Với Render PostgreSQL nội bộ, đặt DATABASE_SSL=false nếu connection string nội bộ của Render yêu cầu. Với Neon hoặc database ngoài, bật TLS (DATABASE_SSL=true) và dùng URL do nhà cung cấp cấp.
 
 ## Website, Mini App và API
 
-Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin. Giao diện giới thiệu dùng CSS/JS tự host trong `public/assets/`, không phụ thuộc Tailwind CDN, Font Awesome CDN hoặc Google Fonts CDN. Username bot được lấy từ API public config sau khi backend gọi Telegram `getMe()`; trình duyệt không nhận Bot Token.
+Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin. Giao diện giới thiệu dùng CSS/JS tự host trong `public/assets/`, không phụ thuộc Tailwind CDN, Font Awesome CDN hoặc Google Fonts CDN. `/customer` tiếp tục phục vụ Trung tâm khách hàng; `/admin` dùng Dashboard Pro mới. Liên kết bot được khai báo thủ công bằng `BOT1_PUBLIC_URL`/`BOT2_PUBLIC_URL`; trình duyệt không nhận Bot Token.
 
 | Mục đích | Đường dẫn |
 |---|---|
@@ -74,7 +74,7 @@ Trang chủ công khai được tách khỏi ứng dụng thành viên và Admin
 | Video provider callback | `/webhook/video` |
 | Bank callback (mặc định khóa) | `/webhook/bank` |
 
-Liên kết cộng đồng, kênh và hỗ trợ được đọc từ `GROUP_URL`, `CHANNEL_URL`, `SUPPORT_URL`. Backend chỉ công khai URL HTTPS thuộc Telegram (`t.me`/`telegram.me`); URL khác bị loại bỏ.
+Liên kết bot chính/phụ đọc từ `BOT1_PUBLIC_URL` và `BOT2_PUBLIC_URL`; cộng đồng, kênh và hỗ trợ đọc từ `GROUP_URL`, `CHANNEL_URL`, `SUPPORT_URL`. Backend chỉ công khai URL HTTPS thuộc Telegram (`t.me`/`telegram.me`); URL khác bị loại bỏ. Khai báo các biến này tại Render Environment.
 
 ## Kiểm tra trước khi deploy
 
