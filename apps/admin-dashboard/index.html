@@ -744,7 +744,7 @@
     const data = await api('/api/referrals');
     return '<div class="hero"><div class="eyebrow">HENDY REFERRAL</div><h2>Mời bạn bè cùng trải nghiệm</h2><p>Chia sẻ đường dẫn riêng để hệ thống ghi nhận người dùng mới đăng ký qua bạn.</p></div>' +
       '<div class="stat-grid"><div class="stat"><small>Bạn bè đã mời</small><b>' + data.totalInvited + '</b></div><div class="stat"><small>Thưởng đã nhận</small><b>' + money(data.totalReward) + '</b></div></div>' +
-      '<div class="card"><div class="field"><label>Liên kết giới thiệu</label><div class="code-box"><span style="overflow-wrap:anywhere">' + escapeHtml(data.referralLink || 'Đang đồng bộ username từ Telegram') + '</span>' +
+      '<div class="card"><div class="field"><label>Liên kết giới thiệu</label><div class="code-box"><span style="overflow-wrap:anywhere">' + escapeHtml(data.referralLink || 'Chưa cấu hình liên kết Telegram Bot công khai') + '</span>' +
       (data.referralLink ? '<button class="tiny-btn" data-copy="' + escapeHtml(data.referralLink) + '">Sao chép</button>' : '') + '</div></div>' +
       '<p class="small muted">Tỷ lệ thưởng hiện tại: ' + Number(data.commissionPercent) + '%. Tỷ lệ do quản trị viên cấu hình; mặc định 0% khi chưa bật chương trình.</p></div>';
   }
