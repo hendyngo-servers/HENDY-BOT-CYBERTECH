@@ -33,13 +33,12 @@ final class TelegramAuth
             ? 'TELEGRAM_SECOND_WEBHOOK_SECRET'
             : 'TELEGRAM_WEBHOOK_SECRET';
         $configured = trim((string) Env::get($name, ''));
-
-        if ($configured !== '') {
+        $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
+        if ($configured !== '' && !$overrideIsValid) {
             error_log($name . ' không hợp lệ; backend sẽ tạo webhook secret ngẫu nhiên riêng cho bot.');
         }
 
         $fingerprint = hash('sha256', $token);
-        $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
         $overrideFingerprint = $overrideIsValid ? hash('sha256', $configured) : '';
 
         return Database::transaction(static function () use ($key, $fingerprint, $configured, $overrideIsValid, $overrideFingerprint): string {
