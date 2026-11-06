@@ -99,6 +99,20 @@ jobs:
           fi
           rm -f "$generated_env_file"
 
+      - name: Validate public landing page, canonical routes and versioned API
+        run: |
+          set -euo pipefail
+          test -s apps/website/landing.html
+          php -r '$html=file_get_contents("apps/website/landing.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (count($matches[1]) !== 1) { fwrite(STDERR, "Landing page must contain exactly one inline script\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-landing.js", $matches[1][0]);'
+          node --check "$(php -r 'echo sys_get_temp_dir()."/hendy-landing.js";')"
+          grep -q "apps/website/landing.html" public/index.php
+          grep -q "'/admin'" public/index.php
+          grep -q "'/customer'" public/index.php
+          grep -q "'/miniapp'" public/index.php
+          grep -q "'/api/v1/public/config'" public/index.php
+          grep -q "BotIdentity::username('primary')" public/index.php
+          ! grep -Eq "HendyBot_Bot|hendymono_bot" apps/website/index.html
+
       - name: Validate inline dashboard JavaScript
         run: |
           php -r '$html=file_get_contents("apps/admin-dashboard/index.html"); preg_match_all("#<script(?![^>]*src=)[^>]*>(.*?)</script>#si", $html, $matches); if (!$matches[1]) { fwrite(STDERR, "No inline dashboard script found\\n"); exit(1); } file_put_contents(sys_get_temp_dir()."/hendy-dashboard.js", implode("\\n;\\n", $matches[1]));'
