@@ -177,24 +177,57 @@ try {
         exit;
     }
 
-    if ($method === 'GET' && in_array($path, ['/mini-app', '/mini-app/'], true)) {
-        $bot = (($_GET['bot'] ?? 'primary') === 'secondary') ? 'secondary' : 'primary';
-        header('Location: /?bot=' . $bot, true, 302);
+    // Public marketing homepage, separate from authenticated customer and admin applications.
+    if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
+        readfile(dirname(__DIR__) . '/apps/website/landing.html');
         exit;
     }
 
-    if ($method === 'GET' && in_array($path, ['/admin', '/admin/', '/miniapp', '/miniapp/'], true)) {
+    // Customer portal and Telegram Mini App share the authenticated customer application.
+    if ($method === 'GET' && in_array($path, [
+        '/customer', '/customer/', '/customer-center', '/customer-center/',
+        '/miniapp', '/miniapp/', '/mini-app', '/mini-app/', '/app', '/app/'
+    ], true)) {
         header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: no-store');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('X-Robots-Tag: noindex, nofollow');
+        readfile(dirname(__DIR__) . '/apps/website/index.html');
+        exit;
+    }
+
+    // Admin application is isolated at /admin and performs server-side Telegram auth.
+    if ($method === 'GET' && in_array($path, ['/admin', '/admin/'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         header('X-Robots-Tag: noindex, nofollow');
         readfile(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
         exit;
     }
-    if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
-        header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: no-store');
-        readfile(dirname(__DIR__) . '/apps/website/index.html');
-        exit;
+
+    // Public, non-secret runtime identity. Usernames originate from getMe() sync;
+    // tokens and numeric internal identifiers are never returned to the browser.
+    if ($method === 'GET' && $path === '/api/v1/public/config') {
+        $primary = BotIdentity::username('primary');
+        $secondary = BotIdentity::username('secondary');
+        respond([
+            'brand' => 'HENDY BOT | HENDY CYBERTECH',
+            'botUsername' => $primary,
+            'botUrl' => $primary !== '' ? 'https://t.me/' . $primary : '',
+            'secondaryBotUsername' => $secondary,
+            'secondaryBotUrl' => $secondary !== '' ? 'https://t.me/' . $secondary : '',
+            'routes' => [
+                'home' => '/',
+                'admin' => '/admin',
+                'customer' => '/customer',
+                'miniapp' => '/miniapp',
+                'api' => '/api/v1',
+                'health' => '/health',
+            ],
+        ]);
     }
     if ($method === 'POST' && $path === '/auth/logout') {
         setcookie('hendy_web_session', '', [
@@ -319,6 +352,15 @@ try {
         $controller = new ApiController($_GET, [], $headers);
         $result = $controller->uploadModule($_FILES['file'] ?? [], (string) ($_POST['module'] ?? ''));
         respond($result['body'] ?? [], (int) ($result['status'] ?? 200));
+    }
+
+    // Versioned public API aliases the stable internal /api routes.
+    if (str_starts_with($path, '/api/v1/')) {
+        $path = '/api/' . substr($path, strlen('/api/v1/'));
+    }
+
+    if ($method === 'GET' && $path === '/api/health') {
+        respond(['status' => 'ok', 'service' => 'hendy-bot-cybertech', 'apiVersion' => 'v1']);
     }
 
     if (str_starts_with($path, '/api/')) {
