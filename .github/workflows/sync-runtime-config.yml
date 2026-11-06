@@ -53,7 +53,7 @@ jobs:
       ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
       ADMIN_ID: ${{ vars.ADMIN_ID }}
       ADMIN_IDS: ${{ vars.ADMIN_IDS }}
-      DATABASE_SSL: ${{ vars.DATABASE_SSL || 'false' }}
+      DATABASE_SSL: ${{ vars.DATABASE_SSL || 'true' }}
       DB_STARTUP_WAIT_SECONDS: ${{ vars.DB_STARTUP_WAIT_SECONDS || '120' }}
       RUN_MIGRATIONS_ON_START: ${{ vars.RUN_MIGRATIONS_ON_START || 'true' }}
       WEBHOOK_AUTO_REGISTER: ${{ vars.WEBHOOK_AUTO_REGISTER || 'true' }}
