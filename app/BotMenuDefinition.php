@@ -27,8 +27,12 @@ final class BotMenuDefinition
         ['vip-coming-soon'],
     ];
 
+    // Keep legacy keys accepted by the admin JSON editor so old saved
+    // configuration can still be opened and saved; only ITEMS render buttons.
     public const ACTIONS = [
         'live', 'otp', 'wallet', 'vip', 'codes', 'customer',
         'group', 'news', 'vip-coming-soon', 'admin',
+        'tools', 'viptools', 'miniapp', 'ref', 'vietsub',
+        'history', 'jobs', 'abcvip', 'gift', 'support',
     ];
 }
