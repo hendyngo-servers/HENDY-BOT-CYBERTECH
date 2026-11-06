@@ -344,8 +344,11 @@ final class BotService
             default => 'buổi đêm',
         };
         $name = $firstName !== '' ? $firstName : ($username !== '' ? '@' . $username : 'bạn');
-        $botUsername = BotIdentity::username($this->botKey);
-        $botLabel = $botUsername !== '' ? '@' . $botUsername : 'HENDY BOT';
+        $botPublicUrl = TelegramLink::normalize((string) Env::get(
+            $this->botKey === 'secondary' ? 'BOT2_PUBLIC_URL' : 'BOT1_PUBLIC_URL',
+            ''
+        ));
+        $botLabel = 'HENDY BOT';
         $vipLevel = (int) ($user['vip_level'] ?? 0);
         $intro = trim((string) ($config['intro_text'] ?? ''));
 
@@ -369,8 +372,8 @@ final class BotService
         if ($intro !== '') $lines[] = self::escape($intro);
         $links = ['<a href="' . self::escape($websiteUrl) . '">🌐 Website HENDY</a>'];
         if (self::isHttpsUrl($groupUrl)) $links[] = '<a href="' . self::escape($groupUrl) . '">💬 Nhóm hỗ trợ</a>';
-        if ($botUsername !== '') {
-            $links[] = '<a href="https://t.me/' . self::escape($botUsername) . '">🤖 @' . self::escape($botUsername) . '</a>';
+        if ($botPublicUrl !== '') {
+            $links[] = '<a href="' . self::escape($botPublicUrl) . '">🤖 Mở Telegram Bot</a>';
         }
         $lines[] = implode(' · ', $links);
 
@@ -1762,14 +1765,19 @@ final class BotService
 
     private function showReferral(string $chatId, string $userId): void
     {
-        $botUsername = BotIdentity::username($this->botKey);
+        $botPublicUrl = TelegramLink::normalize((string) Env::get(
+            $this->botKey === 'secondary' ? 'BOT2_PUBLIC_URL' : 'BOT1_PUBLIC_URL',
+            ''
+        ));
         $count = (int) Database::value('SELECT COUNT(*) FROM users WHERE ref_by = ?', [$userId]);
         $reward = (int) Database::value(
             "SELECT COALESCE(SUM(amount), 0) FROM wallet_ledger WHERE user_id = ? AND transaction_type = 'REFERRAL_REWARD'",
             [$userId]
         );
         $rate = (float) (Database::value("SELECT value FROM app_settings WHERE key = 'referral_commission_percent'") ?? '0');
-        $link = $botUsername !== '' ? 'https://t.me/' . $botUsername . '?start=ref_' . $userId : 'Chưa lấy được username bot';
+        $link = $botPublicUrl !== ''
+            ? $botPublicUrl . '?start=ref_' . rawurlencode($userId)
+            : 'Chưa cấu hình liên kết Telegram Bot công khai.';
         $this->telegram->sendMessage($chatId, implode("\n", [
             '🎊 <b>GIỚI THIỆU BẠN BÈ</b>',
             'Số người đã mời: <b>' . $count . '</b>',
