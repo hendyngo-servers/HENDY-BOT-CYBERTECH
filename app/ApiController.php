@@ -22,12 +22,9 @@ final class ApiController
     private const SETTINGS = [
         'homepage_title', 'announcement', 'website_url', 'VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO',
         'VIETQR_ACCOUNT_NAME', 'GROUP_URL', 'CHANNEL_URL', 'ABCVIP_CONNECT_URL',
-        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'bot_username', 'bot_display_name', 'replay_live_url',
+        'referral_commission_percent', 'support_message', 'vip_checkin_points', 'replay_live_url',
     ];
-    private const MENU_ACTIONS = [
-        'live', 'tools', 'codes', 'wallet', 'otp', 'viptools', 'customer', 'miniapp',
-        'ref', 'vip', 'group', 'news', 'gift', 'support', 'admin', 'vietsub', 'history', 'jobs', 'abcvip',
-    ];
+    private const MENU_ACTIONS = BotMenuDefinition::ACTIONS;
 
     private array $query;
     private array $body;
@@ -110,8 +107,7 @@ final class ApiController
                 'products' => $this->listProducts(null, false),
                 'settings' => $publicSettings,
                 'referralCount' => $referrals,
-                'botUsername' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME', $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot'),
-                'botDisplayName' => (string) Env::get($this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME', $this->botKey === 'secondary' ? 'HENDY BOT 2' : 'HENDY BOT 1'),
+                'botUsername' => BotIdentity::username($this->botKey),
             ]);
         }
 
@@ -345,9 +341,7 @@ final class ApiController
                 [$userId]
             );
             $commission = $this->settings(['referral_commission_percent'], true);
-            $usernameKey = $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME';
-            $defaultUsername = $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot';
-            $username = ltrim((string) Env::get($usernameKey, Env::get('BOT_USERNAME', $defaultUsername)), '@');
+            $username = BotIdentity::username($this->botKey);
             $link = $username !== '' ? 'https://t.me/' . $username . '?start=ref_' . $userId : '';
             return self::response([
                 'totalInvited' => $count,
@@ -742,12 +736,6 @@ final class ApiController
             $values = [];
             foreach ($this->body as $key => $value) {
                 $text = $this->text($value, 500);
-                if ($key === 'bot_display_name' || $key === 'bot_username') {
-                    $text = ltrim($text, '@');
-                    if (!preg_match('/^[A-Za-z0-9_]{5,32}$/', $text)) {
-                        throw new HttpException(400, 'Username bot phải hợp lệ, chỉ gồm chữ cái, số và dấu gạch dưới, không cần @.');
-                    }
-                }
                 if ($key === 'vip_checkin_points') {
                     $points = filter_var($text, FILTER_VALIDATE_INT);
                     if ($points === false || $points < 0 || $points > 1000) {

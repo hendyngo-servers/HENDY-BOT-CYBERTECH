@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/BotIdentity.php';
+require dirname(__DIR__) . '/app/BotMenuDefinition.php';
 require dirname(__DIR__) . '/app/WebhookSecurity.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
@@ -13,6 +15,8 @@ require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
 
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
+use Hendy\BotIdentity;
+use Hendy\BotMenuDefinition;
 use Hendy\WebhookSecurity;
 use Hendy\WebServiceKernel;
 
@@ -27,6 +31,12 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 $assert(TelegramAuth::safeEquals('same-secret', 'same-secret'), 'so sánh chuỗi đúng');
 $assert(!TelegramAuth::safeEquals('different', 'same-secret'), 'so sánh chuỗi khác');
 $assert(!TelegramAuth::safeEquals('', ''), 'secret rỗng bị từ chối');
+$assert(BotIdentity::normalizeUsername('@HendyCyber_Bot') === 'HendyCyber_Bot', 'username bot chuẩn hóa dấu @');
+$assert(BotIdentity::normalizeUsername('not a username') === '', 'username bot sai định dạng bị loại');
+$assert(BotIdentity::tokenFingerprintMatches(hash('sha256', 'sample-token-for-tests'), 'sample-token-for-tests'), 'token fingerprint khớp');
+$assert(!BotIdentity::tokenFingerprintMatches(hash('sha256', 'old-token'), 'new-token'), 'token mới không dùng identity cache của token cũ');
+$assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','otp','wallet','vip','codes','customer','group','news','vip-coming-soon'], 'menu chứa đủ chín chức năng mới');
+$assert(BotMenuDefinition::LAYOUT === [['live','otp'],['wallet','vip'],['codes'],['customer'],['group','news'],['vip-coming-soon']], 'layout đúng sáu hàng theo mẫu');
 $webhookSecret = 'sample-webhook-secret-for-tests-000001';
 $assert(WebhookSecurity::verifySecret($webhookSecret, $webhookSecret), 'webhook secret đúng được chấp nhận');
 $assert(!WebhookSecurity::verifySecret($webhookSecret, 'wrong-webhook-secret-for-tests-000001'), 'webhook secret sai bị từ chối');
