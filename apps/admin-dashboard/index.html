@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#05050a">
   <meta name="description" content="HENDY CYBERTECH — Bảng điều khiển quản trị hệ thống">
   <title>HENDY ADMIN DASHBOARD PRO</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
   <style>
     :root {
       color-scheme: light;
@@ -143,9 +143,9 @@
     }
   
     /* HENDY ADMIN DASHBOARD PRO — dark neon glass theme */
-    :root{color-scheme:dark;--bg-color:#05050a;--panel-bg:rgba(15,15,25,.78);--panel-border:rgba(255,255,255,.09);--primary:#00e7f5;--secondary:#4f8cff;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--text-main:#f7f8ff;--text-muted:#93a0bd}
-    html,body{min-height:100%;background:#05050a;color:var(--text-main)}
-    body{display:block;min-height:100vh;margin:0;padding:0;overflow-x:hidden;background:radial-gradient(circle at 12% 35%,rgba(0,242,254,.08),transparent 27%),radial-gradient(circle at 85% 12%,rgba(118,75,162,.12),transparent 28%),#05050a;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    :root{color-scheme:dark;--bg-color:#05050a;--panel-bg:rgba(15,15,25,.78);--panel-border:rgba(255,255,255,.09);--primary:#00e7f5;--secondary:#4f8cff;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--text-main:#f7f8ff;--text-muted:#93a0bd;--tg-safe-top:0px;--tg-safe-bottom:0px;--tg-content-safe-top:0px;--tg-content-safe-bottom:0px;--tg-viewport-stable-height:100dvh}
+    html,body{min-height:100%;background:var(--bg-color);color:var(--text-main);overscroll-behavior-y:contain}
+    body{display:block;min-height:var(--tg-viewport-stable-height,100dvh);margin:0;padding:calc(env(safe-area-inset-top,0px) + var(--tg-safe-top) + var(--tg-content-safe-top)) 0 calc(env(safe-area-inset-bottom,0px) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));overflow-x:hidden;background:radial-gradient(circle at 12% 35%,rgba(0,242,254,.08),transparent 27%),radial-gradient(circle at 85% 12%,rgba(118,75,162,.12),transparent 28%),var(--bg-color);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
     body:before{content:"";position:fixed;inset:0;background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.018) 1px,transparent 1px);pointer-events:none;z-index:0;mask-image:radial-gradient(circle at center,#000 55%,transparent 100%)}
     .sidebar{width:260px;height:100vh;position:fixed;z-index:100;inset:0 auto 0 0;display:flex;flex-direction:column;background:rgba(8,10,18,.94);backdrop-filter:blur(20px);border-right:1px solid var(--panel-border);transition:transform .28s ease}
     .sidebar-header{padding:23px 20px;display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--panel-border)}
@@ -174,7 +174,7 @@
     .admin-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(135deg,#a855f7,#ec4899);font-size:13px;font-weight:900;color:white}
     .admin-info strong{display:block;font-size:11px}
     .admin-info small{display:block;color:var(--success);font-size:10px;margin-top:3px}
-    .content-body{width:min(100%,1500px);margin:0 auto;padding:28px 30px 60px}
+    .content-body{width:min(100%,1500px);margin:0 auto;padding:calc(28px + var(--tg-content-safe-top)) 30px 60px}
     .page-title{margin:0 0 7px}
     .page-title h1{font-size:23px;font-weight:850;letter-spacing:-.035em;margin:0}
     .page-title p{font-size:12px;color:var(--text-muted);margin:7px 0 0;line-height:1.6}
@@ -319,7 +319,6 @@
 (function(){
   'use strict';
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-  if (tg) { tg.ready(); tg.expand(); }
   const initData = tg ? tg.initData : '';
   const botKey = new URLSearchParams(window.location.search).get('bot') === 'secondary' ? 'secondary' : 'primary';
   let realtimeSocket = null;
@@ -331,6 +330,86 @@
   let welcomeSloganSwap = null;
   const requestedView = new URLSearchParams(window.location.search).get('view') || (window.location.pathname.startsWith('/admin') ? 'admin' : '');
   const state = { boot:null, page:requestedView === 'admin' ? 'admin' : (requestedView === 'customer' ? 'customer' : 'home'), category:'minigame', adminTab:'overview', wallet:null, orders:[], tickets:[], adminData:{}, editingProductId:null };
+
+  function hapticImpact(style='light'){
+    try{if(typeof tg?.HapticFeedback?.impactOccurred==='function')tg.HapticFeedback.impactOccurred(style);}catch(_){}
+  }
+  function hapticSelection(){
+    try{if(typeof tg?.HapticFeedback?.selectionChanged==='function')tg.HapticFeedback.selectionChanged();}catch(_){}
+  }
+  function hapticNotification(kind='success'){
+    try{
+      if(typeof tg?.HapticFeedback?.notificationOccurred==='function')tg.HapticFeedback.notificationOccurred(kind);
+      else hapticImpact(kind==='error'?'heavy':'light');
+    }catch(_){}
+  }
+  const safeColor=value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)?value:'';
+  function applyAdminTelegramTheme(){
+    if(!tg)return;
+    const theme=tg.themeParams||{},root=document.documentElement;
+    const map={
+      '--bg-color':theme.bg_color,
+      '--primary':theme.button_color,
+      '--secondary':theme.link_color,
+      '--text-main':theme.text_color,
+      '--text-muted':theme.hint_color,
+      '--panel-border':theme.section_separator_color
+    };
+    for(const [key,value] of Object.entries(map)){const color=safeColor(value);if(color)root.style.setProperty(key,color);}
+    try{
+      tg.setHeaderColor(safeColor(theme.header_bg_color)||safeColor(theme.bg_color)||'#05050a');
+      tg.setBackgroundColor(safeColor(theme.bg_color)||'#05050a');
+      if(typeof tg.setBottomBarColor==='function'&&safeColor(theme.bottom_bar_bg_color))tg.setBottomBarColor(theme.bottom_bar_bg_color);
+    }catch(_){}
+  }
+  function applyAdminTelegramViewport(){
+    if(!tg)return;
+    const root=document.documentElement,safe=tg.safeAreaInset||{},content=tg.contentSafeAreaInset||{};
+    for(const [key,value] of [
+      ['--tg-safe-top',safe.top],['--tg-safe-bottom',safe.bottom],
+      ['--tg-content-safe-top',content.top],['--tg-content-safe-bottom',content.bottom]
+    ]){
+      const n=Number(value);if(Number.isFinite(n)&&n>=0)root.style.setProperty(key,n+'px');
+    }
+    const height=Number(tg.viewportStableHeight||tg.viewportHeight||0);
+    if(Number.isFinite(height)&&height>200)root.style.setProperty('--tg-viewport-stable-height',height+'px');
+  }
+  function updateAdminMiniAppControls(){
+    if(!tg?.initData||!tg.BackButton)return;
+    if(state.page==='admin'&&state.adminTab!=='overview')tg.BackButton.show();
+    else if(state.page!=='home')tg.BackButton.show();
+    else tg.BackButton.hide();
+  }
+  function handleAdminMiniAppBack(){
+    hapticImpact('light');
+    if(document.body.classList.contains('sidebar-open')){
+      document.body.classList.remove('sidebar-open');
+      return;
+    }
+    if(state.page==='admin'&&state.adminTab!=='overview'){
+      state.adminTab='overview';
+      renderPage();
+      return;
+    }
+    if(state.page!=='home'){
+      navigate('home');
+      return;
+    }
+    try{tg?.close?.();}catch(_){}
+  }
+  function initAdminMiniApp(){
+    if(!tg?.initData)return;
+    try{tg.ready();tg.expand();}catch(_){}
+    applyAdminTelegramTheme();
+    applyAdminTelegramViewport();
+    if(typeof tg.onEvent==='function'){
+      tg.onEvent('themeChanged',applyAdminTelegramTheme);
+      tg.onEvent('viewportChanged',applyAdminTelegramViewport);
+      tg.onEvent('safeAreaChanged',applyAdminTelegramViewport);
+      tg.onEvent('contentSafeAreaChanged',applyAdminTelegramViewport);
+    }
+    if(tg.BackButton&&typeof tg.BackButton.onClick==='function')tg.BackButton.onClick(handleAdminMiniAppBack);
+  }
   const $ = id => document.getElementById(id);
   const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' VNĐ';
   const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -442,10 +521,11 @@
     return data;
   }
 
-  function toast(message) {
+  function toast(message,kind='success') {
     const node = $('toast');
     node.textContent = message;
     node.classList.add('show');
+    hapticNotification(kind);
     window.clearTimeout(toast.timer);
     toast.timer = window.setTimeout(() => node.classList.remove('show'), 2600);
   }
@@ -1067,6 +1147,7 @@
       else if (page === 'admin') html = await renderAdmin();
       else html = renderHome();
       $('app').innerHTML = html;
+      updateAdminMiniAppControls();
       if (page === 'home') startWelcomeSlogan(); else stopWelcomeSlogan();
       if (page === 'wallet') {
         document.querySelectorAll('[data-amount]').forEach(button => button.addEventListener('click',() => showQr(button.dataset.amount)));
@@ -1153,7 +1234,7 @@
       return;
     }
     state.page = page;
-    if (tg && typeof tg.HapticFeedback !== 'undefined') tg.HapticFeedback.selectionChanged();
+    hapticSelection();
     renderPage();
     window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -1163,6 +1244,7 @@
   document.addEventListener('pointerdown', event => {
     const button = event.target.closest('button:not(:disabled)');
     if (!button || event.button !== 0) return;
+    hapticImpact('light');
     const rect = button.getBoundingClientRect();
     const diameter = Math.max(rect.width, rect.height);
     const ripple = document.createElement('span');
@@ -1427,7 +1509,7 @@
       }
       submitSucceeded = true;
     } catch (error) {
-      toast(error.message);
+      toast(error.message,'error');
     } finally {
       if (submitButton) {
         submitButton.classList.remove('is-loading');
@@ -1446,6 +1528,7 @@
 
   async function start() {
     try {
+      initAdminMiniApp();
       state.boot = await api('/api/bootstrap');
       $('profile-name').textContent = state.boot.user.name || 'Thành viên';
       $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Cybertech';
