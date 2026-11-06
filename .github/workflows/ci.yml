@@ -124,6 +124,14 @@ jobs:
           ! grep -Eq 'BotIdentity|->getMe|function getMe' public/index.php app/BotService.php app/ApiController.php app/TelegramApi.php bin/register-webhooks.php
           ! grep -q 'getMe()' apps/website/landing.html apps/website/index.html
           grep -q "TelegramLink::normalize" public/index.php
+          test -s app/TelegramAuth.php
+          grep -q 'telegram_webhook_secrets' database/schema.sql
+          grep -q 'pg_advisory_xact_lock' app/TelegramAuth.php
+          grep -q 'random_bytes(32)' app/TelegramAuth.php
+          grep -q "TelegramAuth::webhookSecret" public/index.php
+          grep -q "TelegramAuth::webhookSecret" bin/register-webhooks.php
+          ! grep -Eq 'secret_value|telegram_webhook_secrets|override_fingerprint' public/index.php apps/website/index.html apps/admin-dashboard/index.html app/ApiController.php
+
           grep -q "'/privacy'" public/index.php
           grep -q "'/terms'" public/index.php
           test -s apps/website/privacy.html
@@ -149,6 +157,15 @@ jobs:
           grep -q 'data-customer-tab' apps/website/index.html
           grep -q 'support-abuse' apps/website/index.html
           grep -q 'submit-voucher' apps/website/index.html
+          grep -q 'telegram-web-app.js?64' apps/website/index.html
+          grep -q 'initTelegramMiniApp' apps/website/index.html
+          grep -q 'tg.ready()' apps/website/index.html
+          grep -q 'tg.expand()' apps/website/index.html
+          grep -q 'tg.MainButton.onClick' apps/website/index.html
+          grep -q 'tg.BackButton.onClick' apps/website/index.html
+          grep -q 'HapticFeedback' apps/website/index.html
+          grep -q 'safeAreaChanged' apps/website/index.html
+          grep -q 'contentSafeAreaChanged' apps/website/index.html
 
       - name: Verify dashboard buttons and Docker tools
         run: |
@@ -158,6 +175,18 @@ jobs:
           grep -q -- 'button.is-loading' apps/admin-dashboard/styles/buttons.css
           grep -q -- 'button.is-success' apps/admin-dashboard/styles/buttons.css
           grep -q -- 'installVisualEffects();' apps/admin-dashboard/index.html
+          grep -q 'telegram-web-app.js?64' apps/admin-dashboard/index.html
+          grep -q 'initAdminMiniApp' apps/admin-dashboard/index.html
+          grep -q 'tg.ready()' apps/admin-dashboard/index.html
+          grep -q 'tg.expand()' apps/admin-dashboard/index.html
+          grep -q 'handleAdminMiniAppBack' apps/admin-dashboard/index.html
+          grep -q 'HapticFeedback' apps/admin-dashboard/index.html
+          for tab in overview users orders payments products tickets vouchers giftcodes bot-menus runtime modules video-jobs settings audit; do
+            grep -q "state.adminTab === '$tab'" apps/admin-dashboard/index.html
+          done
+          for handler in adminOverview adminUsers adminOrders adminPayments adminProducts adminTickets adminVouchers adminGiftcodes adminBotMenus adminRuntime adminModules adminVideoJobs adminSettings adminAudit; do
+            grep -q "function $handler" apps/admin-dashboard/index.html
+          done
           grep -q 'class="sidebar"' apps/admin-dashboard/index.html
           grep -q 'data-admin-tab="bot-menus"' apps/admin-dashboard/index.html
           grep -q "document.body.classList.toggle('sidebar-open')" apps/admin-dashboard/index.html
