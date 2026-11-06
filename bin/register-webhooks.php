@@ -9,7 +9,7 @@ Hendy\Env::load(dirname(__DIR__) . '/.env');
 
 $autoRegister = Hendy\Env::bool('WEBHOOK_AUTO_REGISTER', true);
 if (!$autoRegister) {
-    fwrite(STDOUT, "WEBHOOK_AUTO_REGISTER=false; bỏ qua đăng ký webhook. Không gọi getMe().\n");
+    fwrite(STDOUT, "WEBHOOK_AUTO_REGISTER=false; bỏ qua đăng ký webhook.\n");
     exit(0);
 }
 
