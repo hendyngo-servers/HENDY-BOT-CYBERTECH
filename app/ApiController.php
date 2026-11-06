@@ -948,10 +948,6 @@ final class ApiController
     private function exchangeLegacySession(): array
     {
         $ticket = $this->text($this->body['ticket'] ?? '', 128);
-        $secret = (string) Env::get('LEGACY_SESSION_SECRET', '');
-        if (strlen($secret) < 32) {
-            throw new HttpException(503, 'Cổng đăng nhập website cũ chưa được cấu hình.');
-        }
         if (!preg_match('/^[a-f0-9]{64}$/i', $ticket)) {
             throw new HttpException(400, 'Login ticket không hợp lệ.');
         }
@@ -972,6 +968,9 @@ final class ApiController
             }
             return ['identity' => $found, 'user' => $user];
         });
+
+        $botKey = (string) $identity['identity']['bot_key'];
+        $secret = TelegramAuth::websiteSessionSecret($botKey);
 
         $now = time();
         $header = self::base64Url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
