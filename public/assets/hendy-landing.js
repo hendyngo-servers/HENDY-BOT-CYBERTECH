@@ -43,6 +43,20 @@
       });
       if (!response.ok) throw new Error('Không thể tải các liên kết công khai.');
       const config = await response.json();
+      const botUrl = safeTelegramUrl(config.botUrl);
+      ['header-bot-link','hero-bot-link','footer-bot-link'].forEach((id) => {
+        const link = byId(id);
+        if (!link) return;
+        if (botUrl) {
+          link.href = botUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        } else {
+          link.href = '/customer';
+          link.removeAttribute('target');
+          link.removeAttribute('rel');
+        }
+      });
       activateOptionalLink('group-link', config.groupUrl);
       activateOptionalLink('channel-link', config.channelUrl);
       activateOptionalLink('support-link', config.supportUrl);
