@@ -1,34 +1,74 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080b18">
-<meta name="description" content="HENDY BOT | HENDY CYBERTECH — hệ sinh thái Mini Game Live, Tool, Code, OTP, Proxy, VIP và chăm sóc khách hàng.">
-<title>HENDY BOT | HENDY CYBERTECH</title>
-<style>
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--bg:#080b18;--panel:#111a30;--line:#293653;--muted:#a8b5d0;--cyan:#35d2e9;--blue:#438cff;--violet:#a36bff;--pink:#ff5b91;--gold:#ffc85c}
-*{box-sizing:border-box}html{scroll-behavior:smooth;background:var(--bg)}body{margin:0;color:#f7f8ff;background:radial-gradient(ellipse at 8% 0%,#38204b 0,transparent 34%),radial-gradient(ellipse at 100% 5%,#103d56 0,transparent 33%),var(--bg);min-height:100vh}a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}.wrap{width:min(1160px,calc(100% - 36px));margin:auto}.top{height:82px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:12px}.mark{width:48px;height:48px;border-radius:17px;display:grid;place-items:center;font-size:25px;background:linear-gradient(140deg,var(--cyan),#3984ff 58%,var(--violet));box-shadow:0 8px 30px #35d2e955}.brand b{display:block;font-size:17px;letter-spacing:.1em}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.18em;margin-top:4px}.toplinks{display:flex;gap:10px;align-items:center}.link{border:1px solid #435575;background:#111b31;color:#e9f2ff;border-radius:999px;padding:11px 16px;font-size:12px;font-weight:800}.link.primary,.cta{border:0;background:linear-gradient(110deg,#6656ed,#168fce);box-shadow:0 12px 32px #3379ed55}.hero{position:relative;overflow:hidden;display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;padding:clamp(26px,5vw,62px);border:1px solid #514b7c;border-radius:32px;background:linear-gradient(130deg,#1a2744ee,#271632ee 58%,#10283b);box-shadow:0 24px 90px #0008}.eyebrow{color:#8beeff;font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.hero h1{font-size:clamp(36px,5vw,64px);line-height:1.03;letter-spacing:-.055em;margin:20px 0 16px}.gradient{background:linear-gradient(90deg,#ffd05b,#ff669c,#64dff1);background-clip:text;color:transparent}.hero p{max-width:590px;color:#c0cbe0;font-size:15px;line-height:1.8}.actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:26px}.cta{display:inline-flex;align-items:center;justify-content:center;border-radius:14px;padding:14px 19px;font-size:13px;font-weight:900}.cta.secondary{background:#17223a;border:1px solid #53698c;box-shadow:none}.orbit{min-height:330px;display:grid;place-items:center;position:relative}.orb{width:min(260px,65vw);aspect-ratio:1;border-radius:50%;border:1px solid #697bb0;display:grid;place-items:center;background:radial-gradient(circle,#294c78,#101a34 68%);box-shadow:0 0 90px #36c9ef40}.orb span{font-size:90px;filter:drop-shadow(0 0 22px #32cbed)}.ring{position:absolute;width:320px;max-width:90%;aspect-ratio:1;border:1px dashed #536a9b;border-radius:50%;animation:spin 28s linear infinite}.float{position:absolute;font-size:28px;background:#0e1b31;border:1px solid #52658d;border-radius:15px;padding:10px;box-shadow:0 12px 30px #0006}.f1{top:8%;left:15%}.f2{top:12%;right:12%}.f3{bottom:12%;left:10%}.f4{bottom:7%;right:17%}@keyframes spin{to{transform:rotate(360deg)}}.section{padding:58px 0}.section-head{text-align:center;max-width:680px;margin:0 auto 28px}.section-head h2{font-size:clamp(25px,4vw,38px);margin:10px 0}.section-head p{color:var(--muted);line-height:1.7}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.tile{padding:22px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#141e35,#0d1426);min-height:160px}.tile .ico{font-size:27px}.tile h3{font-size:16px;margin:15px 0 8px}.tile p{font-size:12px;color:var(--muted);line-height:1.7;margin:0}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.step{border:1px solid var(--line);background:#10182b;border-radius:18px;padding:20px}.step strong{display:block;color:#8beeff;font-size:12px;margin-bottom:9px}.step p{color:var(--muted);font-size:12px;line-height:1.7}.bottom{border-top:1px solid #283550;padding:28px 0 38px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.status{font-size:11px;color:#9eb1d2;margin-top:14px}.mobile-menu{display:none}
-@media(max-width:760px){.wrap{width:min(100% - 24px,600px)}.top{height:72px}.brand b{font-size:14px}.toplinks .link:not(.primary){display:none}.hero{grid-template-columns:1fr;padding:27px 22px;border-radius:24px}.hero h1{font-size:42px}.hero p{font-size:13px}.orbit{min-height:240px}.orb{width:180px}.orb span{font-size:66px}.ring{width:230px}.float{font-size:21px;padding:8px}.grid{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr}.section{padding:42px 0}.tile{padding:17px}.bottom{padding-bottom:28px}}
-@media(max-width:390px){.grid{grid-template-columns:1fr}.hero h1{font-size:36px}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05050a">
+  <meta name="description" content="HENDY BOT | HENDY CYBERTECH — hệ sinh thái dịch vụ Telegram gồm Mini Game Live, Tool & Code, OTP, Proxy, Vietsub, AI, VIP và Trung tâm khách hàng.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="HENDY CYBERTECH">
+  <meta property="og:title" content="HENDY BOT | HENDY CYBERTECH">
+  <meta property="og:description" content="Công nghệ kết nối — Giá trị thật. Khám phá hệ sinh thái dịch vụ HENDY trên Telegram.">
+  <meta property="og:url" content="https://hendy-bot-cybertech.onrender.com/">
+  <link rel="canonical" href="https://hendy-bot-cybertech.onrender.com/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/hendy-landing.css">
+  <title>HENDY BOT | HENDY CYBERTECH — Công nghệ kết nối</title>
+  <script src="/assets/hendy-landing.js" defer></script>
 </head>
 <body>
-<header class="wrap top"><a class="brand" href="/"><span class="mark">💠</span><span><b>HENDY <span class="gradient">CYBERTECH</span></b><small>TECHNOLOGY · LIVE · SERVICES</small></span></a><nav class="toplinks"><a class="link" href="/customer">TRUNG TÂM KHÁCH HÀNG</a><a class="link primary" id="bot-link" href="https://t.me/" target="_blank" rel="noopener">🚀 MỞ TELEGRAM BOT</a></nav></header>
-<main class="wrap">
-<section class="hero"><div><div class="eyebrow">✦ HENDY DIGITAL ECOSYSTEM</div><h1>Công nghệ kết nối<br><span class="gradient">Giá trị thật.</span></h1><p>Hệ sinh thái dịch vụ Telegram HENDY — tập trung Mini Game Live, Tool & Code, OTP, Proxy, Vietsub, AI, VIP, ví điện tử và chăm sóc khách hàng trên cùng một nền tảng.</p><div class="actions"><a class="cta" id="hero-bot-link" href="https://t.me/" target="_blank" rel="noopener">🚀 KHÁM PHÁ HENDY BOT</a><a class="cta secondary" href="/customer">💎 TRUNG TÂM KHÁCH HÀNG</a></div><div class="status" id="bot-status">Đang đồng bộ username bot từ Telegram…</div></div><div class="orbit" aria-hidden="true"><div class="ring"></div><div class="orb"><span>💠</span></div><span class="float f1">🚀</span><span class="float f2">🌈</span><span class="float f3">⚡</span><span class="float f4">💎</span></div></section>
-<section class="section"><div class="section-head"><div class="eyebrow">HENDY SERVICES</div><h2>Một hệ sinh thái, nhiều tiện ích</h2><p>Các dịch vụ được tổ chức theo từng khu vực để thành viên dễ khám phá, sử dụng và theo dõi.</p></div><div class="grid">
-<article class="tile"><div class="ico">🎮</div><h3>Mini Game Live</h3><p>Khu vực liên kết tài khoản và quản lý dịch vụ game live.</p></article>
-<article class="tile"><div class="ico">⚙️</div><h3>Tool & Code</h3><p>Danh mục công cụ, mã nguồn và sản phẩm số.</p></article>
-<article class="tile"><div class="ico">🔐</div><h3>OTP & Proxy</h3><p>Không gian dịch vụ OTP, proxy và lịch sử đơn hàng.</p></article>
-<article class="tile"><div class="ico">🎬</div><h3>Vietsub & AI</h3><p>Các tiện ích xử lý nội dung và dịch vụ tự động hóa.</p></article>
-<article class="tile"><div class="ico">💎</div><h3>VIP & Ưu đãi</h3><p>Theo dõi cấp VIP, quyền lợi và chương trình giftcode.</p></article>
-<article class="tile"><div class="ico">💳</div><h3>Ví & Đơn hàng</h3><p>Quản lý số dư, giao dịch, đơn hàng và yêu cầu hỗ trợ.</p></article>
-</div></section>
-<section class="section"><div class="section-head"><div class="eyebrow">GET STARTED</div><h2>Bắt đầu trong 3 bước</h2><p>Không cần cài ứng dụng riêng. Sử dụng Telegram hoặc trình duyệt tương thích.</p></div><div class="steps"><article class="step"><strong>01 · MỞ BOT</strong><p>Truy cập bot Telegram chính thức và nhấn Start để bắt đầu.</p></article><article class="step"><strong>02 · XÁC THỰC</strong><p>Mở Trung tâm khách hàng từ bot để xác thực tài khoản Telegram.</p></article><article class="step"><strong>03 · QUẢN LÝ</strong><p>Theo dõi hồ sơ, ví, đơn hàng, VIP và ticket CSKH trong một nơi.</p></article></div></section>
-</main>
-<footer class="wrap bottom"><span>© <span id="year"></span> HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI - GIÁ TRỊ THẬT</span><span><a href="/customer">Khách hàng</a> · <a href="/admin">Quản trị</a> · <a href="/health">Trạng thái hệ thống</a></span></footer>
-<script>
-(async()=>{document.getElementById('year').textContent=String(new Date().getFullYear());try{const r=await fetch('/api/v1/public/config',{headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)throw new Error('Không tải được cấu hình bot');const c=await r.json();const link=c.botUrl||'https://t.me/';for(const id of ['bot-link','hero-bot-link'])document.getElementById(id).href=link;document.getElementById('bot-status').textContent=c.botUsername?'Bot chính thức: @'+c.botUsername:'Bot đang đồng bộ danh tính. Vui lòng thử lại sau.';}catch(e){document.getElementById('bot-status').textContent='Kết nối cấu hình bot tạm thời chưa sẵn sàng.';}})();
-</script>
+  <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+  <div class="background-grid" aria-hidden="true"></div><div class="ambient ambient-a" aria-hidden="true"></div><div class="ambient ambient-b" aria-hidden="true"></div>
+  <header class="site-header"><div class="container header-inner">
+    <a class="brand" href="/" aria-label="HENDY CYBERTECH — Trang chủ"><span class="brand-mark" aria-hidden="true">💠</span><span class="brand-copy"><strong>HENDY <span>CYBERTECH</span></strong><small>TECHNOLOGY · LIVE · SERVICES</small></span></a>
+    <nav class="main-nav" aria-label="Điều hướng chính"><a href="#services">Dịch vụ</a><a href="#how-it-works">Cách hoạt động</a><a href="#security">Bảo mật</a><a href="#faq">Câu hỏi</a></nav>
+    <a class="button button-primary bot-action is-disabled" id="header-bot-link" href="/customer" aria-disabled="true">↗ MỞ TELEGRAM BOT</a>
+  </div></header>
+  <main id="main">
+    <section class="hero-section"><div class="container"><div class="hero-card glass-panel">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span> HENDY DIGITAL ECOSYSTEM</div>
+        <h1>🤖 HENDY <span class="gradient-text">BOT</span><br><span class="hero-subtitle">Công nghệ kết nối — Giá trị thật!</span></h1>
+        <p class="hero-description">Hệ sinh thái dịch vụ số vận hành trên Telegram, kết nối các tiện ích Mini Game Live, Tool & Code, OTP, Proxy, Vietsub, AI, VIP và chăm sóc khách hàng trong một trải nghiệm thống nhất.</p>
+        <div class="feature-pills" aria-label="Các nhóm dịch vụ"><span>🎮 Mini Game Live</span><span>⚙️ Tool & Code</span><span>🌐 Proxy</span><span>🔐 OTP</span><span>🎬 Vietsub</span><span>🎨 Chỉnh sửa ảnh</span><span>🤖 AI</span><span class="pill-gold">💎 VIP & CSKH</span></div>
+        <div class="hero-actions"><a class="button button-primary bot-action is-disabled" id="hero-bot-link" href="/customer" aria-disabled="true">🚀 KHÁM PHÁ HENDY BOT</a><a class="button button-secondary" href="/customer">💠 TRUNG TÂM KHÁCH HÀNG</a></div>
+        <p class="bot-status" id="bot-status" role="status" aria-live="polite">Đang đồng bộ danh tính Bot từ Telegram…</p>
+        <div class="terminal-note"><span class="terminal-prompt">hendy@cybertech:~$</span><span>Mở bot</span><span class="terminal-arrow">→</span><span>Xác thực Telegram</span><span class="terminal-arrow">→</span><span>Sử dụng hệ sinh thái HENDY</span></div>
+      </div>
+      <div class="orbit-area" aria-hidden="true"><div class="orbit orbit-inner"><span class="orbit-node node-code">⌘</span><span class="orbit-node node-shield">⬡</span></div><div class="orbit orbit-outer"><span class="orbit-node node-game">🎮</span><span class="orbit-node node-art">🎨</span><span class="orbit-node node-ai">✦</span></div><div class="bot-core"><span>🤖</span></div><div class="orbit-caption">ONE BOT · MANY SERVICES</div></div>
+    </div></div></section>
+    <section class="section" id="services"><div class="container">
+      <div class="section-heading"><span class="eyebrow">HENDY SERVICES</span><h2>Một hệ sinh thái, nhiều tiện ích</h2><p>Các khu vực dịch vụ được tổ chức rõ ràng để bạn dễ khám phá, đặt dịch vụ và theo dõi tại Trung tâm khách hàng.</p></div>
+      <div class="service-grid">
+        <article class="service-card service-cyan"><div class="service-icon">🎮</div><h3>Mini Game Live</h3><p>Khu vực dịch vụ game live và quản lý tài khoản liên kết.</p><span class="service-index">01</span></article>
+        <article class="service-card service-violet"><div class="service-icon">⚙️</div><h3>Tool & Code</h3><p>Danh mục công cụ, mã dịch vụ và sản phẩm số.</p><span class="service-index">02</span></article>
+        <article class="service-card service-blue"><div class="service-icon">🌐</div><h3>OTP & Proxy</h3><p>Truy cập danh mục OTP, Proxy và theo dõi đơn hàng.</p><span class="service-index">03</span></article>
+        <article class="service-card service-pink"><div class="service-icon">🎬</div><h3>Vietsub & Media</h3><p>Khu vực xử lý nội dung video và tác vụ media.</p><span class="service-index">04</span></article>
+        <article class="service-card service-gold"><div class="service-icon">🤖</div><h3>AI & Sáng tạo</h3><p>Các tiện ích AI và hỗ trợ sáng tạo nội dung.</p><span class="service-index">05</span></article>
+        <article class="service-card service-green"><div class="service-icon">💎</div><h3>VIP & Ưu đãi</h3><p>Theo dõi cấp thành viên, điểm thưởng và Giftcode.</p><span class="service-index">06</span></article>
+        <article class="service-card service-orange"><div class="service-icon">💳</div><h3>Ví & Giao dịch</h3><p>Quản lý số dư, yêu cầu nạp và lịch sử giao dịch.</p><span class="service-index">07</span></article>
+        <article class="service-card service-teal"><div class="service-icon">🎧</div><h3>Trung tâm CSKH</h3><p>Hồ sơ, đơn hàng, hỗ trợ và chăm sóc khách hàng.</p><span class="service-index">08</span></article>
+      </div>
+    </div></section>
+    <section class="section section-steps" id="how-it-works"><div class="container">
+      <div class="section-heading"><span class="eyebrow">GET STARTED</span><h2>Bắt đầu chỉ với 3 bước</h2><p>Trải nghiệm HENDY từ Telegram và tiếp tục quản lý hoạt động trên giao diện web/Mini App.</p></div>
+      <div class="steps-grid"><article class="step-card"><span class="step-number">01</span><div class="step-icon">🚀</div><h3>Mở Telegram Bot</h3><p>Truy cập bot chính thức được hệ thống tự nhận diện từ Telegram.</p></article><article class="step-card"><span class="step-number">02</span><div class="step-icon">🔐</div><h3>Xác thực tài khoản</h3><p>Mở Trung tâm khách hàng và xác minh phiên Telegram hợp lệ.</p></article><article class="step-card"><span class="step-number">03</span><div class="step-icon">💠</div><h3>Quản lý dịch vụ</h3><p>Theo dõi hồ sơ, ví, đơn hàng, VIP và yêu cầu hỗ trợ tại một nơi.</p></article></div>
+    </div></section>
+    <section class="section" id="security"><div class="container"><div class="security-panel glass-panel">
+      <div><span class="eyebrow">SECURITY BY DESIGN</span><h2>Trải nghiệm tiện lợi, kiểm soát truy cập rõ ràng</h2><p>HENDY tách biệt website công khai, khu vực khách hàng và giao diện quản trị. Các thao tác riêng tư được xử lý qua API và xác thực ở phía máy chủ.</p></div>
+      <div class="security-points"><div><span>✓</span><p><strong>Xác thực Telegram</strong><small>Kiểm tra dữ liệu đăng nhập ở backend.</small></p></div><div><span>✓</span><p><strong>Phân quyền Admin</strong><small>Quyền quản trị được kiểm tra phía máy chủ.</small></p></div><div><span>✓</span><p><strong>Không công khai Bot Token</strong><small>Danh tính công khai chỉ gồm username, không gồm token.</small></p></div></div>
+    </div></div></section>
+    <section class="section" id="faq"><div class="container faq-layout">
+      <div class="section-heading section-heading-left"><span class="eyebrow">HELP CENTER</span><h2>Câu hỏi thường gặp</h2><p>Thông tin cơ bản trước khi bắt đầu sử dụng hệ sinh thái HENDY.</p><a class="button button-secondary" href="/customer">MỞ TRUNG TÂM KHÁCH HÀNG ↗</a></div>
+      <div class="faq-list"><details><summary>Làm sao để bắt đầu sử dụng HENDY?</summary><p>Nhấn nút Khám phá HENDY Bot, mở cuộc trò chuyện Telegram và gửi lệnh /start.</p></details><details><summary>Trung tâm khách hàng dùng để làm gì?</summary><p>Đây là khu vực xem hồ sơ, ví, lịch sử giao dịch, đơn hàng, VIP và gửi yêu cầu hỗ trợ sau khi xác thực.</p></details><details><summary>Tôi có cần nhập username bot không?</summary><p>Không. Máy chủ lấy username trực tiếp từ Telegram bằng getMe() theo BOT1_TOKEN và BOT2_TOKEN (nếu bot phụ được bật).</p></details><details><summary>Nạp tiền có tự động cộng vào ví không?</summary><p>Không phải mọi phương thức đều tự động. Yêu cầu nạp cần được xác minh/đối soát theo phương thức thanh toán đang được HENDY cấu hình.</p></details></div>
+    </div></section>
+    <section class="section final-cta"><div class="container final-cta-card"><div><span class="eyebrow">READY TO CONNECT?</span><h2>Khám phá hệ sinh thái HENDY ngay hôm nay</h2><p>Bắt đầu trên Telegram hoặc mở Trung tâm khách hàng để tiếp tục.</p></div><div class="final-actions"><a class="button button-primary bot-action is-disabled" id="footer-bot-link" href="/customer" aria-disabled="true">🚀 KHỞI ĐỘNG BOT</a><a class="button button-secondary" href="/customer">💠 TRUNG TÂM KHÁCH HÀNG</a></div></div></section>
+  </main>
+  <footer class="site-footer"><div class="container footer-main">
+    <div class="footer-brand"><span class="brand-mark" aria-hidden="true">💠</span><div><strong>HENDY CYBERTECH</strong><small>CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</small></div></div>
+    <div class="footer-links"><a href="/privacy">Chính sách bảo mật</a><a href="/terms">Điều khoản sử dụng</a><a href="/customer">Trung tâm khách hàng</a><a href="/admin" rel="nofollow">Quản trị</a><a href="/health">Trạng thái hệ thống</a></div>
+    <div class="footer-links social-links"><a id="group-link" href="/customer" hidden>Nhóm cộng đồng ↗</a><a id="channel-link" href="/customer" hidden>Kênh thông báo ↗</a><a id="support-link" href="/customer" hidden>Hỗ trợ ↗</a></div>
+  </div><div class="container footer-bottom"><span>© <span id="current-year"></span> HENDY CYBERTECH. All rights reserved.</span><span id="footer-bot-status">Thông tin Bot được đồng bộ tự động từ Telegram.</span></div></footer>
 </body></html>
