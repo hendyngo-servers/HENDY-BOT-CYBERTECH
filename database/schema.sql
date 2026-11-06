@@ -246,7 +246,17 @@ ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NUL
 -- Token fingerprint changes rotate only the corresponding bot's secret on the next startup.
 CREATE TABLE IF NOT EXISTS telegram_webhook_secrets (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
-    token_fingerprint CHAR(64) NOT NULL CHECK (token_fingerprint ~ '^[a-f0-9]{64}-- Apply the approved persistent keyboard layout while preserving unrelated settings.
+    token_fingerprint CHAR(64) NOT NULL CHECK (token_fingerprint ~ '^[a-f0-9]{64}$'),
+    secret_value VARCHAR(256) NOT NULL CHECK (secret_value ~ '^[A-Za-z0-9_-]{32,256}$'),
+    override_fingerprint CHAR(64) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- Existing deployments may already have an earlier version of this private table.
+ALTER TABLE telegram_webhook_secrets
+    ADD COLUMN IF NOT EXISTS override_fingerprint CHAR(64) NOT NULL DEFAULT '';
+
+-- Apply the approved persistent keyboard layout while preserving unrelated settings.
 UPDATE bot_menu_configs
 SET menu_mode = 'reply_keyboard',
     menu_columns = 2,
