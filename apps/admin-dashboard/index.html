@@ -125,6 +125,14 @@
     .live-indicator.offline{color:#9a6814;background:#fff7e8;border-color:#f6dfb5}
     .json-help{font-size:10px;color:#76819c;line-height:1.5}
     .hidden{display:none!important}
+    .app-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px;border-radius:20px;background:linear-gradient(120deg,#10224f,#176bc6 62%,#7842db);color:#fff;margin:0 0 14px;box-shadow:0 13px 28px #214e9b2a}
+    .app-banner b{font-size:16px;display:block}.app-banner small{display:block;opacity:.82;font-size:10px;margin-top:5px;line-height:1.45}.app-banner .banner-icon{font-size:32px;flex:none}
+    .admin-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 14px}.admin-heading h2{font-size:18px;margin:0}.admin-heading p{font-size:11px;color:var(--muted);margin:4px 0 0}
+    .admin-shortcuts,.customer-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+    .admin-shortcut,.customer-shortcut{display:flex;align-items:center;gap:10px;border:1px solid #e2eaff;background:#fff;border-radius:15px;padding:12px;text-align:left;color:var(--ink);font-weight:850;font-size:11px}
+    .admin-shortcut span,.customer-shortcut span{font-size:21px}.customer-shortcut{display:block;padding:13px;box-shadow:0 6px 16px #263d7808}.customer-shortcut span{display:block;margin-bottom:8px}.customer-shortcut b{display:block;font-size:12px}.customer-shortcut small{display:block;font-size:10px;color:var(--muted);margin-top:4px;line-height:1.4}
+    .audit-event{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #edf1fa}.audit-dot{width:9px;height:9px;border-radius:50%;background:#3189ed;margin-top:4px;flex:none}.audit-event b{font-size:11px;display:block}.audit-event small{font-size:10px;color:var(--muted);display:block;margin-top:4px}
+    .admin-tabs{position:sticky;top:0;z-index:4;background:#eef3ffed;backdrop-filter:blur(12px);padding:7px 0 9px}
     @media(min-width:760px){
       .shell{padding:24px 24px 35px}
       .service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -178,7 +186,8 @@
   let realtimeStopped = false;
   let welcomeSloganTimer = null;
   let welcomeSloganSwap = null;
-  const state = { boot:null, page:'home', category:'minigame', adminTab:'overview', wallet:null, orders:[], tickets:[], adminData:{}, editingProductId:null };
+  const requestedView = new URLSearchParams(window.location.search).get('view') || (window.location.pathname.startsWith('/admin') ? 'admin' : '');
+  const state = { boot:null, page:requestedView === 'admin' ? 'admin' : (requestedView === 'customer' ? 'customer' : 'home'), category:'minigame', adminTab:'overview', wallet:null, orders:[], tickets:[], adminData:{}, editingProductId:null };
   const $ = id => document.getElementById(id);
   const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' VNĐ';
   const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -498,7 +507,16 @@
       '<div class="stat"><small>' + icon + ' ' + label + '</small><b>' + money(amount) + '</b></div>';
     const metric = (label, value) =>
       '<div class="stat"><small>' + label + '</small><b>' + Number(value || 0) + '</b></div>';
-    return '<section class="balance-card"><div class="card-row"><div class="avatar" style="width:48px;height:48px;font-size:17px">' +
+    return '<div class="app-banner"><div><b>💠 TRUNG TÂM KHÁCH HÀNG</b><small>Quản lý hồ sơ, ví, đơn hàng và yêu cầu hỗ trợ trên một màn hình.</small></div><span class="banner-icon">👋</span></div>' +
+      '<div class="customer-shortcuts">' +
+      '<button class="customer-shortcut" data-page="wallet"><span>👛</span><b>Ví & nạp tiền</b><small>Số dư, VietQR, lịch sử giao dịch</small></button>' +
+      '<button class="customer-shortcut" data-page="orders"><span>🧾</span><b>Đơn hàng</b><small>Theo dõi trạng thái và bàn giao</small></button>' +
+      '<button class="customer-shortcut" data-page="support"><span>🎧</span><b>CSKH & ticket</b><small>Gửi yêu cầu và xem phản hồi</small></button>' +
+      '<button class="customer-shortcut" data-page="accounts"><span>🎮</span><b>Tài khoản liên kết</b><small>Quản lý username Mini Game</small></button>' +
+      '<button class="customer-shortcut" data-page="vip"><span>👑</span><b>Hạng thành viên</b><small>Quyền lợi và điểm danh VIP</small></button>' +
+      '<button class="customer-shortcut" data-page="referrals"><span>🎊</span><b>Giới thiệu bạn bè</b><small>Liên kết REF và thưởng giới thiệu</small></button>' +
+      '</div>' +
+      '<section class="balance-card"><div class="card-row"><div class="avatar" style="width:48px;height:48px;font-size:17px">' +
       escapeHtml((user.name || 'H').slice(0,1).toUpperCase()) + '</div><div style="flex:1"><b>' + escapeHtml(user.name) +
       '</b><div class="small muted">Telegram ID: ' + escapeHtml(user.id) + (user.username ? ' · @' + escapeHtml(user.username) : '') +
       '</div></div><span class="vip-pill">👑 VIP ' + Number(user.vipLevel || 0) + '</span></div>' +
@@ -646,6 +664,8 @@
     if (tab === 'users') state.adminData.users = (await api('/api/admin/users')).users;
     if (tab === 'payments') state.adminData.payments = (await api('/api/admin/payments')).payments || [];
     if (tab === 'vouchers') state.adminData.vouchers = (await api('/api/admin/vouchers')).requests || [];
+    if (tab === 'runtime') state.adminData.runtime = await api('/api/admin/runtime');
+    if (tab === 'audit') state.adminData.audit = (await api('/api/admin/audit-log?limit=50')).events || [];
     if (tab === 'video-jobs') {
       const result = await api('/api/admin/video-jobs');
       state.adminData.videoJobs = result.jobs || [];
@@ -654,12 +674,24 @@
   }
 
   function adminTabs() {
-    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot']];
+    const tabs = [['overview','Tổng quan'],['payments','Duyệt nạp'],['vouchers','Voucher 72H'],['video-jobs','Video Jobs'],['modules','Tệp & Module'],['products','Sản phẩm'],['orders','Đơn hàng'],['tickets','CSKH'],['users','Thành viên'],['giftcodes','Giftcode'],['settings','Cấu hình'],['bot-menus','Menu & Bot'],['runtime','Hệ thống'],['audit','Nhật ký']];
     return '<div class="admin-tabs">' + tabs.map(tab =>
       '<button class="admin-tab ' + (state.adminTab === tab[0] ? 'active' : '') + '" data-admin-tab="' + tab[0] + '">' + tab[1] + '</button>'
     ).join('') + '</div>';
   }
 
+  function adminRuntime() {
+    const data = state.adminData.runtime || {};
+    return '<div class="app-banner"><div><b>⚙️ TRẠNG THÁI HỆ THỐNG</b><small>Kiểm tra cấu hình bot. Secret không được hiển thị.</small></div><span class="banner-icon">🛰️</span></div>' +
+      '<div class="card"><div class="section-head"><h3>Telegram Bot</h3><span>' + escapeHtml(data.timestamp || '') + '</span></div>' +
+      (data.bots || []).map(bot => '<div class="list-row"><div><b>' + (bot.key === 'primary' ? '🤖 Bot chính' : '🧪 Bot thử nghiệm') + '</b><small>' + (bot.configured ? 'Token đã cấu hình trong máy chủ' : 'Chưa cấu hình token') + '</small></div><span class="status ' + (bot.configured ? 'completed' : 'pending') + '">' + (bot.configured ? 'Đã cấu hình' : 'Đang tắt') + '</span></div>').join('') +
+      '</div><div class="notice warn">Không hiển thị token, webhook secret hoặc DATABASE_URL. Quản lý credential tại Render Environment.</div>';
+  }
+  function adminAudit() {
+    const rows = state.adminData.audit || [];
+    return '<div class="app-banner"><div><b>🧾 NHẬT KÝ QUẢN TRỊ</b><small>Lịch sử hành động quản trị lưu trong PostgreSQL.</small></div><span class="banner-icon">🔎</span></div>' +
+      '<div class="card">' + (rows.length ? rows.map(item => '<div class="audit-event"><span class="audit-dot"></span><div><b>' + escapeHtml(item.action) + ' · ' + escapeHtml(item.target || '—') + '</b><small>Admin ID: ' + escapeHtml(item.admin_user_id) + ' · ' + escapeHtml(new Date(item.created_at).toLocaleString('vi-VN')) + '</small></div></div>').join('') : empty('Chưa có nhật ký','Các thao tác quản trị sẽ được ghi nhận tại đây.')) + '</div>';
+  }
   function adminModules() {
     const rows = state.adminData.modules || [];
     return '<div class="notice warn">Tệp tải lên chỉ được lưu trong vùng cách ly, không tự chạy và không tự ghi đè mã nguồn. Mã PHP/JavaScript thực thi, tệp nén và secret bị từ chối. Phát hành code phải qua Pull Request và CI.</div>' +
@@ -864,7 +896,10 @@
     if (state.adminTab === 'payments') body = adminPayments();
     if (state.adminTab === 'vouchers') body = adminVouchers();
     if (state.adminTab === 'video-jobs') body = adminVideoJobs();
-    return '<div class="notice good">Đã xác thực quyền quản trị cho Telegram ID ' + escapeHtml(state.boot.user.id) + '.</div>' +
+    if (state.adminTab === 'runtime') body = adminRuntime();
+    if (state.adminTab === 'audit') body = adminAudit();
+    return '<div class="admin-heading"><div><h2>🛡️ HENDY CONTROL CENTER</h2><p>Xin chào ' + escapeHtml(state.boot.user.name || 'Admin') + ' · ID ' + escapeHtml(state.boot.user.id) + '</p></div><span class="vip-pill">ADMIN VERIFIED</span></div>' +
+      '<div class="admin-shortcuts"><button class="admin-shortcut" data-admin-tab="payments"><span>💳</span> Duyệt nạp tiền</button><button class="admin-shortcut" data-admin-tab="orders"><span>🧾</span> Xử lý đơn hàng</button><button class="admin-shortcut" data-admin-tab="tickets"><span>🎧</span> Ticket CSKH</button><button class="admin-shortcut" data-admin-tab="users"><span>👥</span> Thành viên</button></div>' +
       adminTabs() + body;
   }
 
@@ -1279,24 +1314,22 @@
   async function start() {
     try {
       state.boot = await api('/api/bootstrap');
-      if (!state.boot.isAdmin) {
-        $('page-title').textContent='Không có quyền truy cập';
-        $('page-subtitle').textContent='Khu vực này chỉ dành cho Admin HENDY.';
-        $('app').innerHTML='<div class="notice warn">⛔ Tài khoản Telegram hiện tại không nằm trong ADMIN_ID / ADMIN_IDS. Các chức năng thành viên được sử dụng trực tiếp trong bot.</div>';
-        $('profile-name').textContent='Không có quyền';
-        return;
-      }
-      connectAdminRealtime();
-      $('profile-name').textContent = state.boot.user.name || 'Admin';
-      $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Bot';
+      $('profile-name').textContent = state.boot.user.name || 'Thành viên';
+      $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Cybertech';
       $('profile-chip').querySelector('.avatar').textContent = (state.boot.user.name || 'H').slice(0,1).toUpperCase();
-      state.page = 'admin';
+      if (state.boot.isAdmin) {
+        $('admin-nav').classList.remove('hidden');
+        connectAdminRealtime();
+      } else {
+        $('admin-nav').classList.add('hidden');
+        if (state.page === 'admin') state.page = 'customer';
+      }
       renderPage();
     } catch (error) {
       if (!initData) {
         $('page-title').textContent='HENDY · ĐĂNG NHẬP ADMIN';
         $('page-subtitle').textContent='Đăng nhập website qua bot HENDY, sau đó mở lại trang quản trị.';
-        $('app').innerHTML='<div class="notice warn">Phiên website chưa đăng nhập hoặc đã hết hạn.</div><p><a class="btn primary" href="https://t.me/hendymono_bot?start=web_login">🔐 ĐĂNG NHẬP QUA BOT 1</a> <a class="btn" href="https://t.me/HENDY BOT?start=web_login">ĐĂNG NHẬP QUA BOT 2</a></p>';
+        $('app').innerHTML='<div class="notice warn">Mở Mini App từ nút Trung tâm khách hàng trong Telegram để xác thực initData an toàn. Không đăng nhập bằng liên kết công khai.</div>';
         $('profile-name').textContent='Chưa đăng nhập';
         return;
       }

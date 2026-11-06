@@ -461,9 +461,9 @@ final class BotService
             foreach ($group as $item) {
                 $button = ['text' => $item['label'], 'style' => $item['style']];
                 if (($item['iconCustomEmojiId'] ?? '') !== '') $button['icon_custom_emoji_id'] = $item['iconCustomEmojiId'];
-                if ($item['action'] === 'miniapp') {
+                if (in_array($item['action'], ['miniapp', 'customer'], true)) {
                     $url = $this->miniAppUrl();
-                    if ($url !== '') $button['web_app'] = ['url' => $url];
+                    if ($url !== '') $button['web_app'] = ['url' => $url . '&view=customer'];
                     else $button['callback_data'] = 'member:miniapp';
                 } elseif ($item['action'] === 'admin') {
                     $url = $this->webAppUrl('admin');
@@ -2287,7 +2287,7 @@ final class BotService
     {
         $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         if (!str_starts_with($base, 'https://')) return '';
-        return $base . '/?bot=' . rawurlencode($this->botKey);
+        return $base . '/miniapp?bot=' . rawurlencode($this->botKey);
     }
 
     private function webAppUrl(string $section): string
@@ -2295,7 +2295,7 @@ final class BotService
         $base = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         if (!str_starts_with($base, 'https://')) return '';
         // The only Telegram Web App route retained is the admin-only dashboard.
-        return $base . '/admin?section=' . rawurlencode($section) . '&bot=' . rawurlencode($this->botKey);
+        return $base . '/admin?section=' . rawurlencode($section) . '&view=admin&bot=' . rawurlencode($this->botKey);
     }
 
     private function setPending(string $userId, string $type, array $payload = []): void
