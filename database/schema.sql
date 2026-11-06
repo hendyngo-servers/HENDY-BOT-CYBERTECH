@@ -242,6 +242,16 @@ CREATE TABLE IF NOT EXISTS bot_menu_configs (
 
 ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+-- Private Telegram webhook secrets: 256-bit random secret per bot, never exposed by any API.
+-- Token fingerprint changes rotate only the corresponding bot's secret on the next startup.
+CREATE TABLE IF NOT EXISTS telegram_webhook_secrets (
+    bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
+    token_fingerprint CHAR(64) NOT NULL CHECK (token_fingerprint ~ '^[a-f0-9]{64}$'),
+    secret_value CHAR(64) NOT NULL CHECK (secret_value ~ '^[a-f0-9]{64}$'),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Apply the approved persistent keyboard layout while preserving unrelated settings.
 UPDATE bot_menu_configs
 SET menu_mode = 'reply_keyboard',
