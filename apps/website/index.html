@@ -691,10 +691,24 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     }
   });
   document.querySelectorAll('[data-nav]').forEach(btn=>btn.addEventListener('click',()=>openSection(btn.dataset.nav)));
-  function renderWebsiteLogin() {
-    const isSecondary = botKey === 'secondary';
-    const botUrl = isSecondary ? 'https://t.me/HendyBot_Bot?start=web_login' : 'https://t.me/hendymono_bot?start=web_login';
-    const otherUrl = isSecondary ? 'https://t.me/hendymono_bot?start=web_login' : 'https://t.me/HendyBot_Bot?start=web_login';
+  async function renderWebsiteLogin() {
+    let identities = {};
+    try {
+      const response = await fetch('/api/v1/public/config', {headers:{Accept:'application/json'},cache:'no-store'});
+      if (response.ok) identities = await response.json();
+    } catch (_) {}
+    const primaryUsername = String(identities.botUsername || '');
+    const secondaryUsername = String(identities.secondaryBotUsername || '');
+    const primaryUrl = primaryUsername ? 'https://t.me/' + encodeURIComponent(primaryUsername) + '?start=web_login' : '';
+    const secondaryUrl = secondaryUsername ? 'https://t.me/' + encodeURIComponent(secondaryUsername) + '?start=web_login' : '';
+    const selectedUrl = botKey === 'secondary' ? secondaryUrl : primaryUrl;
+    const selectedLabel = botKey === 'secondary' ? 'BOT 2' : 'BOT 1';
+    const otherUrl = botKey === 'secondary' ? primaryUrl : secondaryUrl;
+    const otherLabel = botKey === 'secondary' ? 'BOT 1' : 'BOT 2';
+    const loginButtons = [
+      selectedUrl ? '<a class="btn primary" href="' + escapeHtml(selectedUrl) + '" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA ' + selectedLabel + ' · @' + escapeHtml(botKey === 'secondary' ? secondaryUsername : primaryUsername) + '</a>' : '',
+      otherUrl ? '<a class="btn" href="' + escapeHtml(otherUrl) + '" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA ' + otherLabel + ' · @' + escapeHtml(botKey === 'secondary' ? primaryUsername : secondaryUsername) + '</a>' : ''
+    ].filter(Boolean).join('');
     $('#bot-chip').textContent = 'HENDY WEBSITE · ĐĂNG NHẬP';
     $('#app').innerHTML = `
       <section class="hero hendy-showcase website-login-hero">
@@ -702,10 +716,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
           <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
           <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
           <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
-          <div class="hero-actions">
-            <a class="btn primary" href="${botUrl}" target="_blank" rel="noopener">🔐 ĐĂNG NHẬP QUA BOT ${isSecondary?'2':'1'}</a>
-            <a class="btn" href="${otherUrl}" target="_blank" rel="noopener">↗ ĐĂNG NHẬP QUA BOT ${isSecondary?'1':'2'}</a>
-          </div>
+          <div class="hero-actions">${loginButtons || '<span class="notice error">Bot chưa sẵn sàng. Vui lòng thử lại sau khi máy chủ đồng bộ danh tính Telegram.</span>'}</div>
+          <div class="notice">Username được máy chủ tự động lấy từ Telegram getMe() bằng BOT1_TOKEN/BOT2_TOKEN. Không cần khai báo BOT_USERNAME, BOT1_USERNAME, BOT2_USERNAME hoặc DISPLAY_NAME.</div>
           <div class="notice">Quy trình: mở bot → Telegram gửi link đăng nhập riêng → mở link trong 5 phút. Link chỉ dùng một lần; website nhận cookie bảo mật sau khi máy chủ xác minh.</div>
         </div>
         <div class="orbit-stage" aria-hidden="true">
@@ -731,7 +743,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
       state.boot=await api('/api/bootstrap');
       localStorage.setItem('hendy_bot_key', botKey);
       if(state.boot.botKey!==botKey)throw new Error('Phiên đăng nhập thuộc bot khác. Hãy mở đúng địa chỉ website BOT 1 hoặc BOT 2.');
-      if(params.get('view')==='customer' || location.pathname.toLowerCase().includes('/khach-hang/trung-tam-khach-hang/')){
+      if(params.get('view')==='customer' || ['/customer','/customer/','/customer-center','/customer-center/','/miniapp','/miniapp/','/mini-app','/mini-app/','/app','/app/'].includes(location.pathname.toLowerCase()) || location.pathname.toLowerCase().includes('/khach-hang/trung-tam-khach-hang/')){
         await loadCustomer('active',true);
       }else{
         renderHome();
