@@ -411,7 +411,7 @@ final class BotService
             $action = $item['action'];
             $configuredLabel = (string) ($labels[$action] ?? $item['label']);
             if ($action === 'customer' && str_contains($configuredLabel, 'TRUNG TÂM KHÁCH HÀNG')) {
-                $configuredLabel = '💠 TRUNG TÂM QUẢN LÝ TÀI KHOẢN';
+                $configuredLabel = '💠 TRUNG TÂM KHÁCH HÀNG HENDY';
             }
             $items[] = [
                 ...$item,
@@ -1201,21 +1201,21 @@ final class BotService
         $rows = [];
         if ($miniAppUrl !== '') {
             $rows[] = [[
-                'text' => '🚀 MINI APP BẢN MỚI | CHỈ MOBILE',
+                'text' => '🚀 MINI APP HENDY | KHUYẾN NGHỊ',
                 'web_app' => ['url' => $miniAppUrl . '&view=customer'],
             ]];
         }
         if ($legacyUrl !== '') {
-            $rows[] = [['text' => '🔑 PHIÊN BẢN WEB CŨ', 'url' => $legacyUrl]];
+            $rows[] = [['text' => '🌐 ĐĂNG NHẬP WEBSITE (WEB CŨ)', 'url' => $legacyUrl]];
         }
         $rows[] = [['text' => '↩️ TRỞ VỀ MENU CHÍNH', 'callback_data' => 'member:home']];
 
         $lines = [
-            '💠 <b>TRUNG TÂM QUẢN LÝ TÀI KHOẢN</b>',
+            '💠 <b>TRUNG TÂM KHÁCH HÀNG HENDY</b>',
             '',
             'Chọn một trong hai cách truy cập bên dưới:',
             '• <b>Mini App:</b> Trải nghiệm mới, mượt mà hơn (khuyến nghị).',
-            '• <b>Đăng nhập truyền thống:</b> Link có hiệu lực 5 phút.',
+            '• <b>Website truyền thống:</b> Liên kết bảo mật dùng một lần, hiệu lực 5 phút.',
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '👤 Thành viên: <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>',
