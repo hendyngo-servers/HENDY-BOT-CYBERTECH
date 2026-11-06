@@ -14,7 +14,6 @@ require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
-require dirname(__DIR__) . '/app/BotIdentity.php';
 require dirname(__DIR__) . '/app/TelegramLink.php';
 require dirname(__DIR__) . '/app/BotMenuDefinition.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
@@ -245,32 +244,20 @@ try {
         ]);
     }
 
-    // Public, non-secret runtime identity. Tokens and internal Telegram IDs never reach the browser.
+    // Public website config. Telegram entry links are configured explicitly in deployment environment.
     if ($method === 'GET' && $path === '/api/v1/public/config') {
-        $primary = '';
-        $secondary = '';
-        try {
-            $primary = BotIdentity::username('primary');
-        } catch (Throwable $error) {
-            error_log('Không thể đọc danh tính bot chính: ' . get_class($error));
-        }
-        try {
-            $secondary = BotIdentity::username('secondary');
-        } catch (Throwable $error) {
-            error_log('Không thể đọc danh tính bot phụ: ' . get_class($error));
-        }
-
+        $primaryBotUrl = Hendy\TelegramLink::normalize((string) Env::get('BOT1_PUBLIC_URL', ''));
+        $secondaryBotUrl = Hendy\TelegramLink::normalize((string) Env::get('BOT2_PUBLIC_URL', ''));
         $groupUrl = Hendy\TelegramLink::normalize((string) (Env::get('GROUP_URL') ?: Env::get('GROUP_CHAT_URL', '')));
         $channelUrl = Hendy\TelegramLink::normalize((string) (Env::get('CHANNEL_URL') ?: Env::get('NEWS_CHANNEL_URL', '')));
         $supportUrl = Hendy\TelegramLink::normalize((string) (Env::get('SUPPORT_URL') ?: $groupUrl));
 
         respond([
             'brand' => 'HENDY BOT | HENDY CYBERTECH',
-            'botConfigured' => $primary !== '',
-            'botUsername' => $primary,
-            'botUrl' => $primary !== '' ? 'https://t.me/' . $primary : '',
-            'secondaryBotUsername' => $secondary,
-            'secondaryBotUrl' => $secondary !== '' ? 'https://t.me/' . $secondary : '',
+            'botConfigured' => $primaryBotUrl !== '',
+            'botUrl' => $primaryBotUrl,
+            'secondaryBotConfigured' => $secondaryBotUrl !== '',
+            'secondaryBotUrl' => $secondaryBotUrl,
             'groupUrl' => $groupUrl,
             'channelUrl' => $channelUrl,
             'supportUrl' => $supportUrl,
@@ -286,6 +273,7 @@ try {
             ],
         ]);
     }
+
     if ($method === 'POST' && $path === '/auth/logout') {
         setcookie('hendy_web_session', '', [
             'expires' => time() - 3600,
