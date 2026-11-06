@@ -13,6 +13,34 @@ final class TelegramAuth
         return trim((string) Env::get($name, ''));
     }
 
+    /**
+     * Resolve one stable webhook secret for each bot.
+     * An explicit valid override wins; otherwise derive it from that bot's token.
+     * Rotating a bot token automatically rotates its derived webhook secret.
+     */
+    public static function webhookSecret(string $botKey = 'primary'): string
+    {
+        $key = $botKey === 'secondary' ? 'secondary' : 'primary';
+        $token = self::token($key);
+        if ($token === '') {
+            return '';
+        }
+
+        $name = $key === 'secondary'
+            ? 'TELEGRAM_SECOND_WEBHOOK_SECRET'
+            : 'TELEGRAM_WEBHOOK_SECRET';
+        $configured = trim((string) Env::get($name, ''));
+
+        if ($configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1) {
+            return $configured;
+        }
+        if ($configured !== '') {
+            error_log($name . ' không hợp lệ; backend dùng webhook secret dẫn xuất theo token bot.');
+        }
+
+        return hash_hmac('sha256', 'hendy:telegram-webhook:v1:' . $key, $token);
+    }
+
     public static function adminIds(): array
     {
         $configured = [

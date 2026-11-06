@@ -6,7 +6,7 @@ HENDY chạy các Web Service trên cùng nền PHP 8.3 và PostgreSQL, tách kh
 
 - app/WebServiceContract.php: hợp đồng HTTP chung cho service.
 - app/WebServiceKernel.php: router allow-list, chỉ thực thi lớp service được đăng ký trong mã nguồn.
-- app/WebServices/SystemWebService.php: service hệ thống cho health/capabilities.
+- app/SystemWebService.php: service hệ thống cho health/capabilities.
 - services/: tài liệu, mã nguồn tích hợp và cấu hình theo từng service nghiệp vụ.
 
 ## Endpoint có sẵn

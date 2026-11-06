@@ -49,12 +49,12 @@ if [[ -n "${ADMIN_IDS:-}" ]]; then
     fi
   done
 fi
-if [[ ! "$BOT1_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]{20,}$ ]]; then
+if [[ ! "$BOT1_TOKEN" =~ ^[0-9]{5,12}:[A-Za-z0-9_-]{30,}$ ]]; then
   echo "BOT1_TOKEN không đúng định dạng Telegram Bot Token." >&2
   exit 1
 fi
 if [[ -n "${BOT2_TOKEN:-}" ]]; then
-  if [[ ! "$BOT2_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]{20,}$ ]]; then
+  if [[ ! "$BOT2_TOKEN" =~ ^[0-9]{5,12}:[A-Za-z0-9_-]{30,}$ ]]; then
     echo "BOT2_TOKEN không đúng định dạng Telegram Bot Token." >&2
     exit 1
   fi
@@ -64,9 +64,14 @@ if [[ -n "${BOT2_TOKEN:-}" ]]; then
   fi
 fi
 
+if [[ -z "${APP_URL:-}" ]]; then
+  APP_URL="https://hendy-bot-cybertech.onrender.com"
+  export APP_URL
+fi
+
 if [[ "${WEBHOOK_AUTO_REGISTER:-true}" == "true" ]]; then
   if [[ -z "${APP_URL:-}" ]]; then
-    echo "APP_URL bắt buộc khi WEBHOOK_AUTO_REGISTER=true." >&2
+    echo "APP_URL hoặc Render URL bắt buộc khi WEBHOOK_AUTO_REGISTER=true." >&2
     exit 1
   fi
   if ! php -r '$p=parse_url((string)getenv("APP_URL")); exit(is_array($p) && strtolower((string)($p["scheme"] ?? "")) === "https" && !empty($p["host"]) ? 0 : 1);'; then

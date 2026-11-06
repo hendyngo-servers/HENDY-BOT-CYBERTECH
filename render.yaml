@@ -1,20 +1,16 @@
-# Render Blueprint — PHP 8.3 + Apache + PostgreSQL.
-# Web services and PostgreSQL must share a region to use the Internal Database URL.
+# Render Blueprint for the existing HENDY-BOT-CYBERTECH web service.
+# DATABASE_URL is managed separately (current service uses an external PostgreSQL URL).
+# This Blueprint deliberately does not create or attach another application's database.
 services:
   - type: web
-    name: hendy-bot-tele
+    name: HENDY-BOT-CYBERTECH
     runtime: docker
-    plan: starter
+    plan: free
     region: singapore
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    # Explicitly overrides any stale Docker Command saved in the Dashboard.
     dockerCommand: /var/www/app/docker/start.sh
-    disk:
-      name: hendy-module-storage
-      mountPath: /var/www/app/storage
-      sizeGB: 1
     healthCheckPath: /healthz
     autoDeployTrigger: checksPass
     envVars:
@@ -35,11 +31,9 @@ services:
       - key: ADMIN_IDS
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: hendy-bot-tele-db
-          property: connectionString
+        sync: false
       - key: DATABASE_SSL
-        value: "false"
+        value: "true"
       - key: TELEGRAM_WEBHOOK_SECRET
         generateValue: true
       - key: TELEGRAM_SECOND_WEBHOOK_SECRET
@@ -50,6 +44,8 @@ services:
         value: "true"
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
         value: "3600"
+      - key: ALLOWED_ORIGINS
+        value: https://hendy-bot-cybertech.onrender.com
       - key: VIETQR_BANK_ID
         sync: false
       - key: VIETQR_ACCOUNT_NO
@@ -65,19 +61,12 @@ services:
       - key: WEBSOCKET_ENABLED
         value: "true"
       - key: WEBSOCKET_URL
-        value: wss://hendy-bot-tele.onrender.com/ws
+        value: wss://hendy-bot-cybertech.onrender.com/ws
       - key: WEBSOCKET_ALLOWED_ORIGINS
-        value: https://hendy-bot-tele.onrender.com
+        value: https://hendy-bot-cybertech.onrender.com
       - key: WEBSOCKET_MAX_CONNECTIONS
         value: "250"
       - key: WEBSOCKET_BIND
         value: 127.0.0.1
       - key: WEBSOCKET_PORT
         value: "10001"
-
-databases:
-  - name: hendy-bot-tele-db
-    databaseName: hendy_bot_tele
-    user: hendy_bot_tele
-    plan: basic-256mb
-    region: singapore

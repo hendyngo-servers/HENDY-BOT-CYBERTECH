@@ -12,7 +12,7 @@ $bot2 = Hendy\TelegramAuth::token('secondary');
 $admin = trim((string) Hendy\Env::get('ADMIN_ID', ''));
 $adminList = trim((string) Hendy\Env::get('ADMIN_IDS', ''));
 
-$botTokenPattern = '~\A[0-9]+:[A-Za-z0-9_-]{20,}\z~D';
+$botTokenPattern = '~\\A[0-9]{5,12}:[A-Za-z0-9_-]{30,}\\z~D';
 $adminPattern = '~\A[0-9]{5,20}\z~D';
 $secretPattern = '~\A[A-Za-z0-9_-]{32,256}\z~D';
 
@@ -75,22 +75,19 @@ if ($autoWebhook) {
         $errors[] = 'APP_URL hoặc RENDER_EXTERNAL_URL phải là URL HTTPS khi bật WEBHOOK_AUTO_REGISTER.';
     }
 
-    $primarySecret = (string) Hendy\Env::get('TELEGRAM_WEBHOOK_SECRET', '');
-    if (preg_match($secretPattern, $primarySecret) !== 1) {
-        $errors[] = 'TELEGRAM_WEBHOOK_SECRET phải có 32–256 ký tự chữ, số, gạch dưới hoặc gạch nối.';
+    // Webhook secrets are optional overrides. Missing or malformed values
+    // fall back to stable per-bot secrets derived by TelegramAuth.
+    foreach (['TELEGRAM_WEBHOOK_SECRET', 'TELEGRAM_SECOND_WEBHOOK_SECRET'] as $secretName) {
+        $configuredSecret = trim((string) Hendy\Env::get($secretName, ''));
+        if ($configuredSecret !== '' && preg_match($secretPattern, $configuredSecret) !== 1) {
+            $warnings[] = $secretName . ' không hợp lệ; backend sẽ dùng secret dẫn xuất theo token bot.';
+        }
     }
-
-    if ($bot2 !== '') {
-        $secondarySecret = (string) Hendy\Env::get('TELEGRAM_SECOND_WEBHOOK_SECRET', '');
-        if (preg_match($secretPattern, $secondarySecret) !== 1) {
-            $errors[] = 'BOT2_TOKEN đang bật nhưng TELEGRAM_SECOND_WEBHOOK_SECRET chưa hợp lệ.';
-        }
-        if ($primarySecret !== '' && $secondarySecret !== '' && hash_equals($primarySecret, $secondarySecret)) {
-            // Telegram permits the same shape of secret for both bots. Keep the
-            // service online, warn, and let the explicit sync workflow rotate
-            // the secondary secret before its next deploy.
-            $warnings[] = 'Hai Telegram webhook secret đang giống nhau; hãy chạy sync workflow để tự sinh secret riêng cho BOT2.';
-        }
+    if ($bot2 !== '' && hash_equals(
+        Hendy\TelegramAuth::webhookSecret('primary'),
+        Hendy\TelegramAuth::webhookSecret('secondary')
+    )) {
+        $errors[] = 'Không thể tạo webhook secret riêng cho BOT1 và BOT2.';
     }
 }
 
