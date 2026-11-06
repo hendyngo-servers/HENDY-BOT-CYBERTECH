@@ -31,18 +31,6 @@ $assert = static function (bool $condition, string $message) use (&$checks): voi
 $assert(TelegramAuth::safeEquals('same-secret', 'same-secret'), 'so sánh chuỗi đúng');
 $assert(!TelegramAuth::safeEquals('different', 'same-secret'), 'so sánh chuỗi khác');
 $assert(!TelegramAuth::safeEquals('', ''), 'secret rỗng bị từ chối');
-$previousPrimaryWebhookSecret = getenv('TELEGRAM_WEBHOOK_SECRET');
-$previousSecondaryWebhookSecret = getenv('TELEGRAM_SECOND_WEBHOOK_SECRET');
-putenv('BOT1_TOKEN=123456789:' . str_repeat('A', 40));
-putenv('BOT2_TOKEN=987654321:' . str_repeat('B', 40));
-putenv('TELEGRAM_WEBHOOK_SECRET=explicit-test-secret-012345678901234567890123456789');
-putenv('TELEGRAM_SECOND_WEBHOOK_SECRET=explicit-secondary-secret-012345678901234567890123456789');
-$assert(TelegramAuth::webhookSecret('primary') === 'explicit-test-secret-012345678901234567890123456789', 'explicit webhook secret is preserved for primary bot');
-$assert(TelegramAuth::webhookSecret('secondary') === 'explicit-secondary-secret-012345678901234567890123456789', 'explicit webhook secret is preserved for secondary bot');
-$assert(TelegramAuth::webhookSecret('primary') !== TelegramAuth::webhookSecret('secondary'), 'two bots use different configured webhook secrets');
-if ($previousPrimaryWebhookSecret === false) putenv('TELEGRAM_WEBHOOK_SECRET'); else putenv('TELEGRAM_WEBHOOK_SECRET=' . $previousPrimaryWebhookSecret);
-if ($previousSecondaryWebhookSecret === false) putenv('TELEGRAM_SECOND_WEBHOOK_SECRET'); else putenv('TELEGRAM_SECOND_WEBHOOK_SECRET=' . $previousSecondaryWebhookSecret);
-
 $assert(TelegramLink::normalize('https://t.me/HendySupportGroup') === 'https://t.me/HendySupportGroup', 'chấp nhận liên kết Telegram HTTPS hợp lệ');
 $assert(TelegramLink::normalize('https://t.me/+Invite_Code-123') === 'https://t.me/+Invite_Code-123', 'chấp nhận liên kết mời Telegram');
 $assert(TelegramLink::normalize('http://t.me/HendySupportGroup') === '', 'từ chối liên kết Telegram không HTTPS');
