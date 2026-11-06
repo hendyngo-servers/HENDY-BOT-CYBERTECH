@@ -39,6 +39,13 @@ final class ApiController
         $this->headers = $headers;
     }
 
+    private function publicBotUrl(?string $botKey = null): string
+    {
+        $key = $botKey ?? $this->botKey;
+        $variable = $key === 'secondary' ? 'BOT2_PUBLIC_URL' : 'BOT1_PUBLIC_URL';
+        return TelegramLink::normalize((string) Env::get($variable, ''));
+    }
+
     public function uploadModule(array $file, string $module): array
     {
         try { $this->user = TelegramAuth::authenticateRequest(); } catch (Throwable $error) { throw new HttpException(401, 'Yêu cầu xác thực Telegram.'); }
@@ -107,7 +114,7 @@ final class ApiController
                 'products' => $this->listProducts(null, false),
                 'settings' => $publicSettings,
                 'referralCount' => $referrals,
-                'botUsername' => BotIdentity::username($this->botKey),
+                'botUrl' => $this->publicBotUrl(),
             ]);
         }
 
@@ -341,8 +348,8 @@ final class ApiController
                 [$userId]
             );
             $commission = $this->settings(['referral_commission_percent'], true);
-            $username = BotIdentity::username($this->botKey);
-            $link = $username !== '' ? 'https://t.me/' . $username . '?start=ref_' . $userId : '';
+            $botUrl = $this->publicBotUrl();
+            $link = $botUrl !== '' ? $botUrl . '?start=ref_' . rawurlencode($userId) : '';
             return self::response([
                 'totalInvited' => $count,
                 'totalReward' => $reward,
