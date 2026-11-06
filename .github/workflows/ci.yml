@@ -89,7 +89,8 @@ jobs:
             exit 1
           fi
           generated_env_file="$(mktemp)"
-          GITHUB_ENV="$generated_env_file" bash scripts/sync-render-env.sh --dry-run
+          env -u TELEGRAM_WEBHOOK_SECRET -u TELEGRAM_SECOND_WEBHOOK_SECRET -u LEGACY_SESSION_SECRET GITHUB_ENV="$generated_env_file" bash scripts/sync-render-env.sh --dry-run
+          grep -q '^TELEGRAM_WEBHOOK_SECRET=' "$generated_env_file"
           grep -q '^TELEGRAM_SECOND_WEBHOOK_SECRET=' "$generated_env_file"
           grep -q '^LEGACY_SESSION_SECRET=' "$generated_env_file"
           if grep -q '^BANK_WEBHOOK_SECRET=' "$generated_env_file"; then
