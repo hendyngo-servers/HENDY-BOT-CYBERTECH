@@ -42,23 +42,46 @@ final class TelegramAuth
         }
 
         $fingerprint = hash('sha256', $token);
-        $candidate = bin2hex(random_bytes(32));
+        $existing = Database::one(
+            'SELECT token_fingerprint, secret_value FROM telegram_webhook_secrets WHERE bot_key = ?',
+            [$key]
+        );
+        $existingFingerprint = trim((string) ($existing['token_fingerprint'] ?? ''));
+        $existingSecret = trim((string) ($existing['secret_value'] ?? ''));
+        $existingIsValid = preg_match('~^[a-f0-9]{64}$~D', $existingSecret) === 1;
+        $overrideIsValid = $configured !== '' && preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $configured) === 1;
+
+        if ($existing !== null && hash_equals($fingerprint, $existingFingerprint) && $existingIsValid) {
+            // An operator may still rotate the secret by changing the explicit override.
+            if ($overrideIsValid && !hash_equals($existingSecret, $configured)) {
+                Database::run(
+                    'UPDATE telegram_webhook_secrets SET secret_value = ?, updated_at = NOW() ' .
+                    'WHERE bot_key = ? AND token_fingerprint = ?',
+                    [$configured, $key, $fingerprint]
+                );
+                return $configured;
+            }
+            return $existingSecret;
+        }
+
+        // Preserve an explicit override on first provisioning. If a token changes
+        // and the old override remains unchanged, create a fresh random value.
+        $candidate = $overrideIsValid
+            && ($existing === null || !hash_equals($existingSecret, $configured))
+            ? $configured
+            : bin2hex(random_bytes(32));
+
         $secret = Database::value(
             'INSERT INTO telegram_webhook_secrets (bot_key, token_fingerprint, secret_value) ' .
             'VALUES (?, ?, ?) ' .
             'ON CONFLICT (bot_key) DO UPDATE SET ' .
             'token_fingerprint = EXCLUDED.token_fingerprint, ' .
-            'secret_value = CASE ' .
-            'WHEN telegram_webhook_secrets.token_fingerprint = EXCLUDED.token_fingerprint ' .
-            'THEN telegram_webhook_secrets.secret_value ELSE EXCLUDED.secret_value END, ' .
-            'updated_at = CASE ' .
-            'WHEN telegram_webhook_secrets.token_fingerprint = EXCLUDED.token_fingerprint ' .
-            'THEN telegram_webhook_secrets.updated_at ELSE NOW() END ' .
+            'secret_value = EXCLUDED.secret_value, updated_at = NOW() ' .
             'RETURNING secret_value',
             [$key, $fingerprint, $candidate]
         );
 
-        if (!is_string($secret) || preg_match('~^[a-f0-9]{64}$~D', $secret) !== 1) {
+        if (!is_string($secret) || preg_match('~^[A-Za-z0-9_-]{32,256}$~D', $secret) !== 1) {
             throw new RuntimeException('Không thể tạo webhook secret an toàn cho ' . $key . '.');
         }
         return $secret;
