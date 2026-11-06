@@ -409,9 +409,13 @@ final class BotService
 
         foreach (BotMenuDefinition::ITEMS as $item) {
             $action = $item['action'];
+            $configuredLabel = (string) ($labels[$action] ?? $item['label']);
+            if ($action === 'customer' && str_contains($configuredLabel, 'TRUNG TÂM KHÁCH HÀNG')) {
+                $configuredLabel = '💠 TRUNG TÂM QUẢN LÝ TÀI KHOẢN';
+            }
             $items[] = [
                 ...$item,
-                'label' => self::truncate((string) ($labels[$action] ?? $item['label']) === '💠 TRUNG TÂM KHÁCH HÀNG' ? '💠 TRUNG TÂM QUẢN LÝ TÀI KHOẢN' : (string) ($labels[$action] ?? $item['label']), 60),
+                'label' => self::truncate($configuredLabel, 60),
                 'description' => self::truncate((string) ($descriptions[$action] ?? $item['description']), 160),
                 'style' => in_array($styles[$action] ?? '', ['primary', 'success', 'danger'], true) ? $styles[$action] : ($item['style'] ?? 'primary'),
                 'iconCustomEmojiId' => preg_match('/^[0-9]{5,32}$/', (string) ($icons[$action] ?? '')) ? (string) $icons[$action] : '',
@@ -1234,7 +1238,7 @@ final class BotService
             $lines[] = '';
             $lines[] = '⚠️ Phiên bản web cũ hiện chưa tạo được liên kết đăng nhập. Vui lòng dùng Mini App hoặc liên hệ CSKH.';
         }
-        $this->telegram->sendMessage($chatId, implode("\\n", $lines), [
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), [
             'reply_markup' => $this->inlineMenu($rows),
             'disable_web_page_preview' => true,
         ]);
