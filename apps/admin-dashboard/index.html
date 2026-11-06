@@ -164,6 +164,7 @@
     .sidebar-footer a{padding:9px 11px;border:1px solid var(--panel-border);border-radius:10px;color:#b9c4dc;text-decoration:none;font-size:11px}
     .sidebar-footer a:hover{border-color:var(--primary);color:#fff}
     .main-content{position:relative;z-index:1;margin-left:260px;min-height:100vh;display:flex;flex-direction:column}
+    .sidebar[hidden]{display:none!important}body.auth-required .main-content{margin-left:0}
     .top-header{height:72px;position:sticky;top:0;z-index:80;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 28px;background:rgba(5,7,14,.78);backdrop-filter:blur(16px);border-bottom:1px solid var(--panel-border)}
     .top-header-left{display:flex;align-items:center;gap:14px;min-width:0}
     .top-header-title{font-size:13px;font-weight:800;color:var(--primary);letter-spacing:.035em}
@@ -1450,21 +1451,29 @@
       $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Cybertech';
       $('profile-chip').querySelector('.avatar').textContent = (state.boot.user.name || 'H').slice(0,1).toUpperCase();
       if (state.boot.isAdmin) {
+        $('admin-sidebar').hidden = false;
+        document.body.classList.remove('auth-required');
         $('admin-nav').classList.remove('hidden');
         connectAdminRealtime();
       } else {
+        $('admin-sidebar').hidden = true;
+        document.body.classList.add('auth-required');
         $('admin-nav').classList.add('hidden');
         if (state.page === 'admin') state.page = 'customer';
       }
       renderPage();
     } catch (error) {
       if (!initData) {
+        $('admin-sidebar').hidden = true;
+        document.body.classList.add('auth-required');
         $('page-title').textContent='HENDY · ĐĂNG NHẬP ADMIN';
         $('page-subtitle').textContent='Đăng nhập website qua bot HENDY, sau đó mở lại trang quản trị.';
         $('app').innerHTML='<div class="notice warn">Mở Mini App từ nút Trung tâm khách hàng trong Telegram để xác thực initData an toàn. Không đăng nhập bằng liên kết công khai.</div>';
         $('profile-name').textContent='Chưa đăng nhập';
         return;
       }
+      $('admin-sidebar').hidden = true;
+      document.body.classList.add('auth-required');
       $('page-title').textContent='Không thể xác thực';
       $('page-subtitle').textContent='Vui lòng mở lại Website HENDY từ Telegram Bot.';
       $('app').innerHTML='<div class="notice warn">' + escapeHtml(error.message) + '</div>';
