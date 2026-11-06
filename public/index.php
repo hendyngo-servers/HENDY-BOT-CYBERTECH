@@ -15,6 +15,7 @@ require dirname(__DIR__) . '/app/Database.php';
 require dirname(__DIR__) . '/app/TelegramApi.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
 require dirname(__DIR__) . '/app/BotIdentity.php';
+require dirname(__DIR__) . '/app/TelegramLink.php';
 require dirname(__DIR__) . '/app/BotMenuDefinition.php';
 require dirname(__DIR__) . '/app/PaymentService.php';
 require dirname(__DIR__) . '/app/VideoJobService.php';
@@ -177,13 +178,31 @@ try {
         exit;
     }
 
-    // Public marketing homepage, separate from authenticated customer and admin applications.
+    // Public marketing homepage. Assets are self-hosted and isolated from customer/admin apps.
     if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
+        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
         readfile(dirname(__DIR__) . '/apps/website/landing.html');
         exit;
     }
+
+    // Public legal pages share the public design but remain outside the authenticated Mini App.
+    if ($method === 'GET' && in_array($path, ['/privacy', '/privacy/'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=1800');
+        header("Content-Security-Policy: default-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
+        readfile(dirname(__DIR__) . '/apps/website/privacy.html');
+        exit;
+    }
+    if ($method === 'GET' && in_array($path, ['/terms', '/terms/'], true)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=1800');
+        header("Content-Security-Policy: default-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
+        readfile(dirname(__DIR__) . '/apps/website/terms.html');
+        exit;
+    }
+
 
     // Customer portal and Telegram Mini App share the authenticated customer application.
     if ($method === 'GET' && in_array($path, [
@@ -226,17 +245,35 @@ try {
         ]);
     }
 
-    // Public, non-secret runtime identity. Usernames originate from getMe() sync;
-    // tokens and numeric internal identifiers are never returned to the browser.
+    // Public, non-secret runtime identity. Tokens and internal Telegram IDs never reach the browser.
     if ($method === 'GET' && $path === '/api/v1/public/config') {
-        $primary = BotIdentity::username('primary');
-        $secondary = BotIdentity::username('secondary');
+        $primary = '';
+        $secondary = '';
+        try {
+            $primary = BotIdentity::username('primary');
+        } catch (Throwable $error) {
+            error_log('Không thể đọc danh tính bot chính: ' . get_class($error));
+        }
+        try {
+            $secondary = BotIdentity::username('secondary');
+        } catch (Throwable $error) {
+            error_log('Không thể đọc danh tính bot phụ: ' . get_class($error));
+        }
+
+        $groupUrl = Hendy\TelegramLink::normalize((string) (Env::get('GROUP_URL') ?: Env::get('GROUP_CHAT_URL', '')));
+        $channelUrl = Hendy\TelegramLink::normalize((string) (Env::get('CHANNEL_URL') ?: Env::get('NEWS_CHANNEL_URL', '')));
+        $supportUrl = Hendy\TelegramLink::normalize((string) (Env::get('SUPPORT_URL') ?: $groupUrl));
+
         respond([
             'brand' => 'HENDY BOT | HENDY CYBERTECH',
+            'botConfigured' => $primary !== '',
             'botUsername' => $primary,
             'botUrl' => $primary !== '' ? 'https://t.me/' . $primary : '',
             'secondaryBotUsername' => $secondary,
             'secondaryBotUrl' => $secondary !== '' ? 'https://t.me/' . $secondary : '',
+            'groupUrl' => $groupUrl,
+            'channelUrl' => $channelUrl,
+            'supportUrl' => $supportUrl,
             'routes' => [
                 'home' => '/',
                 'admin' => '/admin',
@@ -244,6 +281,8 @@ try {
                 'miniapp' => '/miniapp',
                 'api' => '/api/v1',
                 'health' => '/health',
+                'privacy' => '/privacy',
+                'terms' => '/terms',
             ],
         ]);
     }
@@ -265,7 +304,7 @@ try {
     }
     if ($method === 'GET' && in_array($path, ['/health', '/healthz', '/api/health'], true)) {
         Database::check();
-        respond(['status' => 'ok', 'service' => 'hendy-bot-tele-php']);
+        respond(['status' => 'ok', 'service' => 'hendy-bot-cybertech']);
     }
 
     // --- ROUTE TÙY CHỈNH MỞ RỘNG ---
