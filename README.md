@@ -13,6 +13,12 @@ Nền tảng Telegram Bot bằng PHP 8.3, PostgreSQL và giao diện web quản 
 
 > Không có token mẫu được lưu trong repository. Tất cả credential phải được cấu hình bằng Render Environment hoặc GitHub Secrets; không nhập chúng vào source code, log, issue hoặc commit.
 
+## Menu Telegram và đồng bộ username
+
+Menu cố định dùng Reply Keyboard hai cột theo ảnh mẫu: MiniGame/OTP & Proxy; Nạp tiền/Trung tâm VIP; Mua Lì Xì - Code Màn - Code Tele; Trung tâm khách hàng; Nhóm chat/Kênh thông báo; VIP dịch vụ sắp triển khai. Các nút đều có action định danh; nhóm và kênh sẽ mở liên kết đã cấu hình, còn nút VIP sắp triển khai chỉ hiển thị thông báo và nút quay lại.
+
+Không cần khai báo BOT_USERNAME, BOT1_USERNAME, BOT2_USERNAME hoặc DISPLAY_NAME. Khi Render khởi động, backend gọi Telegram getMe() bằng BOT1_TOKEN (và BOT2_TOKEN nếu được cấu hình), lưu username cùng fingerprint SHA-256 của token vào PostgreSQL. Khi token đổi, username cache cũ bị xem là không hợp lệ và lần khởi động sẽ lấy username mới. Token gốc không được lưu trong bảng danh tính.
+
 ## Chạy local
 
 Yêu cầu PHP 8.3+, Composer, PostgreSQL và extensions curl, mbstring, pdo_pgsql.

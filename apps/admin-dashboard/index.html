@@ -367,8 +367,7 @@
     const memberStatus = Number(user.vipLevel || 0) > 0 ? 'VIP ' + Number(user.vipLevel) : 'Bình thường';
     const website = settings.website_url || 'https://hendy-bot-tele.onrender.com';
     const group = settings.GROUP_URL || 'https://t.me/Hendy_Support_Group';
-    const botUsername = String(settings.bot_username || state.boot.botUsername || 'hendymono_bot').replace(/^@/,'');
-    const botDisplayName = String(settings.bot_display_name || 'HENDY BOT').replace(/^@/,'');
+    const botUsername = String(state.boot.botUsername || '').replace(/^@/,'');
     const services = [
       ['minigame','🎮','Mini Game Live','Chơi game · Nhận quà','g-violet'],
       ['tools','🗂️','App / Tool','Công cụ chuyên nghiệp','g-blue'],
@@ -399,7 +398,7 @@
       '<button class="card" data-page="customer" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid #e1e9fb"><b style="font-size:13px">💎 Quản lý tài khoản và hỗ trợ</b><span class="price">Mở trung tâm →</span></button>' +
       '<div class="card"><div class="list-row"><b>🌟 Website chính thức</b><a class="price" href="' + escapeHtml(website) + '" target="_blank" rel="noopener noreferrer">Mở website ↗</a></div>' +
       '<div class="list-row"><b>💥 Cộng đồng HENDY</b><a class="price" href="' + escapeHtml(group) + '" target="_blank" rel="noopener noreferrer">Tham gia nhóm ↗</a></div>' +
-      '<div class="list-row"><b>🤖 Bot HENDY</b><a class="price" href="https://t.me/' + encodeURIComponent(botUsername) + '" target="_blank" rel="noopener noreferrer">@' + escapeHtml(botDisplayName) + '</a></div></div>' +
+      (botUsername ? '<div class="list-row"><b>🤖 Bot Telegram</b><a class="price" href="https://t.me/' + encodeURIComponent(botUsername) + '" target="_blank" rel="noopener noreferrer">@' + escapeHtml(botUsername) + '</a></div>' : '') + '</div>' +
       (state.boot.isAdmin ? '<div class="notice good" style="margin-top:12px">Tài khoản quản trị đã được xác thực. Mục Quản trị chỉ hiển thị với Admin.</div>' : '');
   }
 
@@ -757,8 +756,6 @@
       field('homepage_title','Tên thương hiệu') +
       '<div class="field"><label>Thông báo trang chủ</label><textarea name="announcement">' + escapeHtml(s.announcement || '') + '</textarea></div>' +
       field('website_url','Website chính thức (HTTPS)','url') +
-      field('bot_username','Username bot Telegram (đích liên kết)') +
-      field('bot_display_name','Tên bot hiển thị trong lời chào') +
       field('VIETQR_BANK_ID','Mã ngân hàng VietQR') +
       field('VIETQR_ACCOUNT_NO','Số tài khoản nhận tiền') +
       field('VIETQR_ACCOUNT_NAME','Tên chủ tài khoản') +
@@ -794,8 +791,8 @@
           '<div class="two-col"><label class="small"><input type="checkbox" name="persistentKeyboard" ' + (menu.persistentKeyboard ? 'checked' : '') + '> Giữ Reply Keyboard luôn hiển thị</label>' +
           '<label class="small"><input type="checkbox" name="resizeKeyboard" ' + (menu.resizeKeyboard ? 'checked' : '') + '> Tự co chiều cao bàn phím</label></div>' +
           '<div class="field"><label>JSON tên nút theo action</label><textarea name="buttonLabels" rows="5" spellcheck="false">' + json(menu.buttonLabels) + '</textarea><div class="json-help">Ví dụ: {"live":"🚀 MINI GAME","wallet":"💳 NẠP TIỀN"}.</div></div>' +
-          '<div class="field"><label>JSON mô tả chức năng từng nút</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Các mô tả xuất hiện trong phần giới thiệu menu. Action hợp lệ: live, tools, codes, wallet, otp, viptools, customer, miniapp, vietsub, history, jobs, ref, vip, group, news, gift, support, admin.</div></div>' +
-          '<div class="field"><label>JSON màu cho từng nút</label><textarea name="buttonStyles" rows="5" spellcheck="false">' + json(menu.buttonStyles) + '</textarea><div class="json-help">Chỉ dùng primary (xanh dương), success (xanh lá), danger (đỏ). Ví dụ: {"live":"primary","wallet":"success","gift":"success","support":"danger"}.</div></div>' +
+          '<div class="field"><label>JSON mô tả chức năng từng nút</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Các mô tả xuất hiện trong phần giới thiệu menu. Action hợp lệ: live, otp, wallet, vip, codes, customer, group, news, vip-coming-soon, admin.</div></div>' +
+          '<div class="field"><label>JSON màu cho từng nút</label><textarea name="buttonStyles" rows="5" spellcheck="false">' + json(menu.buttonStyles) + '</textarea><div class="json-help">Chỉ dùng primary (xanh dương), success (xanh lá), danger (đỏ). Ví dụ: {"live":"danger","otp":"primary","wallet":"danger","codes":"success"}.</div></div>' +
           '<div class="field"><label>JSON Custom Emoji ID (tùy chọn)</label><textarea name="buttonIcons" rows="4" spellcheck="false">' + json(menu.buttonIcons) + '</textarea><div class="json-help">Nhập ID custom emoji dạng số theo action (ví dụ {"live":"5368324170671202286"}). ID phải thuộc emoji mà bot được phép dùng. Telegram keyboard hỗ trợ custom emoji, nhưng hiệu ứng CSS/7 màu đầy đủ chỉ hiển thị trong Website HENDY.</div></div>' +
           '<button class="primary">Lưu cấu hình ' + (menu.botKey === 'primary' ? 'Bot chính' : 'Bot thứ hai') + '</button>' +
           '</form>';

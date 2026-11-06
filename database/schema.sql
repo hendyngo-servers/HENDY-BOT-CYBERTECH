@@ -215,23 +215,16 @@ WHERE key = 'website_url' AND value = 'https://lethituanem.com';
 
 INSERT INTO app_settings (key, value, is_public)
 VALUES
-    ('GROUP_URL', 'https://t.me/Hendy_Support_Group', TRUE),
-    ('bot_username', 'hendymono_bot', TRUE),
-    ('bot_display_name', 'HendyBot_Bot', TRUE)
+    ('GROUP_URL', 'https://t.me/Hendy_Support_Group', TRUE)
 ON CONFLICT (key) DO NOTHING;
+
+-- Bot usernames are fetched dynamically with Telegram getMe(); remove legacy editable name settings.
+DELETE FROM app_settings WHERE key IN ('bot_username', 'bot_display_name');
 
 -- Migrate only the old bundled defaults; preserve any administrator customization.
 UPDATE app_settings
 SET value = 'https://t.me/Hendy_Support_Group', updated_at = NOW()
 WHERE key = 'GROUP_URL' AND value = 'https://t.me/lethituanem_nhomchat';
-
-UPDATE app_settings
-SET value = 'hendymono_bot', updated_at = NOW()
-WHERE key = 'bot_username' AND value = 'tuanem2027_bot';
-
-UPDATE app_settings
-SET value = 'HENDY BOT 1', updated_at = NOW()
-WHERE key = 'bot_display_name' AND value = 'HendyBot_Bot';
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
@@ -248,6 +241,45 @@ CREATE TABLE IF NOT EXISTS bot_menu_configs (
 );
 
 ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Runtime bot identity cache: store public username and token fingerprint only.
+CREATE TABLE IF NOT EXISTS bot_runtime_identity (
+    bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
+    bot_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    token_fingerprint CHAR(64) NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Apply the approved persistent keyboard layout while preserving unrelated settings.
+UPDATE bot_menu_configs
+SET menu_mode = 'reply_keyboard',
+    menu_columns = 2,
+    persistent_keyboard = TRUE,
+    resize_keyboard = TRUE,
+    button_labels = COALESCE(button_labels, '{}'::jsonb) || '{
+        "live": "🚀 MINIGAME LIVE",
+        "otp": "📲 OTP & PROXY",
+        "wallet": "💳 NẠP TIỀN",
+        "vip": "👑 TRUNG TÂM VIP",
+        "codes": "🎁 MUA LÌ XÌ - CODE MÀN - CODE TELE",
+        "customer": "💠 TRUNG TÂM KHÁCH HÀNG",
+        "group": "🗣️ NHÓM CHAT ↗",
+        "news": "📢 KÊNH THÔNG BÁO ↗",
+        "vip-coming-soon": "👑 VIP DỊCH VỤ SẮP TRIỂN KHAI"
+    }'::jsonb,
+    button_styles = COALESCE(button_styles, '{}'::jsonb) || '{
+        "live": "danger",
+        "otp": "primary",
+        "wallet": "danger",
+        "vip": "primary",
+        "codes": "success",
+        "customer": "primary",
+        "group": "primary",
+        "news": "primary",
+        "vip-coming-soon": "primary"
+    }'::jsonb,
+    updated_at = NOW();
 
 CREATE TABLE IF NOT EXISTS admin_audit (
     id BIGSERIAL PRIMARY KEY,

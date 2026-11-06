@@ -18,39 +18,6 @@ final class BotService
     ];
 
 
-    private const MENU = [
-        ['action' => 'live', 'label' => '🚀 MINIGAME LIVE', 'description' => 'Kho tài khoản, dịch vụ Mini Game và hỗ trợ đơn.', 'style' => 'primary'],
-        ['action' => 'tools', 'label' => '🧰 THUÊ TOOL', 'description' => 'Thuê công cụ và theo dõi thời hạn.', 'style' => 'success'],
-        ['action' => 'codes', 'label' => '🎁 MUA CODE', 'description' => 'Mua mã và theo dõi đơn hàng.', 'style' => 'danger'],
-        ['action' => 'wallet', 'label' => '💳 NẠP TIỀN', 'description' => 'Tạo QR VietQR và xem trạng thái duyệt.', 'style' => 'success'],
-        ['action' => 'otp', 'label' => '📲 OTP & PROXY', 'description' => 'Thuê OTP, Proxy và quản lý kho đã thuê.', 'style' => 'primary'],
-        ['action' => 'viptools', 'label' => '💎 KHO VIP', 'description' => 'Công cụ và ưu đãi dành cho thành viên VIP.', 'style' => 'danger'],
-        ['action' => 'customer', 'label' => '👤 TRUNG TÂM KHÁCH HÀNG', 'description' => 'Hồ sơ, ví, tài khoản liên kết và lịch sử.', 'style' => 'primary'],
-        ['action' => 'miniapp', 'label' => '🌈 MỞ WEBSITE HENDY', 'description' => 'Mở website dịch vụ HENDY đã tích hợp đầy đủ tính năng dành riêng cho bot này.', 'style' => 'success'],
-        ['action' => 'vietsub', 'label' => '🎬 DỊCH VỤ VIETSUB', 'description' => 'Gửi video vào hàng đợi xử lý phụ đề.', 'style' => 'primary'],
-        ['action' => 'history', 'label' => '📜 LỊCH SỬ GIAO DỊCH', 'description' => 'Tra cứu yêu cầu nạp và biến động số dư.', 'style' => 'success'],
-        ['action' => 'jobs', 'label' => '📂 VIDEO JOBS', 'description' => 'Theo dõi tiến độ xử lý video.', 'style' => 'primary'],
-        ['action' => 'ref', 'label' => '🎊 GIỚI THIỆU REF', 'description' => 'Chia sẻ mã giới thiệu và theo dõi hoa hồng.', 'style' => 'danger'],
-        ['action' => 'vip', 'label' => '👑 TRUNG TÂM VIP', 'description' => 'Cấp VIP, quyền lợi và điểm danh.', 'style' => 'success'],
-        ['action' => 'group', 'label' => '💬 NHÓM CHAT', 'description' => 'Kết nối cộng đồng HENDY.', 'style' => 'primary'],
-        ['action' => 'news', 'label' => '📢 KÊNH THÔNG BÁO', 'description' => 'Nhận cập nhật dịch vụ và thông báo.', 'style' => 'danger'],
-        ['action' => 'gift', 'label' => '🎟️ GIFTCODE', 'description' => 'Kích hoạt mã quà tặng.', 'style' => 'success'],
-        ['action' => 'support', 'label' => '🧑‍💻 LIÊN HỆ CSKH', 'description' => 'Tạo ticket hỗ trợ với đội ngũ HENDY.', 'style' => 'primary'],
-    ];
-
-    private const MENU_LAYOUT = [
-        ['live', 'tools'],
-        ['codes'],
-        ['wallet', 'otp'],
-        ['viptools'],
-        ['customer'],
-        ['miniapp'],
-        ['vietsub', 'history'],
-        ['jobs', 'ref'],
-        ['vip', 'group', 'news'],
-        ['gift', 'support'],
-    ];
-
     private TelegramApi $telegram;
     private string $botKey;
 
@@ -377,10 +344,8 @@ final class BotService
             default => 'buổi đêm',
         };
         $name = $firstName !== '' ? $firstName : ($username !== '' ? '@' . $username : 'bạn');
-        $botLabel = trim((string) Env::get(
-            $this->botKey === 'secondary' ? 'BOT2_DISPLAY_NAME' : 'BOT1_DISPLAY_NAME',
-            $this->botKey === 'secondary' ? 'HENDY BOT THỬ NGHIỆM' : 'HENDY BOT CHÍNH'
-        ));
+        $botUsername = BotIdentity::username($this->botKey);
+        $botLabel = $botUsername !== '' ? '@' . $botUsername : 'HENDY BOT';
         $vipLevel = (int) ($user['vip_level'] ?? 0);
         $intro = trim((string) ($config['intro_text'] ?? ''));
 
@@ -404,11 +369,7 @@ final class BotService
         if ($intro !== '') $lines[] = self::escape($intro);
         $links = ['<a href="' . self::escape($websiteUrl) . '">🌐 Website HENDY</a>'];
         if (self::isHttpsUrl($groupUrl)) $links[] = '<a href="' . self::escape($groupUrl) . '">💬 Nhóm hỗ trợ</a>';
-        $botUsername = trim(ltrim((string) Env::get(
-            $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME',
-            $this->botKey === 'secondary' ? 'hendymono_bot' : 'HendyBot_Bot'
-        ), '@'));
-        if (preg_match('/^[A-Za-z0-9_]{5,32}$/', $botUsername)) {
+        if ($botUsername !== '') {
             $links[] = '<a href="https://t.me/' . self::escape($botUsername) . '">🤖 @' . self::escape($botUsername) . '</a>';
         }
         $lines[] = implode(' · ', $links);
@@ -443,7 +404,7 @@ final class BotService
         $icons = self::jsonArray($config['button_icons'] ?? []);
         $items = [];
 
-        foreach (self::MENU as $item) {
+        foreach (BotMenuDefinition::ITEMS as $item) {
             $action = $item['action'];
             $items[] = [
                 ...$item,
@@ -472,7 +433,7 @@ final class BotService
         foreach ($items as $item) $byAction[(string) $item['action']] = $item;
         $rows = [];
         $used = [];
-        foreach (self::MENU_LAYOUT as $layout) {
+        foreach (BotMenuDefinition::LAYOUT as $layout) {
             $row = [];
             foreach ($layout as $action) {
                 if (isset($byAction[$action])) {
@@ -774,6 +735,17 @@ final class BotService
                 return;
             case 'vip-info':
                 $this->showVipInfo($chatId, $userId);
+                return;
+            case 'vip-coming-soon':
+                $this->telegram->sendMessage(
+                    $chatId,
+                    '🚧 <b>VIP DỊCH VỤ ĐANG ĐƯỢC TRIỂN KHAI</b>' . "\n" .
+                    'Các gói dịch vụ VIP mới đang được hoàn thiện. HENDY sẽ thông báo khi mở bán chính thức.',
+                    ['reply_markup' => $this->inlineMenu([
+                        [['text' => '👑 TRUNG TÂM VIP', 'callback_data' => 'member:vip']],
+                        [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+                    ])]
+                );
                 return;
             case 'group':
             case 'news':
@@ -1790,17 +1762,7 @@ final class BotService
 
     private function showReferral(string $chatId, string $userId): void
     {
-        $usernameKey = $this->botKey === 'secondary' ? 'BOT2_USERNAME' : 'BOT1_USERNAME';
-        $defaultUsername = $this->botKey === 'secondary' ? 'HendyBot_Bot' : 'hendymono_bot';
-        $botUsername = ltrim((string) Env::get($usernameKey, $defaultUsername), '@');
-        if ($botUsername === '') {
-            try {
-                $me = $this->telegram->getMe();
-                $botUsername = (string) ($me['username'] ?? '');
-            } catch (Throwable) {
-                $botUsername = '';
-            }
-        }
+        $botUsername = BotIdentity::username($this->botKey);
         $count = (int) Database::value('SELECT COUNT(*) FROM users WHERE ref_by = ?', [$userId]);
         $reward = (int) Database::value(
             "SELECT COALESCE(SUM(amount), 0) FROM wallet_ledger WHERE user_id = ? AND transaction_type = 'REFERRAL_REWARD'",
