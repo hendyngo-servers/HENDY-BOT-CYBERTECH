@@ -530,6 +530,13 @@ final class ApiController
             if ($url === '' || !preg_match('#^wss://#i', $url)) throw new HttpException(503, 'WebSocket WSS chưa được cấu hình.');
             return self::response(['ticket' => $ticket, 'url' => $url, 'audience' => 'admin', 'expiresInSeconds' => 60]);
         }
+        if ($method === 'GET' && $path === '/api/admin/audit-log') {
+            $limit = max(10, min(100, (int) ($this->query['limit'] ?? 50)));
+            return self::response(['events' => Database::all(
+                'SELECT id, admin_user_id, action, target, details, created_at FROM admin_audit ORDER BY created_at DESC LIMIT ?',
+                [$limit]
+            )]);
+        }
         if ($method === 'GET' && $path === '/api/admin/overview') {
             $paymentStats = PaymentService::stats();
             $videoStats = VideoJobService::stats();

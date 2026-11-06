@@ -183,9 +183,10 @@ try {
         exit;
     }
 
-    if ($method === 'GET' && in_array($path, ['/admin', '/admin/'], true)) {
+    if ($method === 'GET' && in_array($path, ['/admin', '/admin/', '/miniapp', '/miniapp/'], true)) {
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: no-store');
+        header('X-Robots-Tag: noindex, nofollow');
         readfile(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
         exit;
     }
