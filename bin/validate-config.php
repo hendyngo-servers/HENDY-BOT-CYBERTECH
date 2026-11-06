@@ -83,19 +83,21 @@ if ($autoWebhook) {
         $errors[] = 'APP_URL hoặc RENDER_EXTERNAL_URL phải là URL HTTPS khi bật WEBHOOK_AUTO_REGISTER.';
     }
 
-    // Webhook secrets are optional overrides. Missing or malformed values
-    // fall back to stable per-bot secrets derived by TelegramAuth.
-    foreach (['TELEGRAM_WEBHOOK_SECRET', 'TELEGRAM_SECOND_WEBHOOK_SECRET'] as $secretName) {
-        $configuredSecret = trim((string) Hendy\Env::get($secretName, ''));
+    // Explicit environment overrides are optional. If omitted or invalid,
+    // TelegramAuth creates a persistent random secret after PostgreSQL migrations.
+    $primaryOverride = trim((string) Hendy\Env::get('TELEGRAM_WEBHOOK_SECRET', ''));
+    $secondaryOverride = trim((string) Hendy\Env::get('TELEGRAM_SECOND_WEBHOOK_SECRET', ''));
+    foreach ([
+        'TELEGRAM_WEBHOOK_SECRET' => $primaryOverride,
+        'TELEGRAM_SECOND_WEBHOOK_SECRET' => $secondaryOverride,
+    ] as $secretName => $configuredSecret) {
         if ($configuredSecret !== '' && preg_match($secretPattern, $configuredSecret) !== 1) {
-            $warnings[] = $secretName . ' không hợp lệ; backend sẽ dùng secret dẫn xuất theo token bot.';
+            $warnings[] = $secretName . ' không hợp lệ; backend sẽ tự tạo secret ngẫu nhiên riêng trong PostgreSQL.';
         }
     }
-    if ($bot2 !== '' && hash_equals(
-        Hendy\TelegramAuth::webhookSecret('primary'),
-        Hendy\TelegramAuth::webhookSecret('secondary')
-    )) {
-        $errors[] = 'Không thể tạo webhook secret riêng cho BOT1 và BOT2.';
+    if ($bot2 !== '' && $primaryOverride !== '' && $secondaryOverride !== ''
+        && hash_equals($primaryOverride, $secondaryOverride)) {
+        $errors[] = 'TELEGRAM_WEBHOOK_SECRET và TELEGRAM_SECOND_WEBHOOK_SECRET phải khác nhau.';
     }
 }
 
