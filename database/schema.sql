@@ -218,7 +218,7 @@ VALUES
     ('GROUP_URL', 'https://t.me/Hendy_Support_Group', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
--- Bot usernames are fetched dynamically with Telegram getMe(); remove legacy editable name settings.
+-- Legacy editable bot-name settings are retired; public Telegram URLs now come from deployment environment.
 DELETE FROM app_settings WHERE key IN ('bot_username', 'bot_display_name');
 
 -- Migrate only the old bundled defaults; preserve any administrator customization.
@@ -241,15 +241,6 @@ CREATE TABLE IF NOT EXISTS bot_menu_configs (
 );
 
 ALTER TABLE bot_menu_configs ADD COLUMN IF NOT EXISTS button_icons JSONB NOT NULL DEFAULT '{}'::jsonb;
-
--- Runtime bot identity cache: store public username and token fingerprint only.
-CREATE TABLE IF NOT EXISTS bot_runtime_identity (
-    bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
-    bot_id TEXT NOT NULL,
-    username TEXT NOT NULL,
-    token_fingerprint CHAR(64) NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
 
 -- Apply the approved persistent keyboard layout while preserving unrelated settings.
 UPDATE bot_menu_configs
