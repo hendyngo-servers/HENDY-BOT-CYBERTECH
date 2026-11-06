@@ -74,7 +74,7 @@ jobs:
           DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
           DATABASE_SSL: "false"
           TELEGRAM_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-          TELEGRAM_SECOND_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          TELEGRAM_SECOND_WEBHOOK_SECRET: "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
           WEBHOOK_AUTO_REGISTER: "true"
           BANK_WEBHOOK_ENABLED: "false"
         run: |

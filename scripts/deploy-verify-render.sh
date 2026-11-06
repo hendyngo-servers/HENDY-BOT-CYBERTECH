@@ -4,9 +4,8 @@ set +x
 
 : "${RENDER_API_KEY:?Thiếu RENDER_API_KEY}"
 : "${RENDER_SERVICE_ID:?Thiếu RENDER_SERVICE_ID}"
-: "${APP_URL:?Thiếu APP_URL}"
+: "${APP_URL:=https://hendy-bot-cybertech.onrender.com}"
 : "${BOT1_TOKEN:?Thiếu BOT1_TOKEN}"
-: "${TELEGRAM_WEBHOOK_SECRET:?Thiếu TELEGRAM_WEBHOOK_SECRET}"
 : "${GITHUB_SHA:?Thiếu GITHUB_SHA}"
 
 base_url="${APP_URL%/}"
@@ -128,7 +127,6 @@ fi
 
 verify_bot "Bot chính" "$BOT1_TOKEN" "$base_url/webhook/telegram"
 if [[ -n "${BOT2_TOKEN:-}" ]]; then
-  : "${TELEGRAM_SECOND_WEBHOOK_SECRET:?Bot 2 đang bật nhưng thiếu webhook secret}"
   verify_bot "Bot phụ" "$BOT2_TOKEN" "$base_url/webhook/telegram/secondary"
 fi
 

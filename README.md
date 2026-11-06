@@ -35,7 +35,7 @@ Yêu cầu PHP 8.3+, Composer, PostgreSQL và extensions curl, mbstring, pdo_pgs
     php bin/migrate.php
     php -S 127.0.0.1:8080 -t public
 
-Điền .env bằng credential riêng của bạn. BOT1_TOKEN, ADMIN_ID/ADMIN_IDS, DATABASE_URL và TELEGRAM_WEBHOOK_SECRET là các giá trị cần thiết cho triển khai webhook. Có thể để BOT2_TOKEN trống nếu không chạy bot thử nghiệm.
+Điền .env bằng credential riêng của bạn. BOT1_TOKEN, ADMIN_ID/ADMIN_IDS và DATABASE_URL là các giá trị cần thiết. TELEGRAM_WEBHOOK_SECRET và TELEGRAM_SECOND_WEBHOOK_SECRET là override tùy chọn; nếu để trống hoặc sai định dạng, backend tự dẫn xuất secret riêng từ token từng bot.
 
 Tạo secret ngẫu nhiên:
 
@@ -45,12 +45,12 @@ Mỗi bot phải có token và webhook secret riêng. Không sử dụng cùng m
 
 ## Triển khai Render
 
-1. Kết nối repository này với Render và chọn Blueprint từ render.yaml.
-2. Tạo PostgreSQL cùng region với Web Service để có thể dùng Internal Database URL.
-3. Cấu hình Environment: BOT1_TOKEN, ADMIN_ID hoặc ADMIN_IDS, APP_URL (URL HTTPS công khai), ALLOWED_ORIGINS và các thông tin thanh toán/CSKH cần dùng.
-4. Nếu bật bot thử nghiệm, thêm BOT2_TOKEN và TELEGRAM_SECOND_WEBHOOK_SECRET. Nếu chỉ chạy một bot, để BOT2_TOKEN trống.
-5. Giữ BANK_WEBHOOK_ENABLED=false cho đến khi đã triển khai adapter xác minh chữ ký đúng theo nhà cung cấp ngân hàng.
-6. Deploy. Container sẽ kiểm tra cấu hình, chờ PostgreSQL, chạy migration và đăng ký webhook nếu WEBHOOK_AUTO_REGISTER=true.
+1. Kết nối repository này với Render Web Service `HENDY-BOT-CYBERTECH`, nhánh `main`, vùng Singapore.
+2. Giữ `DATABASE_URL` trỏ tới PostgreSQL riêng của dự án; không dùng database của ứng dụng khác. Đặt `DATABASE_SSL=true` cho Neon/database ngoài hoặc `false` chỉ khi dùng Internal URL của Render.
+3. Cấu hình `BOT1_TOKEN`, `ADMIN_ID` hoặc `ADMIN_IDS`; để `APP_URL` trống để tự dùng `RENDER_EXTERNAL_URL`, hoặc khai báo custom domain HTTPS.
+4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN`; webhook secret có thể để trống vì backend tự dẫn xuất secret riêng cho mỗi bot.
+5. Giữ `BANK_WEBHOOK_ENABLED=false` đến khi tích hợp adapter xác minh chữ ký của ngân hàng.
+6. Deploy. Container kiểm tra cấu hình, chờ PostgreSQL, chạy migration, gọi `getMe()` và đăng ký webhook nếu `WEBHOOK_AUTO_REGISTER=true`.
 
 Với Render PostgreSQL nội bộ, đặt DATABASE_SSL=false nếu connection string nội bộ của Render yêu cầu. Với Neon hoặc database ngoài, bật TLS (DATABASE_SSL=true) và dùng URL do nhà cung cấp cấp.
 

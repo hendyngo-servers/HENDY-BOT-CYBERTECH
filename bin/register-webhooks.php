@@ -21,12 +21,12 @@ $validBaseUrl = is_array($baseParts)
 $bots = [
     'primary' => [
         'token' => Hendy\TelegramAuth::token('primary'),
-        'secret' => (string) Hendy\Env::get('TELEGRAM_WEBHOOK_SECRET', ''),
+        'secret' => Hendy\TelegramAuth::webhookSecret('primary'),
         'path' => '/webhook/telegram',
     ],
     'secondary' => [
         'token' => Hendy\TelegramAuth::token('secondary'),
-        'secret' => (string) Hendy\Env::get('TELEGRAM_SECOND_WEBHOOK_SECRET', ''),
+        'secret' => Hendy\TelegramAuth::webhookSecret('secondary'),
         'path' => '/webhook/telegram/secondary',
     ],
 ];

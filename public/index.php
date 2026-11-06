@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/app/Realtime.php';
 require dirname(__DIR__) . '/app/ModuleRegistry.php';
 require dirname(__DIR__) . '/app/WebServiceContract.php';
 require dirname(__DIR__) . '/app/WebServiceKernel.php';
-require dirname(__DIR__) . '/app/WebServices/SystemWebService.php';
+require dirname(__DIR__) . '/app/SystemWebService.php';
 require dirname(__DIR__) . '/app/ApiController.php';
 
 Env::load(dirname(__DIR__) . '/.env');
@@ -43,7 +43,7 @@ function processBankDeposit(array $body): array
 {
     $secret = (string) Env::get('BANK_WEBHOOK_SECRET', '');
     $received = (string) ($_SERVER['HTTP_X_BANK_WEBHOOK_SECRET'] ?? '');
-    if ($secret === '' || !hash_equals(normalizedSecret($secret), normalizedSecret($received))) {
+    if (!WebhookSecurity::verifySecret($secret, $received)) {
         throw new HttpException(401, 'Webhook secret không hợp lệ.');
     }
 
@@ -296,10 +296,9 @@ try {
         if ($token === '') {
             throw new HttpException(404, 'Bot được yêu cầu chưa được bật.');
         }
-        $secretName = $botKey === 'secondary' ? 'TELEGRAM_SECOND_WEBHOOK_SECRET' : 'TELEGRAM_WEBHOOK_SECRET';
-        $expected = normalizedSecret((string) Env::get($secretName, ''));
-        $received = normalizedSecret((string) ($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? ''));
-        if ($expected === '' || !hash_equals($expected, $received)) {
+        $expected = TelegramAuth::webhookSecret($botKey);
+        $received = (string) ($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '');
+        if (!WebhookSecurity::verifySecret($expected, $received)) {
             throw new HttpException(401, 'Webhook secret không hợp lệ.');
         }
 
