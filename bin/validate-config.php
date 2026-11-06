@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/Env.php';
 require dirname(__DIR__) . '/app/TelegramAuth.php';
+require dirname(__DIR__) . '/app/TelegramLink.php';
 
 Hendy\Env::load(dirname(__DIR__) . '/.env');
 
@@ -11,6 +12,13 @@ $bot1 = Hendy\TelegramAuth::token('primary');
 $bot2 = Hendy\TelegramAuth::token('secondary');
 $admin = trim((string) Hendy\Env::get('ADMIN_ID', ''));
 $adminList = trim((string) Hendy\Env::get('ADMIN_IDS', ''));
+
+foreach (['BOT1_PUBLIC_URL', 'BOT2_PUBLIC_URL'] as $publicUrlName) {
+    $publicUrl = trim((string) Hendy\Env::get($publicUrlName, ''));
+    if ($publicUrl !== '' && Hendy\TelegramLink::normalize($publicUrl) === '') {
+        $errors[] = $publicUrlName . ' phải là liên kết HTTPS Telegram hợp lệ dạng https://t.me/<bot_username>.';
+    }
+}
 
 $botTokenPattern = '~\\A[0-9]{5,12}:[A-Za-z0-9_-]{30,}\\z~D';
 $adminPattern = '~\A[0-9]{5,20}\z~D';
