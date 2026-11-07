@@ -182,7 +182,7 @@ try {
     if ($method === 'GET' && in_array($path, ['/', '/index.html'], true)) {
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
-        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
+        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
         readfile(dirname(__DIR__) . '/apps/website/landing.html');
         exit;
     }
