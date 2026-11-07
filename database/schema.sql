@@ -270,185 +270,38 @@ SET menu_mode = 'reply_keyboard',
     persistent_keyboard = TRUE,
     resize_keyboard = TRUE,
     button_labels = COALESCE(button_labels, '{}'::jsonb) || '{
-        "live": "🚀 MINIGAME LIVE",
-        "otp": "📲 OTP & PROXY",
-        "wallet": "💳 NẠP TIỀN",
-        "vip": "👑 TRUNG TÂM VIP",
+        "live": "🎮 MINI GAME LIVE",
+        "tools": "🧰 THUÊ TOOL (NEW)",
         "codes": "🎁 MUA LÌ XÌ - CODE MÀN - CODE TELE",
-        "customer": "💠 TRUNG TÂM KHÁCH HÀNG",
-        "group": "🗣️ NHÓM CHAT ↗",
+        "wallet": "💳 NẠP TIỀN",
+        "otp": "🛡️ OTP & PROXY",
+        "viptools": "👑 KHO CÔNG CỤ ĐỘC QUYỀN",
+        "customer": "💠 TRUNG TÂM KHÁCH HÀNG HENDY",
+        "matchmaking": "⚔️ HỆ THỐNG GHÉP ĐỐI ĐẤU",
+        "ref": "🎊 GIỚI THIỆU REF",
+        "vip": "👑 TRUNG TÂM VIP",
+        "group": "👥 NHÓM CHAT ↗",
         "news": "📢 KÊNH THÔNG BÁO ↗",
-        "vip-coming-soon": "👑 VIP DỊCH VỤ SẮP TRIỂN KHAI"
+        "gift": "🎟️ NHẬP GIFTCODE",
+        "support": "🧑🏻‍💻 LIÊN HỆ CSKH ↗"
     }'::jsonb,
     button_styles = COALESCE(button_styles, '{}'::jsonb) || '{
         "live": "danger",
-        "otp": "primary",
-        "wallet": "danger",
-        "vip": "primary",
+        "tools": "primary",
         "codes": "success",
+        "wallet": "danger",
+        "otp": "primary",
+        "viptools": "success",
         "customer": "primary",
+        "matchmaking": "danger",
+        "ref": "primary",
+        "vip": "success",
         "group": "primary",
         "news": "primary",
-        "vip-coming-soon": "primary"
+        "gift": "success",
+        "support": "primary"
     }'::jsonb,
     updated_at = NOW();
-
-CREATE TABLE IF NOT EXISTS admin_audit (
-    id BIGSERIAL PRIMARY KEY,
-    admin_user_id TEXT NOT NULL,
-    action TEXT NOT NULL,
-    target TEXT NOT NULL DEFAULT '',
-    details JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS legacy_login_tickets (
-    token_hash CHAR(64) PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    bot_key TEXT NOT NULL CHECK (bot_key IN ('primary','secondary')),
-    expires_at TIMESTAMPTZ NOT NULL,
-    consumed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS linked_accounts (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    brand TEXT NOT NULL,
-    username TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(user_id, brand, username)
-);
-CREATE INDEX IF NOT EXISTS idx_linked_accounts_user ON linked_accounts(user_id, created_at DESC);
-
-CREATE TABLE IF NOT EXISTS matchmaking_matches (
-    id BIGSERIAL PRIMARY KEY,
-    player_one TEXT NOT NULL,
-    player_two TEXT NOT NULL,
-    mode TEXT NOT NULL DEFAULT 'quick',
-    status TEXT NOT NULL DEFAULT 'matched',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    finished_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS matchmaking_queue (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    mode TEXT NOT NULL DEFAULT 'quick',
-    status TEXT NOT NULL DEFAULT 'waiting',
-    matched_user_id TEXT,
-    match_id BIGINT REFERENCES matchmaking_matches(id),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_matchmaking_one_waiting
-    ON matchmaking_queue(user_id) WHERE status = 'waiting';
-CREATE INDEX IF NOT EXISTS idx_matchmaking_mode_waiting
-    ON matchmaking_queue(mode, status, created_at);
-
--- Matchmaking progression: Elo rating, non-cash points and bilateral result review.
-CREATE TABLE IF NOT EXISTS matchmaking_player_stats (
-    user_id TEXT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    rating INTEGER NOT NULL DEFAULT 1000,
-    points BIGINT NOT NULL DEFAULT 0 CHECK (points >= 0),
-    matches_played INTEGER NOT NULL DEFAULT 0 CHECK (matches_played >= 0),
-    wins INTEGER NOT NULL DEFAULT 0 CHECK (wins >= 0),
-    losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0),
-    draws INTEGER NOT NULL DEFAULT 0 CHECK (draws >= 0),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_matchmaking_stats_leaderboard
-    ON matchmaking_player_stats(rating DESC, points DESC, matches_played ASC);
-
-CREATE TABLE IF NOT EXISTS matchmaking_results (
-    id BIGSERIAL PRIMARY KEY,
-    match_id BIGINT NOT NULL UNIQUE REFERENCES matchmaking_matches(id) ON DELETE CASCADE,
-    reported_by TEXT NOT NULL REFERENCES users(user_id),
-    score_one INTEGER NOT NULL CHECK (score_one BETWEEN 0 AND 999),
-    score_two INTEGER NOT NULL CHECK (score_two BETWEEN 0 AND 999),
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'disputed')),
-    confirmed_by TEXT REFERENCES users(user_id),
-    rating_delta_one INTEGER NOT NULL DEFAULT 0,
-    rating_delta_two INTEGER NOT NULL DEFAULT 0,
-    points_awarded_one INTEGER NOT NULL DEFAULT 0,
-    points_awarded_two INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    confirmed_at TIMESTAMPTZ
-);
-CREATE INDEX IF NOT EXISTS idx_matchmaking_results_status
-    ON matchmaking_results(status, created_at DESC);
-
-CREATE TABLE IF NOT EXISTS bot_pending_inputs (
-    user_id TEXT NOT NULL,
-    bot_key TEXT NOT NULL CHECK (bot_key IN ('primary','secondary')),
-    input_type TEXT NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-    expires_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (user_id, bot_key)
-);
-
-CREATE TABLE IF NOT EXISTS telegram_updates (
-    bot_key TEXT NOT NULL CHECK (bot_key IN ('primary','secondary')),
-    update_id BIGINT NOT NULL,
-    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (bot_key, update_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category, is_active);
-CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_wallet_user_created ON wallet_ledger(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_tickets_user_created ON support_tickets(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_legacy_login_expiry ON legacy_login_tickets(expires_at);
-
-INSERT INTO app_settings (key, value, is_public) VALUES
-    ('homepage_title', 'Hendy Bot', TRUE),
-    ('announcement', '', TRUE),
-    ('VIETQR_BANK_ID', '', TRUE),
-    ('VIETQR_ACCOUNT_NO', '', TRUE),
-    ('VIETQR_ACCOUNT_NAME', '', TRUE),
-    ('GROUP_URL', '', TRUE),
-    ('CHANNEL_URL', '', TRUE),
-    ('referral_commission_percent', '0', TRUE),
-    ('support_message', 'Đội ngũ CSKH sẽ phản hồi trong thời gian sớm nhất.', TRUE)
-ON CONFLICT (key) DO NOTHING;
-
-INSERT INTO bot_menu_configs (bot_key, menu_mode, intro_text, menu_columns, persistent_keyboard, resize_keyboard)
-VALUES
-    ('primary', 'reply_keyboard', 'Chào mừng bạn đến với HENDY BOT. Chọn dịch vụ ở bàn phím phía dưới để bắt đầu.', 2, TRUE, TRUE),
-    ('secondary', 'inline_keyboard', 'Chào mừng bạn đến với HENDY BOT. Chọn một chức năng để tiếp tục.', 2, TRUE, TRUE)
-ON CONFLICT (bot_key) DO NOTHING;
-
--- Re-apply the selected layout after seeding so a fresh database receives it too.
-UPDATE bot_menu_configs
-SET menu_mode = 'reply_keyboard',
-    menu_columns = 2,
-    persistent_keyboard = TRUE,
-    resize_keyboard = TRUE,
-    button_labels = COALESCE(button_labels, '{}'::jsonb) || '{
-        "live": "🚀 MINIGAME LIVE",
-        "otp": "📲 OTP & PROXY",
-        "wallet": "💳 NẠP TIỀN",
-        "vip": "👑 TRUNG TÂM VIP",
-        "codes": "🎁 MUA LÌ XÌ - CODE MÀN - CODE TELE",
-        "customer": "💠 TRUNG TÂM KHÁCH HÀNG",
-        "group": "🗣️ NHÓM CHAT ↗",
-        "news": "📢 KÊNH THÔNG BÁO ↗",
-        "vip-coming-soon": "👑 VIP DỊCH VỤ SẮP TRIỂN KHAI"
-    }'::jsonb,
-    button_styles = COALESCE(button_styles, '{}'::jsonb) || '{
-        "live": "danger",
-        "otp": "primary",
-        "wallet": "danger",
-        "vip": "primary",
-        "codes": "success",
-        "customer": "primary",
-        "group": "primary",
-        "news": "primary",
-        "vip-coming-soon": "primary"
-    }'::jsonb,
-    updated_at = NOW();
-
 
 -- Durable event stream and one-time WebSocket authentication tickets.
 CREATE TABLE IF NOT EXISTS realtime_events (
