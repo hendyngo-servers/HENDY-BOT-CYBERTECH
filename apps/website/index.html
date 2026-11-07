@@ -149,6 +149,82 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 .customer-linked{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px;border-radius:13px;background:#101728;border:1px solid #2f4160}.customer-linked span{display:block;font-size:10px;color:#9eacc7;margin-top:5px}.customer-tabs{display:flex;overflow-x:auto;gap:8px;padding:8px 0;margin-top:18px;scrollbar-width:thin}.customer-tabs button{white-space:nowrap;flex:none;border:1px solid #2d3b56;border-radius:11px;background:#0d1423;color:#aab8d0;padding:11px 13px;font-size:10px;font-weight:950}.customer-tabs button.active{border-color:#22c9ed;color:#fff;background:#103245;box-shadow:0 0 15px #13bde833}.customer-tab-content{min-height:170px;padding:12px;border-radius:15px;border:1px solid #3a465d;background:linear-gradient(145deg,#080b11,#06080d)}.customer-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}.customer-list-head h3{font-size:12px;margin:0}.customer-list-head span{font-size:10px;color:#8f9db5}.customer-record{padding:13px;margin-bottom:9px;border:1px solid #26334b;border-radius:12px;background:#0d1320}.customer-record:last-child{margin-bottom:0}.customer-record .record-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.customer-record .record-top b{display:block;font-size:12px}.customer-record .record-top small{display:block;font-size:9px;color:#8f9eb9;margin-top:4px}.customer-record-foot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #222d42;color:#8f9bb2;font-size:10px}.customer-empty{display:grid;place-items:center;text-align:center;gap:8px;padding:28px 14px;color:#aebbd1}.customer-empty>span{font-size:28px}.customer-empty b{font-size:12px}.customer-empty small{font-size:10px;color:#7e8ba5}.customer-form-card{margin-bottom:13px;padding:14px;border:1px solid #2a3d5f;border-radius:14px;background:#0d1423}.customer-footer{text-align:center;padding:24px 8px 12px;color:#64718b;font-size:10px}
 .positive{color:#5cf09a}.negative{color:#ff7888}
 @media(max-width:650px){.customer-profile{padding:16px}.customer-avatar{width:52px;height:52px}.customer-identity h2{font-size:16px}.customer-wallets{gap:7px}.customer-wallets>div{padding:10px 8px}.customer-wallets small{font-size:8px}.customer-wallets b{font-size:15px}.customer-actions{grid-template-columns:1fr}.customer-action{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:10px}.customer-action span{grid-row:span 2}.customer-action b{margin:1px 0 5px}.customer-action small{grid-column:2}.customer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-section-title{font-size:14px}.customer-tabs button{font-size:9px;padding:10px 11px}}
+
+/* Customer Center dashboard layout matching the supplied HENDY reference. */
+.customer-profile{
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);
+  align-items:center;gap:20px;min-height:205px;padding:22px 26px;
+  border-color:#b51f35;
+  background:repeating-linear-gradient(128deg,transparent 0 11%,#f51e3210 11.2% 11.6%,transparent 11.8% 24%),radial-gradient(ellipse at 95% 12%,#5e111c88,transparent 38%),linear-gradient(110deg,#030405,#070708 62%,#18070b);
+  box-shadow:0 0 22px #ff1b342c,inset 0 0 36px #b313271f;
+}
+.customer-profile-main{min-width:0;position:relative;z-index:1}
+.customer-profile-top{display:flex;align-items:center;gap:14px}
+.customer-avatar{width:72px;height:72px;border:2px solid #f8fafc;box-shadow:0 0 18px #e3f8ff44;background:linear-gradient(140deg,#15212e,#05070b);font-size:28px}
+.customer-identity h2{font-size:27px;font-weight:950;letter-spacing:-.02em}
+.customer-identity span{font-size:12px;background:#001b14;border-radius:6px}
+.customer-profile-vip{margin-top:10px}
+.customer-vip{display:inline-block;padding:5px 12px;border-radius:8px;background:linear-gradient(110deg,#ff8b00,#ffd02f);color:#190d00;font-size:12px}
+.customer-progress{max-width:430px;margin-top:10px}
+.customer-progress>div:first-child b{font-size:13px;color:#b9c0cd}
+.customer-progress .progress-track{height:8px;background:#343434}
+.customer-progress .progress-track span{background:linear-gradient(90deg,#ff172e,#ff8c00,#ffe23b)}
+.customer-wallets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;align-content:center}
+.customer-wallets>div{min-height:94px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:0;border-radius:12px;background:#050609b8;padding:13px}
+.customer-wallets small{font-size:10px;color:#edf0f5}
+.customer-wallets b{font-size:26px}
+.customer-wallets>div:first-child b{color:#00f326}
+.customer-wallets>div:nth-child(2) b{color:#ffb900}
+.customer-summary-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);gap:22px;margin-top:24px}
+.customer-summary-panel{min-width:0;padding:0 0 12px;border-radius:13px;background:#0506088a}
+.customer-panel-title{margin:0 0 12px;padding:0 2px 10px;border-bottom:1px dashed #343434;color:#f0f2f5;font-size:17px;font-weight:950}
+.customer-panel-title.green-title{color:#00f326}
+.customer-summary-panel .customer-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.customer-summary-panel .customer-stats>div{min-height:86px;background:linear-gradient(145deg,#0b0d10,#050607);border-color:#333}
+.customer-summary-panel .customer-stats>div:nth-child(2){border-color:#04b9db}
+.customer-summary-panel .customer-stats>div:nth-child(3){border-color:#008f4c}
+.customer-account-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.account-stat{min-height:86px;padding:14px 10px;border:1px solid #8c20b8;border-radius:12px;background:#08070c;text-align:center;display:flex;flex-direction:column;justify-content:center}
+.account-stat.total{grid-column:1/-1;border-color:#00ce25;background:#061409}
+.account-stat:nth-child(2){border-color:#a227d9}
+.account-stat:nth-child(3){border-color:#e4ae00}
+.account-stat.nyc{border-color:#00b9d8}
+.account-stat small{font-size:10px;color:#aab0bb;font-weight:900}
+.account-stat b{display:block;margin-top:8px;color:#fff;font-size:23px}
+.account-stat.total b{color:#00f326}
+.account-stat:nth-child(2) b{color:#fff}
+.account-stat:nth-child(3) b{color:#ffca21}
+.account-stat.nyc b{color:#3dd8f5}
+.customer-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.customer-action{min-height:148px;border-color:#333;background:linear-gradient(145deg,#07090b,#030405)}
+.customer-action.abuse{border-color:#e5a900}
+.customer-action.abuse span{background:linear-gradient(135deg,#ffc400,#ffed76)}
+.customer-action.support{border-color:#00bce6}
+.customer-action.support span{background:linear-gradient(135deg,#c629f3,#f05bff);color:#fff}
+.customer-action.voucher{border-color:#00d88a}
+.customer-action.voucher span{background:linear-gradient(135deg,#00d88a,#70ffd0);color:#062116}
+.customer-replay{margin-top:9px;border-color:#d400ef;background:linear-gradient(110deg,#100817,#09040d)}
+.customer-replay b{color:#df28ff;font-size:15px}
+.customer-replay>span{background:#c400ea;color:white}
+@media(max-width:760px){
+  .customer-profile{grid-template-columns:1fr;gap:16px;padding:17px}
+  .customer-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .customer-wallets>div{min-height:78px}
+  .customer-avatar{width:58px;height:58px}
+  .customer-identity h2{font-size:20px}
+  .customer-summary-grid{grid-template-columns:1fr;gap:12px}
+  .customer-summary-panel .customer-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .customer-actions{grid-template-columns:1fr}
+  .customer-action{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:10px}
+  .customer-action span{grid-row:span 2}
+  .customer-action b{margin:1px 0 5px}
+  .customer-action small{grid-column:2}
+}
+@media(max-width:430px){
+  .customer-summary-panel .customer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .customer-panel-title{font-size:14px}
+  .customer-wallets b{font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -569,34 +645,48 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const status=Number(u.vipLevel||0)>0?'VIP '+Number(u.vipLevel):'Bình thường';
     $('#app').innerHTML=`
       <section class="customer-profile">
-        <div class="customer-profile-top">
-          <div class="customer-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
-          <div class="customer-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span>🟢 ID: ${escapeHtml(u.id||'')}</span><small>${u.username?'@'+escapeHtml(u.username):'HENDY MEMBER'}</small></div>
-          <span class="customer-vip">💎 ${escapeHtml(status)}</span>
+        <div class="customer-profile-main">
+          <div class="customer-profile-top">
+            <div class="customer-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
+            <div class="customer-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span>🟢 ID: ${escapeHtml(u.id||'')}</span><small>${u.username?'@'+escapeHtml(u.username):'HENDY MEMBER'}</small></div>
+          </div>
+          <div class="customer-profile-vip"><span class="customer-vip">💎 ${escapeHtml(status)}</span></div>
+          <div class="customer-progress"><div><span>TỔNG NẠP TÍCH LŨY</span><b>${money(u.totalDeposited)}</b></div><div class="progress-track"><span style="width:${Math.min(100,Number(u.vipProgressPercent||0))}%"></span></div><small>${Number(u.pointOld||0).toLocaleString('vi-VN')} POINT · ${botKey==='secondary'?'BOT 2':'BOT 1'}</small></div>
         </div>
-        <div class="customer-progress"><div><span>TỔNG NẠP TÍCH LŨY</span><b>${money(u.totalDeposited)}</b></div><div class="progress-track"><span style="width:${Math.min(100,Number(u.vipProgressPercent||0))}%"></span></div><small>${Number(u.pointOld||0).toLocaleString('vi-VN')} POINT · ${botKey==='secondary'?'BOT 2':'BOT 1'}</small></div>
         <div class="customer-wallets">
-          <div><small>💰 VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
-          <div><small>🪙 VÍ NYC</small><b>${money(u.nycWallet)}</b></div>
-          <div><small>🎟️ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
+          <div><small>▣ VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
+          <div><small>▣ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
         </div>
-      </section>
-      <div class="customer-section-title">📊 THỐNG KÊ ĐƠN HÀNG</div>
-      <section class="customer-stats">
-        <div><small>TỔNG ĐƠN</small><b>${Number(s.totalOrders||0)}</b></div>
-        <div><small>ĐANG XỬ LÝ</small><b class="cyan">${Number(s.processingOrders||0)}</b></div>
-        <div><small>HOÀN TẤT</small><b class="green">${Number(s.completedOrders||0)}</b></div>
-        <div><small>ĐÃ HỦY</small><b>${Number(s.cancelledOrders||0)}</b></div>
-        <div><small>HOÀN TIỀN</small><b class="yellow">${Number(s.refundedOrders||0)}</b></div>
-        <div><small>TICKET CSKH</small><b>${Number(counts.total||0)}</b></div>
       </section>
       <div class="customer-section-title">⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</div>
       <section class="customer-actions">
-        <button class="customer-action abuse" data-action="support-abuse"><span>1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Đơn hoàn thành nhưng tài khoản bị dính lạm dụng, không nhận được điểm.</small></button>
-        <button class="customer-action support" data-action="support-general"><span>2</span><b>TICKET HỖ TRỢ</b><small>Khiếu nại, thắc mắc và yêu cầu CSKH xử lý.</small></button>
-        <button class="customer-action voucher" data-action="open-vouchers"><span>3</span><b>VOUCHER 72H</b><small>Yêu cầu voucher đền bù cho đơn đã quá 72 giờ chưa hoàn tất.</small></button>
+        <button class="customer-action abuse" data-action="support-abuse"><span>1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi yêu cầu tại đây khi đơn hàng ĐÃ HOÀN THÀNH nhưng tài khoản bị dính lạm dụng nên KHÔNG NHẬN ĐƯỢC ĐIỂM.</small></button>
+        <button class="customer-action support" data-action="support-general"><span>2</span><b>TICKET HỖ TRỢ</b><small>Tất cả vấn đề thắc mắc, khiếu nại, cần hỗ trợ khác vui lòng sử dụng tính năng Gửi Ticket này để được CSKH xử lý.</small></button>
+        <button class="customer-action voucher" data-action="open-vouchers"><span>3</span><b>VOUCHER 72H</b><small>Yêu cầu nhận Voucher đền bù cho đơn hàng quá 72 giờ vẫn chưa HOÀN TẤT. Tặng ngay Voucher 100% giá trị đơn đó.</small></button>
       </section>
-      <a class="customer-replay ${replayValid?'available':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener"':'aria-disabled="true"'}><span>▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Mở kho Replay Live đã cấu hình.':'Chưa kết nối nguồn Replay Live; liên hệ CSKH để yêu cầu kiểm tra.'}</small></div></a>
+      <a class="customer-replay ${replayValid?'available':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener"':'aria-disabled="true"'}><span>▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Xem lại Video Live các đơn hàng đã hoàn tất (Hỗ trợ trong 48H)':'Chưa kết nối nguồn Replay Live; liên hệ CSKH để yêu cầu kiểm tra.'}</small></div></a>
+      <section class="customer-summary-grid">
+        <div class="customer-summary-panel">
+          <div class="customer-panel-title">▰ THỐNG KÊ ĐƠN HÀNG</div>
+          <section class="customer-stats">
+            <div><small>TỔNG ĐƠN</small><b>${Number(s.totalOrders||0)}</b></div>
+            <div><small>ĐANG XỬ LÝ</small><b class="cyan">${Number(s.processingOrders||0)}</b></div>
+            <div><small>HOÀN TẤT</small><b class="green">${Number(s.completedOrders||0)}</b></div>
+            <div><small>ĐÃ HỦY</small><b>${Number(s.cancelledOrders||0)}</b></div>
+            <div><small>HOÀN TIỀN</small><b class="yellow">${Number(s.refundedOrders||0)}</b></div>
+            <div><small>TICKET CSKH</small><b>${Number(counts.total||0)}</b></div>
+          </section>
+        </div>
+        <div class="customer-summary-panel account-panel">
+          <div class="customer-panel-title green-title">▢ THỐNG KÊ TÀI KHOẢN</div>
+          <section class="customer-account-stats">
+            <div class="account-stat total"><small>TỔNG NẠP (VIP)</small><b>${money(u.totalDeposited)}</b></div>
+            <div class="account-stat"><small>POINT (CŨ)</small><b>${Number(u.pointOld||0).toLocaleString('vi-VN')}</b></div>
+            <div class="account-stat"><small>NẠP VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
+            <div class="account-stat nyc"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div>
+          </section>
+        </div>
+      </section>
       <div class="customer-section-title">🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</div>
       <section class="customer-linked">
         <div><b>🔗 TÀI KHOẢN ĐÃ LIÊN KẾT</b><span>${data.accounts.length} tài khoản Mini Game</span></div>
