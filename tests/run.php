@@ -39,8 +39,8 @@ $assert(TelegramLink::normalize('https://user@t.me/HendySupportGroup') === '', '
 $assert(TelegramLink::normalize('https://t.me/hendy_cyber_bot?start=old') === 'https://t.me/hendy_cyber_bot', 'chuẩn hóa public URL bot và loại query có sẵn');
 $assert(TelegramLink::normalize('https://example.com/hendy_cyber_bot') === '', 'từ chối URL public bot ngoài Telegram');
 
-$assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','otp','wallet','vip','codes','customer','group','news','vip-coming-soon'], 'menu chứa đủ chín chức năng mới');
-$assert(BotMenuDefinition::LAYOUT === [['live','otp'],['wallet','vip'],['codes'],['customer'],['group','news'],['vip-coming-soon']], 'layout đúng sáu hàng theo mẫu');
+$assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','tools','codes','wallet','otp','viptools','customer','matchmaking','ref','vip','group','news','gift','support'], 'menu có đủ 14 mục theo giao diện HENDY mới');
+$assert(BotMenuDefinition::LAYOUT === [['live','tools'],['codes'],['wallet','otp'],['viptools'],['customer'],['matchmaking'],['ref','vip'],['group','news'],['gift','support'],['admin']], 'layout đúng thứ tự hai cột và các hàng toàn chiều rộng');
 $webhookSecret = 'sample-webhook-secret-for-tests-000001';
 $assert(WebhookSecurity::verifySecret($webhookSecret, $webhookSecret), 'webhook secret đúng được chấp nhận');
 $assert(!WebhookSecurity::verifySecret($webhookSecret, 'wrong-webhook-secret-for-tests-000001'), 'webhook secret sai bị từ chối');
