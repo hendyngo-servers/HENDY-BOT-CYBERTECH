@@ -177,7 +177,7 @@ jobs:
           grep -q -- 'installVisualEffects();' apps/admin-dashboard/index.html
           ! grep -q 'telegram-web-app.js' apps/admin-dashboard/index.html
           ! grep -q 'initAdminMiniApp();' apps/admin-dashboard/index.html
-          grep -q 'credentials:'"'"'same-origin'"'"'' apps/admin-dashboard/index.html
+          grep -q "credentials:'same-origin'" apps/admin-dashboard/index.html
           grep -q 'MỞ BẢNG ĐIỀU KHIỂN ADMIN' apps/admin-dashboard/index.html
           for tab in overview users orders payments products tickets vouchers giftcodes bot-menus runtime modules video-jobs settings audit; do
             grep -q "state.adminTab === '$tab'" apps/admin-dashboard/index.html
