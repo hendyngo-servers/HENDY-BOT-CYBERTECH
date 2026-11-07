@@ -218,8 +218,9 @@ final class TelegramAuth
         }
         $header = json_decode($headerJson, true);
         $payload = json_decode($payloadJson, true);
+        $audience = (string) ($payload['aud'] ?? '');
         if (!is_array($header) || !is_array($payload) || ($header['alg'] ?? '') !== 'HS256'
-            || ($payload['aud'] ?? '') !== 'hendy-legacy-account') {
+            || !in_array($audience, ['hendy-legacy-account', 'hendy-admin-dashboard'], true)) {
             throw new RuntimeException('Định dạng phiên website không hợp lệ.');
         }
         $expected = hash_hmac('sha256', $headerPart . '.' . $payloadPart, $secret, true);
@@ -237,12 +238,17 @@ final class TelegramAuth
         if ($member === null) {
             throw new RuntimeException('Không tìm thấy hồ sơ thành viên.');
         }
+        $isAdmin = self::isAdmin($userId);
+        if ($audience === 'hendy-admin-dashboard' && !$isAdmin) {
+            throw new RuntimeException('Phiên Admin không còn được phép truy cập.');
+        }
         return [
             'id' => (string) $member['user_id'],
             'first_name' => (string) ($member['name'] ?? ''),
             'username' => (string) ($member['username'] ?? ''),
             '_bot_key' => $botKey,
-            '_is_admin' => self::isAdmin($userId),
+            '_is_admin' => $isAdmin,
+            '_session_scope' => $audience === 'hendy-admin-dashboard' ? 'admin' : 'customer',
         ];
     }
 
