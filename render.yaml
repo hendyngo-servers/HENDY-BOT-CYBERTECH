@@ -69,7 +69,7 @@ services:
       - key: WEBSOCKET_ENABLED
         value: "true"
       - key: WEBSOCKET_URL
-        value: wss://hendy-bot-cybertech.onrender.com/ws
+        value: wss://hendy-bot-cybertech-1.onrender.com/ws
       - key: WEBSOCKET_ALLOWED_ORIGINS
         value: https://hendy-bot-cybertech.onrender.com
       - key: WEBSOCKET_MAX_CONNECTIONS

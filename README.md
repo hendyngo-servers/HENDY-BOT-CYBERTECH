@@ -45,7 +45,7 @@ Mỗi bot phải có token và webhook secret riêng. Secret tự sinh được 
 
 ## Triển khai Render
 
-1. Kết nối repository này với Render Web Service `HENDY-BOT-CYBERTECH`, nhánh `main`, vùng Singapore.
+1. Kết nối repository này với Render Web Service `HENDY-BOT-CYBERTECH-1`, nhánh `main`, vùng Singapore. Production URL hiện tại: `https://hendy-bot-cybertech-1.onrender.com`.
 2. Giữ `DATABASE_URL` trỏ tới PostgreSQL riêng của dự án; không dùng database của ứng dụng khác. Đặt `DATABASE_SSL=true` cho Neon/database ngoài hoặc `false` chỉ khi dùng Internal URL của Render.
 3. Cấu hình `BOT1_TOKEN`, `ADMIN_ID` hoặc `ADMIN_IDS`; nhập `BOT1_PUBLIC_URL=https://t.me/ten_bot_chinh` trong Render Environment. Để `APP_URL` trống để tự dùng `RENDER_EXTERNAL_URL`, hoặc khai báo custom domain HTTPS.
 4. Nếu bật bot thử nghiệm, thêm `BOT2_TOKEN` và `BOT2_PUBLIC_URL=https://t.me/ten_bot_thu_nghiem`; webhook secret có thể để trống vì backend tự tạo, lưu và quản lý khóa ngẫu nhiên riêng cho từng bot.

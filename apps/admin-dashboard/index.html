@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="hendy-build" content="2026.11.07.1">
+  <meta name="hendy-build" content="2026.11.07.2">
   <meta name="theme-color" content="#05050a">
   <meta name="description" content="HENDY CYBERTECH — Bảng điều khiển quản trị hệ thống">
   <title>HENDY ADMIN DASHBOARD PRO</title>
@@ -250,7 +250,7 @@
   <link rel="stylesheet" href="/styles/buttons.css">
 
   <style id="hendy-admin-brand-refresh">
-    /* HENDY ADMIN — red / black production theme, 2026.11.07.1 */
+    /* HENDY ADMIN — red / black production theme, 2026.11.07.2 */
     :root{
       --primary:#ff315d;--secondary:#ff0877;--success:#27d69a;
       --warning:#ffc247;--danger:#ff5572;--panel-border:rgba(255,65,100,.19);
@@ -656,7 +656,7 @@
       hour >= 13 && hour < 18 ? 'buổi chiều' :
       hour >= 18 && hour < 22 ? 'buổi tối' : 'buổi đêm';
     const memberStatus = Number(user.vipLevel || 0) > 0 ? 'VIP ' + Number(user.vipLevel) : 'Bình thường';
-    const website = settings.website_url || 'https://hendy-bot-tele.onrender.com';
+    const website = settings.website_url || 'https://hendy-bot-cybertech-1.onrender.com';
     const group = settings.GROUP_URL || 'https://t.me/Hendy_Support_Group';
     const botUrl = typeof state.boot.botUrl === 'string' ? state.boot.botUrl : '';
     const services = [
