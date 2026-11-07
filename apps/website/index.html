@@ -642,10 +642,10 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     const orderRows=visibleOrders.length?visibleOrders.map(order=>`
       <article class="cc-order">
         <div class="cc-order-top">
-          <div><b>\${${escapeHtml(order.product_name||'Đơn hàng HENDY')}}</b><small>\${${escapeHtml(order.order_code||'')}} · \${${new Date(order.created_at).toLocaleString('vi-VN')}}</small></div>
-          <span class="cc-status">\${${customerStatus(order.status)}}</span>
+          <div><b>${escapeHtml(order.product_name||'Đơn hàng HENDY')}</b><small>${escapeHtml(order.order_code||'')} · ${new Date(order.created_at).toLocaleString('vi-VN')}</small></div>
+          <span class="cc-status">${customerStatus(order.status)}</span>
         </div>
-        <div class="cc-order-foot"><span>Giá trị đơn: <b>\${${money(order.amount)}}</b></span><button class="cc-detail-btn" type="button" data-order-detail="\${${escapeHtml(order.order_code||'')}}">CHI TIẾT</button></div>
+        <div class="cc-order-foot"><span>Giá trị đơn: <b>${money(order.amount)}</b></span><button class="cc-detail-btn" type="button" data-order-detail="${escapeHtml(order.order_code||'')}">CHI TIẾT</button></div>
       </article>`).join(''):'<div class="cc-empty"><span>📭</span><b>'+ (selected==='active'?'Không có đơn hàng đang chạy':'Chưa có lịch sử đơn hàng') +'</b><small>Đơn phát sinh sẽ được cập nhật tại đây.</small></div>';
 
     let tabContent='';
@@ -665,7 +665,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     }
 
     const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
-    const replayValid=/^https:\\/\\//i.test(replayUrl);
+    const replayValid=/^https:\/\/\//i.test(replayUrl);
     const currentLevel=Number(vip.currentLevel??u.vipLevel??0);
     const vipLabel=currentLevel>0?'VIP '+currentLevel:'VIP 0 · THÀNH VIÊN';
     const totalDeposited=Number(vip.totalDeposited??u.totalDeposited??0);
@@ -683,65 +683,64 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
         <section class="cc-profile">
           <div class="cc-profile-main">
             <div class="cc-profile-head">
-              <div class="cc-avatar">\${${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
-              <div class="cc-identity"><h2>\${${escapeHtml(u.name||memberName())}</h2><span class="cc-id">🆔 TELEGRAM ID: \${${escapeHtml(u.id||'')}}</span><small>\${${escapeHtml(accountName)}} · \${${botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH'}}</small></div>
+              <div class="cc-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
+              <div class="cc-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span class="cc-id">🆔 TELEGRAM ID: ${escapeHtml(u.id||'')}</span><small>${escapeHtml(accountName)} · ${botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH'}</small></div>
             </div>
-            <div class="cc-vipline"><span class="cc-vip">💎 \${${escapeHtml(vipLabel)}}</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div>
+            <div class="cc-vipline"><span class="cc-vip">💎 ${escapeHtml(vipLabel)}</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div>
             <div class="cc-progress">
-              <div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>\${${money(totalDeposited)}}</strong></div>
-              <div class="cc-progress-track"><span style="width:\${${Math.max(0,Math.min(100,progress))}}%"></span></div>
-              <div class="cc-progress-label" style="margin-top:6px"><span>\${${progressText}}</span><strong>\${${Math.max(0,Math.min(100,progress))}}%</strong></div>
+              <div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>${money(totalDeposited)}</strong></div>
+              <div class="cc-progress-track"><span style="width:${Math.max(0,Math.min(100,progress))}%"></span></div>
+              <div class="cc-progress-label" style="margin-top:6px"><span>${progressText}</span><strong>${Math.max(0,Math.min(100,progress))}%</strong></div>
             </div>
           </div>
           <div class="cc-wallets">
-            <div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>\${${money(u.balance)}}</b></div>
-            <div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>\${${money(u.voucherWallet)}}</b></div>
+            <div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
+            <div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
           </div>
         </section>
 
-        <div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>\${${ticketTotal}} ticket · \${${voucherRequests}} yêu cầu voucher</small></div>
+        <div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>${ticketTotal} ticket · ${voucherRequests} yêu cầu voucher</small></div>
         <section class="cc-support-grid">
           <button class="cc-support-card abuse" type="button" data-action="support-abuse"><span class="cc-number">1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi mã đơn đã hoàn thành để CSKH kiểm tra trường hợp chưa nhận được điểm. Không gửi mật khẩu, mã OTP hoặc PIN.</small></button>
           <button class="cc-support-card ticket" type="button" data-action="support-general"><span class="cc-number">2</span><b>TICKET HỖ TRỢ</b><small>Tạo yêu cầu, khiếu nại và theo dõi phản hồi của đội ngũ chăm sóc khách hàng HENDY.</small></button>
           <button class="cc-support-card voucher" type="button" data-action="open-vouchers"><span class="cc-number">3</span><b>VOUCHER 72H</b><small>Gửi yêu cầu kiểm tra đơn chờ xử lý quá 72 giờ. Voucher chỉ được cộng sau khi Admin duyệt.</small></button>
         </section>
 
-        <a class="cc-replay \${${replayValid?'':'disabled'}}" \${${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"'}}><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>\${${replayValid?'Xem lại video live các đơn hàng đã hoàn tất (nếu nhà cung cấp có lưu replay).':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.'}}</small></div></a>
+        <a class="cc-replay ${replayValid?'':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"'}><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Xem lại video live các đơn hàng đã hoàn tất (nếu nhà cung cấp có lưu replay).':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.'}</small></div></a>
 
         <section class="cc-summary">
           <div class="cc-summary-card">
             <div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div>
             <div class="cc-order-stats">
-              <div class="cc-stat"><small>TỔNG ĐƠN</small><b>\${${Number(stats.totalOrders||0)}}</b></div>
-              <div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>\${${Number(stats.processingOrders||0)}}</b></div>
-              <div class="cc-stat green"><small>HOÀN TẤT</small><b>\${${Number(stats.completedOrders||0)}}</b></div>
-              <div class="cc-stat"><small>ĐÃ HỦY</small><b>\${${Number(stats.cancelledOrders||0)}}</b></div>
-              <div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>\${${Number(stats.refundedOrders||0)}}</b></div>
+              <div class="cc-stat"><small>TỔNG ĐƠN</small><b>${Number(stats.totalOrders||0)}</b></div>
+              <div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>${Number(stats.processingOrders||0)}</b></div>
+              <div class="cc-stat green"><small>HOÀN TẤT</small><b>${Number(stats.completedOrders||0)}</b></div>
+              <div class="cc-stat"><small>ĐÃ HỦY</small><b>${Number(stats.cancelledOrders||0)}</b></div>
+              <div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>${Number(stats.refundedOrders||0)}</b></div>
             </div>
           </div>
           <div class="cc-summary-card">
             <div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div>
             <div class="cc-account-stats">
-              <div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>\${${money(totalDeposited)}}</b></div>
-              <div class="cc-account-stat"><small>POINT (CŨ)</small><b>\${${Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')}}</b></div>
-              <div class="cc-account-stat nyc"><small>VÍ NYC</small><b>\${${money(nycBalance)}}</b></div>
-              <div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>\${${money(u.voucherWallet)}}</b></div>
+              <div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>${money(totalDeposited)}</b></div>
+              <div class="cc-account-stat"><small>POINT (CŨ)</small><b>${Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')}</b></div>
+              <div class="cc-account-stat nyc"><small>VÍ NYC</small><b>${money(nycBalance)}</b></div>
+              <div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
             </div>
           </div>
         </section>
 
         <div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>
-        <section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>\${${(data.accounts||[]).length}} tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-open="minigame">QUẢN LÝ</button></section>
-
+        <section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>${(data.accounts||[]).length} tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-open="minigame">QUẢN LÝ</button></section>
         <div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng">
-          <button class="\${${selected==='active'?'active':''}}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
-          <button class="\${${selected==='orders'?'active':''}}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
-          <button class="\${${selected==='deposit'?'active':''}}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
-          <button class="\${${selected==='transactions'?'active':''}}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
+          <button class="${selected==='active'?'active':''}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
+          <button class="${selected==='orders'?'active':''}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
+          <button class="${selected==='deposit'?'active':''}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
+          <button class="${selected==='transactions'?'active':''}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
         </div>
-        <section class="cc-tab">\${${tabContent}}</section>
+        <section class="cc-tab">${tabContent}</section>
         <div class="customer-footer">💠 HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</div>
-        \${${orderDetailsMarkup}}
+        ${orderDetailsMarkup}
       </div>`;
     syncMiniAppControls();
   }
