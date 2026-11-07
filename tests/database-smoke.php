@@ -158,6 +158,8 @@ $assert($user !== null && $user['name'] === 'PHP Smoke Test', 'create/read users
 
 // Website browser sessions are signed, bot-bound, cookie-only, and resolve their identity from PostgreSQL.
 $previousWebsiteSecret = getenv('LEGACY_SESSION_SECRET');
+$previousAdminId = getenv('ADMIN_ID');
+$previousAdminIds = getenv('ADMIN_IDS');
 $previousCookie = $_COOKIE['hendy_web_session'] ?? null;
 $previousBotHeader = $_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] ?? null;
 $websiteSecret = str_repeat('hendy-website-session-test-', 2);
@@ -186,7 +188,36 @@ try {
     $crossBotCookieRejected = true;
 }
 $assert($crossBotCookieRejected, 'website cookie cannot authenticate the other bot flow');
+
+// Admin browser sessions use a distinct signed audience and are re-checked against the live allowlist.
+putenv('ADMIN_ID=' . $userId);
+putenv('ADMIN_IDS=');
+$adminPayload = $base64Url(json_encode([
+    'sub' => $userId,
+    'bot' => 'secondary',
+    'aud' => 'hendy-admin-dashboard',
+    'iat' => time(),
+    'exp' => time() + 3600,
+]));
+$adminUnsigned = $websiteHeader . '.' . $adminPayload;
+$adminSignature = $base64Url(hash_hmac('sha256', $adminUnsigned, $websiteSigningKey, true));
+$_COOKIE['hendy_web_session'] = $adminUnsigned . '.' . $adminSignature;
+$_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = 'secondary';
+$adminIdentity = TelegramAuth::authenticateRequest();
+$assert($adminIdentity['_is_admin'] === true && $adminIdentity['_session_scope'] === 'admin', 'Admin browser session authenticates with admin-only audience');
+putenv('ADMIN_ID=123456789999');
+putenv('ADMIN_IDS=');
+$revokedAdminSessionRejected = false;
+try {
+    TelegramAuth::authenticateRequest();
+} catch (Throwable) {
+    $revokedAdminSessionRejected = true;
+}
+$assert($revokedAdminSessionRejected, 'Admin browser session stops working after removal from the live admin allowlist');
+
 if ($previousWebsiteSecret === false) putenv('LEGACY_SESSION_SECRET'); else putenv('LEGACY_SESSION_SECRET=' . $previousWebsiteSecret);
+if ($previousAdminId === false) putenv('ADMIN_ID'); else putenv('ADMIN_ID=' . $previousAdminId);
+if ($previousAdminIds === false) putenv('ADMIN_IDS'); else putenv('ADMIN_IDS=' . $previousAdminIds);
 if ($previousCookie === null) unset($_COOKIE['hendy_web_session']); else $_COOKIE['hendy_web_session'] = $previousCookie;
 if ($previousBotHeader === null) unset($_SERVER['HTTP_X_TELEGRAM_BOT_KEY']); else $_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = $previousBotHeader;
 
