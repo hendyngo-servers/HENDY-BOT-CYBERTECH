@@ -119,3 +119,99 @@ body:after{
   .node-art{right:-26px;top:calc(50% - 26px)}
 }
 @media(prefers-reduced-motion:reduce){.background-grid,body:after{animation:none}}
+
+/* HENDY CYBERTECH — Orbitron / neon-red space theme requested by owner. */
+@font-face{
+  font-family:"Orbitron";
+  font-style:normal;
+  font-weight:400 700;
+  font-display:swap;
+  src:url("https://fonts.gstatic.com/s/orbitron/v35/yMJRMIlzdpvBhQQL_Qq7dy0.woff2") format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+:root{--red:#ff174f;--hot-pink:#ff0085;--orbitron:"Orbitron","Arial Black",system-ui,sans-serif}
+body{
+  background:
+    radial-gradient(ellipse at 12% 28%,#ff00351a,transparent 32%),
+    radial-gradient(ellipse at 85% 36%,#9b145b18,transparent 34%),
+    #020205;
+}
+.brand-mark{background:linear-gradient(135deg,#ff174f,#ff0085 58%,#7d2b86);box-shadow:0 0 30px #ff174f55}
+.brand-copy strong,.hero h1,.eyebrow,.section-heading h2,.service-card h3,.hero-scroll,.orbit-caption{
+  font-family:var(--orbitron);
+}
+.brand-copy strong{text-shadow:0 0 10px #ff174f77,0 0 25px #ff008555}
+.brand-copy strong span{color:#ff789c}
+.eyebrow{color:#ff8aa8;letter-spacing:.14em}
+.status-dot{background:#ff315f;box-shadow:0 0 12px #ff174f}
+.hero-card{
+  border-color:#69203c88;
+  background:linear-gradient(130deg,#08060beF,#0b0610eF 58%,#08050cf2);
+  box-shadow:0 25px 100px #000d,inset 0 0 85px #ff174f0d;
+}
+.hero-glow{
+  background:
+    radial-gradient(ellipse at 10% 10%,#ff174f24,transparent 42%),
+    radial-gradient(ellipse at 90% 80%,#9a1d7729,transparent 44%),
+    linear-gradient(115deg,transparent 40%,#ff006b10 100%);
+}
+.hero h1{text-shadow:0 0 10px #ff174f77,0 0 28px #ff008544}
+.gradient-text{
+  background:linear-gradient(120deg,#ff405f,#ff0085 54%,#ffb0cb);
+  background-clip:text;-webkit-background-clip:text;color:transparent;
+}
+.hero-subtitle{font-family:var(--orbitron);text-shadow:0 0 16px #ff174f30}
+.button-primary{
+  color:#fff;
+  background:linear-gradient(115deg,#e8003d,#ff174f 48%,#ff0085);
+  box-shadow:0 0 22px #ff174f66,0 10px 30px #0008;
+}
+.button-primary:hover{box-shadow:0 0 32px #ff174f99,0 14px 35px #0009}
+.button-secondary{border-color:#ff4b7a55;background:#ff174f0b}
+.button-secondary:hover{border-color:#ff6b9a;background:#ff174f1c}
+.feature-pills span:hover{border-color:#ff477b88}
+.terminal-prompt{color:#ff5b82}
+.orbit{border-color:#ff6b9b55;box-shadow:0 0 34px #ff174f12}
+.orbit-node{border-color:#ff75a566;box-shadow:0 0 22px #ff174f2a,inset 0 0 18px #ff6b9a18}
+.node-code{color:#ff6b9a;border-color:#ff174f99}
+.node-shield{color:#ffc0d0;border-color:#ff7aa399}
+.bot-core{
+  background:linear-gradient(145deg,#ff174f,#d50062 58%,#7d2b86);
+  border-color:#ff86a8;
+  box-shadow:0 0 70px #ff174f80,0 0 140px #e6006b44,inset 0 0 25px #ffffffa8;
+}
+.orbit-caption{color:#ff789c}
+.meteor-layer{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.meteor{
+  position:absolute;top:-24%;left:var(--meteor-left);width:2px;height:145px;
+  opacity:0;transform:rotate(45deg);
+  background:linear-gradient(to bottom,transparent,#fff 48%,#ff789c 72%,transparent);
+  filter:drop-shadow(0 0 8px #ff174f);
+  animation:hendymeteor 8s linear infinite;
+}
+.meteor-one{--meteor-left:88%;animation-delay:.2s}
+.meteor-two{--meteor-left:67%;height:110px;animation-delay:2.8s;animation-duration:9s}
+.meteor-three{--meteor-left:43%;height:125px;animation-delay:5.1s;animation-duration:10s}
+.meteor-four{--meteor-left:97%;height:95px;animation-delay:6.7s;animation-duration:11s}
+.hero-scroll{
+  position:absolute;left:50%;bottom:15px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  color:#ff8ba9;font-size:9px;letter-spacing:.25em;
+  animation:hendyscroll 1.6s ease-in-out infinite;
+}
+.hero-scroll b{font-family:system-ui,sans-serif;font-size:19px;font-weight:400;color:#ff315f}
+@keyframes hendymeteor{
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(45deg)}
+  7%{opacity:.9}
+  24%{opacity:0;transform:translate3d(-58vw,66vh,0) rotate(45deg)}
+  100%{opacity:0;transform:translate3d(-58vw,66vh,0) rotate(45deg)}
+}
+@keyframes hendyscroll{0%,100%{opacity:.95}50%{opacity:.35;transform:translate(-50%,6px)}}
+@media(max-width:700px){
+  .hero-scroll{bottom:8px}
+  .hero-section{padding-bottom:56px}
+  .hero-card{background:linear-gradient(145deg,#09060cf5,#0b0712f2)}
+}
+@media(prefers-reduced-motion:reduce){
+  .meteor,.hero-scroll{animation:none;display:none}
+}
