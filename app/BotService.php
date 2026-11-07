@@ -688,6 +688,15 @@ final class BotService
             case 'codes':
                 $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE', $userId);
                 return;
+            case 'matchmaking':
+                $this->telegram->sendMessage($chatId, '⚔️ <b>HỆ THỐNG GHÉP ĐỐI ĐẤU HENDY</b>' . "\\n" .
+                    'Giao diện menu đã sẵn sàng. Hệ thống ghép trận, xác nhận kết quả và xếp hạng đang được hoàn thiện; bot chưa đưa người chơi vào hàng chờ để tránh tạo trận chưa có cơ chế xử lý đầy đủ.',
+                    ['reply_markup' => $this->inlineMenu([
+                        [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+                        [['text' => '🎧 LIÊN HỆ CSKH', 'callback_data' => 'member:support']],
+                    ])]
+                );
+                return;
             case 'otp':
                 $this->showOtpCenter($chatId, $userId);
                 return;
@@ -1257,8 +1266,14 @@ final class BotService
         ]);
     }
 
-    private function createWebsiteLoginUrl(string $userId): string
+    private function createWebsiteLoginUrl(string $userId, string $scope = 'customer'): string
     {
+        if (!in_array($scope, ['customer', 'admin'], true)) {
+            throw new RuntimeException('Phạm vi đăng nhập website không hợp lệ.');
+        }
+        if ($scope === 'admin' && !TelegramAuth::isAdmin($userId)) {
+            throw new RuntimeException('Chỉ Admin được phép tạo phiên đăng nhập Dashboard.');
+        }
         $baseUrl = rtrim((string) (Env::get('APP_URL') ?: Env::get('RENDER_EXTERNAL_URL', '')), '/');
         if (!self::isHttpsUrl($baseUrl)) {
             throw new RuntimeException('APP_URL HTTPS chưa được cấu hình; chưa thể tạo link đăng nhập an toàn.');
@@ -1272,7 +1287,7 @@ final class BotService
             "INSERT INTO legacy_login_tickets (token_hash, user_id, bot_key, expires_at) VALUES (?, ?, ?, NOW() + INTERVAL '5 minutes')",
             [hash('sha256', $ticket), $userId, $this->botKey]
         );
-        return $baseUrl . '/legacy-login?ticket=' . rawurlencode($ticket);
+        return $baseUrl . '/legacy-login?scope=' . rawurlencode($scope) . '&ticket=' . rawurlencode($ticket);
     }
 
     private function sendLegacyLoginLink(string $chatId, string $userId): void
@@ -2331,7 +2346,26 @@ final class BotService
             $this->telegram->sendMessage($chatId, '⛔ Bạn không có quyền quản trị.');
             return;
         }
-        $this->showAdminStats($chatId, $userId);
+        try {
+            $url = $this->createWebsiteLoginUrl($userId, 'admin');
+        } catch (Throwable $error) {
+            error_log('[admin-login] Không tạo được link đăng nhập Admin: ' . $error->getMessage());
+            $this->telegram->sendMessage($chatId, 'Không thể tạo phiên Admin lúc này. Vui lòng thử lại sau.');
+            return;
+        }
+        $this->telegram->sendMessage($chatId, implode("\\n", [
+            '🛡️ <b>HENDY ADMIN DASHBOARD</b>',
+            'Mở bảng điều khiển trực tiếp trên trình duyệt. Không cần Telegram Mini App.',
+            'Liên kết bảo mật chỉ dùng một lần và hết hạn sau <b>5 phút</b>.',
+            'Chỉ tài khoản nằm trong danh sách ADMIN_ID / ADMIN_IDS mới được cấp phiên Admin.',
+            '',
+            'Không chuyển tiếp liên kết này cho người khác.',
+        ]), [
+            'reply_markup' => $this->inlineMenu([
+                [['text' => '🌐 MỞ BẢNG ĐIỀU KHIỂN ADMIN', 'url' => $url]],
+            ]),
+            'disable_web_page_preview' => true,
+        ]);
     }
 
     private function miniAppUrl(): string
