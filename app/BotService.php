@@ -400,7 +400,7 @@ final class BotService
         $row = Database::one('SELECT * FROM bot_menu_configs WHERE bot_key = ?', [$this->botKey]);
         return $row ?? [
             'bot_key' => $this->botKey,
-            'menu_mode' => 'reply_keyboard',
+            'menu_mode' => 'inline_keyboard',
             'intro_text' => 'Chào mừng bạn đến với HENDY BOT. Chọn dịch vụ ở bàn phím phía dưới để bắt đầu.',
             'menu_columns' => 2,
             'persistent_keyboard' => true,
@@ -492,13 +492,8 @@ final class BotService
             }
             if ($row !== []) $rows[] = $row;
         }
-        if (($config['menu_mode'] ?? 'reply_keyboard') === 'inline_keyboard') return ['inline_keyboard' => $rows];
-        return [
-            'keyboard' => $this->replyRows($items, $config),
-            'resize_keyboard' => $this->toBool($config['resize_keyboard'] ?? true),
-            'is_persistent' => $this->toBool($config['persistent_keyboard'] ?? true),
-            'input_field_placeholder' => 'Chọn tiện ích HENDY',
-        ];
+        // Ignore legacy Reply Keyboard settings; the bot home menu is Inline-only.
+        return ['inline_keyboard' => $rows];
     }
 
     private function replyRows(array $items, array $config): array
@@ -806,7 +801,15 @@ final class BotService
                 $this->showAdminStats($chatId, $userId);
                 return;
             default:
-                $this->telegram->sendMessage($chatId, 'Chức năng chưa được cấu hình. Hãy chọn lại menu chính bằng /menu.');
+                $this->telegram->sendMessage(
+                    $chatId,
+                    '🚧 <b>TÍNH NĂNG ĐANG PHÁT TRIỂN</b>' . "\n" .
+                    'Mục này chưa được phát hành. HENDY sẽ thông báo khi hoàn thiện và mở sử dụng chính thức.',
+                    ['reply_markup' => $this->inlineMenu([
+                        [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
+                        [['text' => '🎧 LIÊN HỆ CSKH', 'callback_data' => 'member:support']],
+                    ])]
+                );
         }
     }
 
@@ -1105,7 +1108,11 @@ final class BotService
                 ((int) ($product['vip_level'] ?? 0) > 0 ? ' · Yêu cầu VIP ' . (int) $product['vip_level'] : '');
             if (trim((string) $product['description']) !== '') $lines[] = '  ' . self::escape(self::truncate((string) $product['description'], 140));
         }
-        if ($rows === []) $lines[] = 'Hiện chưa có sản phẩm phù hợp hoặc tài khoản chưa đủ cấp VIP. Admin có thể quản lý kho sản phẩm.';
+        if ($rows === []) {
+            $lines[] = '';
+            $lines[] = '🚧 <b>TÍNH NĂNG ĐANG PHÁT TRIỂN / CHƯA MỞ BÁN</b>';
+            $lines[] = 'Danh mục hiện chưa có sản phẩm khả dụng cho tài khoản này. HENDY sẽ thông báo khi dịch vụ được mở.';
+        }
         $rows[] = [['text' => '🧾 ĐƠN HÀNG CỦA TÔI', 'callback_data' => 'member:orders']];
         $rows[] = [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']];
         $this->telegram->sendMessage($chatId, implode("\n", $lines), ['reply_markup' => $this->inlineMenu($rows)]);
