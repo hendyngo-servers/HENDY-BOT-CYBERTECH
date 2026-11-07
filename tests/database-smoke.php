@@ -308,11 +308,11 @@ $duplicate = Database::run(
 $assert($duplicate->rowCount() === 0, 'giftcode can only be redeemed once per user');
 
 Database::run(
-    "INSERT INTO bot_menu_configs (bot_key, menu_mode, button_labels) VALUES ('primary', 'reply_keyboard', ?::jsonb) ON CONFLICT (bot_key) DO UPDATE SET menu_mode = EXCLUDED.menu_mode",
+    "INSERT INTO bot_menu_configs (bot_key, menu_mode, button_labels) VALUES ('primary', 'inline_keyboard', ?::jsonb) ON CONFLICT (bot_key) DO UPDATE SET menu_mode = EXCLUDED.menu_mode",
     [json_encode(['wallet' => 'NẠP TIỀN'], JSON_UNESCAPED_UNICODE)]
 );
 $menu = Database::one('SELECT menu_mode FROM bot_menu_configs WHERE bot_key = ?', ['primary']);
-$assert($menu !== null && $menu['menu_mode'] === 'reply_keyboard', 'bot menu config');
+$assert($menu !== null && $menu['menu_mode'] === 'inline_keyboard', 'bot inline menu config');
 
 Database::run(
     "INSERT INTO support_tickets (user_id, subject, message) VALUES (?, ?, ?)",
