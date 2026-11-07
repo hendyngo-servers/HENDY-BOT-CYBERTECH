@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#05050a">
   <meta name="description" content="HENDY CYBERTECH — Bảng điều khiển quản trị hệ thống">
   <title>HENDY ADMIN DASHBOARD PRO</title>
-  <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
   <style>
     :root {
       color-scheme: light;
@@ -1030,31 +1029,25 @@
   function adminBotMenus() {
     const menus = state.adminData.botMenus || [];
     const json = value => escapeHtml(JSON.stringify(value || {}, null, 2));
-    return '<div class="notice">Mỗi bot có cấu hình độc lập. Reply Keyboard là lưới nút cố định dưới ô nhập; Inline Keyboard nằm ngay dưới tin nhắn. Thay đổi được lưu PostgreSQL và áp dụng ở lần mở menu tiếp theo.</div>' +
+    return '<div class="notice">Menu của hai bot được cố định ở chế độ <b>Inline Menu</b> — các nút hiển thị ngay bên dưới tin nhắn. Bạn có thể chỉnh tên, mô tả, màu và custom emoji; cấu hình được lưu PostgreSQL và áp dụng ở lần gửi /start hoặc /menu kế tiếp.</div>' +
       menus.map(menu => {
-        const title = menu.botKey === 'primary' ? 'BOT CHÍNH · BOT1_TOKEN' : 'BOT THỨ HAI · BOT2_TOKEN';
-        const selected = value => menu.menuMode === value ? ' selected' : '';
+        const title = menu.botKey === 'primary' ? 'BOT CHÍNH · BOT1_TOKEN' : 'BOT THỬ NGHIỆM · BOT2_TOKEN';
         return '<form class="card form" id="admin-bot-menu-form" data-bot-key="' + escapeHtml(menu.botKey) + '">' +
           '<div class="record-top"><div><b>' + title + '</b><small class="muted">Key: ' + escapeHtml(menu.botKey) + '</small></div>' +
           '<span class="status ' + (menu.configured ? 'completed' : 'cancelled') + '">' + (menu.configured ? 'Đã cấu hình token' : 'Chưa có token') + '</span></div>' +
-          '<div class="field"><label>Kiểu menu</label><select name="menuMode">' +
-          '<option value="reply_keyboard"' + selected('reply_keyboard') + '>Reply Keyboard · lưới cố định phía dưới</option>' +
-          '<option value="inline_keyboard"' + selected('inline_keyboard') + '>Inline Keyboard · dưới tin nhắn</option></select></div>' +
-          '<div class="two-col"><div class="field"><label>Số cột nút (1–3)</label><select name="menuColumns">' +
+          '<input type="hidden" name="menuMode" value="inline_keyboard">' +
+          '<div class="two-col"><div class="field"><label>Số cột bổ sung (1–3)</label><select name="menuColumns">' +
           [1,2,3].map(n => '<option value="' + n + '"' + (Number(menu.menuColumns) === n ? ' selected' : '') + '>' + n + ' cột</option>').join('') +
           '</select></div><div class="field"><label>Giới thiệu đầu menu</label><input name="introText" maxlength="600" value="' + escapeHtml(menu.introText || '') + '"></div></div>' +
-          '<div class="two-col"><label class="small"><input type="checkbox" name="persistentKeyboard" ' + (menu.persistentKeyboard ? 'checked' : '') + '> Giữ Reply Keyboard luôn hiển thị</label>' +
-          '<label class="small"><input type="checkbox" name="resizeKeyboard" ' + (menu.resizeKeyboard ? 'checked' : '') + '> Tự co chiều cao bàn phím</label></div>' +
           '<div class="field"><label>JSON tên nút theo action</label><textarea name="buttonLabels" rows="5" spellcheck="false">' + json(menu.buttonLabels) + '</textarea><div class="json-help">Ví dụ: {"live":"🚀 MINI GAME","wallet":"💳 NẠP TIỀN"}.</div></div>' +
-          '<div class="field"><label>JSON mô tả chức năng từng nút</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Các mô tả xuất hiện trong phần giới thiệu menu. Action hợp lệ: live, otp, wallet, vip, codes, customer, group, news, vip-coming-soon, admin.</div></div>' +
-          '<div class="field"><label>JSON màu cho từng nút</label><textarea name="buttonStyles" rows="5" spellcheck="false">' + json(menu.buttonStyles) + '</textarea><div class="json-help">Chỉ dùng primary (xanh dương), success (xanh lá), danger (đỏ). Ví dụ: {"live":"danger","otp":"primary","wallet":"danger","codes":"success"}.</div></div>' +
-          '<div class="field"><label>JSON Custom Emoji ID (tùy chọn)</label><textarea name="buttonIcons" rows="4" spellcheck="false">' + json(menu.buttonIcons) + '</textarea><div class="json-help">Nhập ID custom emoji dạng số theo action (ví dụ {"live":"5368324170671202286"}). ID phải thuộc emoji mà bot được phép dùng. Telegram keyboard hỗ trợ custom emoji, nhưng hiệu ứng CSS/7 màu đầy đủ chỉ hiển thị trong Website HENDY.</div></div>' +
-          '<button class="primary">Lưu cấu hình ' + (menu.botKey === 'primary' ? 'Bot chính' : 'Bot thứ hai') + '</button>' +
+          '<div class="field"><label>JSON mô tả từng chức năng</label><textarea name="buttonDescriptions" rows="5" spellcheck="false">' + json(menu.buttonDescriptions) + '</textarea><div class="json-help">Chỉnh mô tả cho từng action có sẵn trong HENDY.</div></div>' +
+          '<div class="field"><label>JSON màu cho từng nút</label><textarea name="buttonStyles" rows="5" spellcheck="false">' + json(menu.buttonStyles) + '</textarea><div class="json-help">Chỉ dùng primary (xanh dương), success (xanh lá), danger (đỏ).</div></div>' +
+          '<div class="field"><label>JSON Custom Emoji ID (tùy chọn)</label><textarea name="buttonIcons" rows="4" spellcheck="false">' + json(menu.buttonIcons) + '</textarea><div class="json-help">ID custom emoji dạng số; Telegram chỉ hiển thị khi bot đủ quyền sử dụng.</div></div>' +
+          '<button class="primary">Lưu Inline Menu ' + (menu.botKey === 'primary' ? 'Bot chính' : 'Bot thử nghiệm') + '</button>' +
           '</form>';
       }).join('') +
-      '<div class="notice warn">Không nhập BOT1_TOKEN, BOT2_TOKEN, DATABASE_URL hoặc webhook secret tại đây. Các token được quản lý riêng trong Render Environment.</div>';
+      '<div class="notice warn">Không nhập BOT1_TOKEN, BOT2_TOKEN, DATABASE_URL hoặc webhook secret tại đây. Credential được quản lý trong Render Environment.</div>';
   }
-
 
   function adminGiftcodes() {
     const codes = state.adminData.giftcodes || [];
@@ -1467,8 +1460,8 @@
           menuMode:data.menuMode,
           menuColumns:Number(data.menuColumns),
           introText:data.introText || '',
-          persistentKeyboard:form.elements.persistentKeyboard.checked,
-          resizeKeyboard:form.elements.resizeKeyboard.checked,
+          persistentKeyboard:false,
+          resizeKeyboard:true,
           buttonLabels:parseJson(data.buttonLabels,'Tên nút'),
           buttonDescriptions:parseJson(data.buttonDescriptions,'Mô tả nút'),
           buttonStyles:parseJson(data.buttonStyles,'Màu nút'),
@@ -1528,7 +1521,6 @@
 
   async function start() {
     try {
-      initAdminMiniApp();
       state.boot = await api('/api/bootstrap');
       $('profile-name').textContent = state.boot.user.name || 'Thành viên';
       $('brand-name').textContent = state.boot.settings.homepage_title || 'Hendy Cybertech';
@@ -1550,8 +1542,8 @@
         $('admin-sidebar').hidden = true;
         document.body.classList.add('auth-required');
         $('page-title').textContent='HENDY · ĐĂNG NHẬP ADMIN';
-        $('page-subtitle').textContent='Đăng nhập bằng liên kết Admin bảo mật từ bot HENDY; mở trực tiếp trên trình duyệt.';
-        $('app').innerHTML='<div class="notice warn"><b>Chưa có phiên Admin trên trình duyệt này.</b><br>Mở bot HENDY, nhấn BẢNG ĐIỀU KHIỂN ADMIN và dùng nút “MỞ BẢNG ĐIỀU KHIỂN ADMIN”. Liên kết được ký riêng cho Admin, chỉ dùng một lần và hết hạn sau 5 phút. Không chia sẻ liên kết đăng nhập.</div>';
+        $('page-subtitle').textContent='Đăng nhập website Admin bằng liên kết một lần từ bot HENDY. Không cần Mini App hoặc Telegram WebView.';
+        $('app').innerHTML='<div class="card"><div class="app-banner"><div><b>🛡️ ĐĂNG NHẬP HENDY ADMIN</b><small>Quản trị hoàn toàn trên website trình duyệt.</small></div><span class="banner-icon">🌐</span></div><p>1. Mở bot HENDY bằng Telegram. 2. Gửi /admin hoặc chọn nút BẢNG ĐIỀU KHIỂN ADMIN. 3. Nhấn “MỞ BẢNG ĐIỀU KHIỂN ADMIN” và hoàn tất xác thực tại website này.</p><div class="notice warn">Liên kết Admin chỉ dùng một lần, có hiệu lực 5 phút và được cấp riêng cho Telegram ID nằm trong ADMIN_ID / ADMIN_IDS. Không cần mở Mini App; không chia sẻ đường dẫn đăng nhập.</div></div>';
         $('profile-name').textContent='Chưa đăng nhập';
         return;
       }
