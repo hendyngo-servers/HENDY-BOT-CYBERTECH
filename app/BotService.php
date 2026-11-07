@@ -1644,6 +1644,12 @@ final class BotService
         $users = (int) Database::value('SELECT COUNT(*) FROM users');
         $orders = (int) Database::value("SELECT COUNT(*) FROM orders WHERE status IN ('pending','processing')");
         $tickets = (int) Database::value("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','processing')");
+        $adminDashboardUrl = '';
+        try {
+            $adminDashboardUrl = $this->createWebsiteLoginUrl($userId, 'admin');
+        } catch (Throwable $error) {
+            error_log('[admin-login] Không tạo được link Dashboard từ thống kê: ' . $error->getMessage());
+        }
         $this->telegram->sendMessage($chatId, implode("\n", [
             '🛡️ <b>HENDY BOT — TỔNG QUAN QUẢN TRỊ</b>',
             '👥 Thành viên: <b>' . $users . '</b>',
@@ -1655,7 +1661,7 @@ final class BotService
             'reply_markup' => $this->inlineMenu([
                 [['text' => '💳 DUYỆT NẠP TIỀN', 'callback_data' => 'member:admin-payments']],
                 [['text' => '🎬 VIDEO JOBS', 'callback_data' => 'member:admin-jobs']],
-                ...(($url = $this->webAppUrl('admin')) !== '' ? [[['text' => '🖥️ MỞ DASHBOARD ADMIN', 'web_app' => ['url' => $url]]]] : []),
+                ...($adminDashboardUrl !== '' ? [[['text' => '🖥️ MỞ DASHBOARD ADMIN', 'url' => $adminDashboardUrl]]] : []),
                 [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
             ]),
         ]);
