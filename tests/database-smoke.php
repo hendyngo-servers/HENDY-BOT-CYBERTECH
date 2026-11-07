@@ -172,7 +172,8 @@ $websitePayload = $base64Url(json_encode([
     'exp' => time() + 3600,
 ]));
 $websiteUnsigned = $websiteHeader . '.' . $websitePayload;
-$websiteSignature = $base64Url(hash_hmac('sha256', $websiteUnsigned, $websiteSecret, true));
+$websiteSigningKey = hash_hmac('sha256', 'hendy-website-session:secondary', $websiteSecret);
+$websiteSignature = $base64Url(hash_hmac('sha256', $websiteUnsigned, $websiteSigningKey, true));
 $_COOKIE['hendy_web_session'] = $websiteUnsigned . '.' . $websiteSignature;
 $_SERVER['HTTP_X_TELEGRAM_BOT_KEY'] = 'secondary';
 $websiteIdentity = TelegramAuth::authenticateRequest();
