@@ -26,7 +26,7 @@
 (async()=>{
   const state=document.getElementById('state');
   const params=new URLSearchParams(location.search);
-  const ticket=params.get('ticket')||'';
+  const ticket=params.get('ticket')||'';\n  const scope=params.get('scope')==='admin'?'admin':'customer';
   history.replaceState(null,'',location.pathname);
   if(!/^[a-f0-9]{64}$/i.test(ticket)){
     state.textContent='Liên kết không hợp lệ. Hãy quay lại bot Telegram và tạo link mới.';
@@ -35,16 +35,16 @@
   try{
     const response=await fetch('/api/legacy/session/exchange',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ticket}),cache:'no-store',credentials:'same-origin'
+      body:JSON.stringify({ticket,scope}),cache:'no-store',credentials:'same-origin'
     });
     const result=await response.json();
     if(!response.ok) throw new Error(result.error||'Liên kết đã hết hạn hoặc được sử dụng.');
-    state.innerHTML='<strong>✓ Đăng nhập thành công</strong><br><span class="muted">Phiên Website bảo mật đã được cấp. Đang mở trang HENDY…</span>';
+    state.innerHTML='<strong>✓ Đăng nhập thành công</strong><br><span class="muted">Phiên Website bảo mật đã được cấp. Đang mở HENDY…</span>';
     const profile=document.createElement('p');
     profile.textContent='Xin chào '+(result.user?.name||result.user?.username||'thành viên')+' · Telegram ID: '+(result.user?.id||'');
     state.appendChild(profile);
     const bot = result.botKey === 'secondary' ? 'secondary' : 'primary';
-    window.setTimeout(()=>{ window.location.replace('/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot='+bot+'&view=customer'); },700);
+    const destination = result.scope === 'admin' ? '/admin?bot='+bot : '/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot='+bot+'&view=customer';\n    window.setTimeout(()=>{ window.location.replace(destination); },700);
   }catch(error){
     state.textContent=error.message||'Không thể xác minh phiên đăng nhập. Hãy tạo link mới từ bot.';
   }
