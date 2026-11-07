@@ -47,7 +47,10 @@ $assert(str_contains($botServiceSource, "return ['inline_keyboard' => \$rows];")
 $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
 $assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');
-$assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.2"') && str_contains($customerUiSource, 'cc-page-heading'), 'Customer Center có release marker và tiêu đề thành viên');
+$assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.3"') && str_contains($customerUiSource, 'cc-page-heading') && str_contains($customerUiSource, 'TRUNG TÂM KHÁCH HÀNG'), 'Customer Center độc lập có release marker và tiêu đề thành viên');
+$assert(str_contains($customerUiSource, "api('/api/customer-center')") && str_contains($customerUiSource, "api('/api/wallet/payment-requests')") && str_contains($customerUiSource, "api('/api/vouchers')"), 'Customer Center lấy số liệu ví, đơn hàng và voucher từ API thật');
+$assert(!preg_match('/<input[^>]+type=["\']password/i', $customerUiSource) && !str_contains($customerUiSource, 'name="abuse_account_name"'), 'Customer Center không thu thập mật khẩu tài khoản game');
+$assert(!str_contains($customerUiSource, '8639286417') && !str_contains($customerUiSource, 'Hendyngok') && !str_contains($customerUiSource, 'AVATAR/5.gif'), 'Customer Center không hard-code Telegram ID, username hoặc avatar cá nhân');
 $adminUiSource = file_get_contents(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
 $assert(!str_contains($adminUiSource, 'telegram-web-app.js'), 'Admin không tải Telegram Mini App SDK');
 $assert(str_contains($adminUiSource, 'value="inline_keyboard"'), 'trình quản lý menu chỉ lưu Inline Keyboard');

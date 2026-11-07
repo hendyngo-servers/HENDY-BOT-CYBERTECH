@@ -1,1075 +1,404 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="hendy-build" content="2026.11.07.2">
-<meta name="theme-color" content="#080b18">
-<title>HENDY WEBSITE</title>
-<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
-<style>
-:root{
-  color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --bg:#080b18;--panel:#10162a;--muted:#9ba8c6;--text:#f7f8ff;--line:#26314d;
-  --c1:#ff4d6d;--c2:#ff8a3d;--c3:#ffd447;--c4:#4fdb8b;--c5:#35c8ef;--c6:#7b7cff;--c7:#d66bff;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
-  --tg-safe-top:0px;--tg-safe-bottom:0px;--tg-content-safe-top:0px;--tg-content-safe-bottom:0px;
-  --tg-viewport-stable-height:100dvh;
-  --tg-accent:#35c8ef;
-}
-*{box-sizing:border-box}html{background:var(--bg);min-height:100%;overscroll-behavior-y:contain}body{margin:0;min-height:var(--tg-viewport-stable-height,100dvh);color:var(--text);background:radial-gradient(ellipse at 8% -10%,#39204a 0,transparent 34%),radial-gradient(ellipse at 100% 10%,#123d54 0,transparent 30%),var(--bg);padding:calc(var(--safe-top) + var(--tg-safe-top) + var(--tg-content-safe-top)) 0 calc(82px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));overscroll-behavior-y:contain;transition:background-color .18s,color .18s}
-button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
-.shell{width:min(100%,1160px);margin:auto;padding:16px 14px 32px;min-height:calc(var(--tg-viewport-stable-height,100dvh) - var(--tg-safe-top) - var(--tg-content-safe-top) - var(--tg-safe-bottom) - var(--tg-content-safe-bottom))}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 18px}
-.brand{display:flex;align-items:center;gap:11px;min-width:0}
-.brand-mark{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-size:25px;background:linear-gradient(135deg,var(--c1),var(--c5),var(--c7));box-shadow:0 0 32px #b35cff55;animation:brand-glow 4s ease-in-out infinite}
-.brand strong{display:block;font-size:18px;letter-spacing:.08em}.brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.1em;margin-top:3px}
-.bot-chip{border:1px solid #59698d;background:#111a2e;border-radius:99px;padding:8px 11px;color:#d9e7ff;font-size:11px;font-weight:800;white-space:nowrap}
-.hero{position:relative;overflow:hidden;padding:23px 21px;border:1px solid #4c4674;border-radius:26px;background:linear-gradient(130deg,#1b2440eF,#211333eF 56%,#101c31);box-shadow:0 18px 60px #0007}
-.hero:before{content:"";position:absolute;inset:-50% -20%;background:conic-gradient(from 90deg,transparent,var(--c1),transparent,var(--c5),transparent,var(--c7),transparent);opacity:.13;animation:orbit 14s linear infinite}
-.hero-content{position:relative;z-index:1}
-.hero-kicker{display:inline-flex;align-items:center;gap:7px;color:#e2d9ff;font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
-.hero h1{font-size:clamp(25px,6vw,43px);line-height:1.05;margin:14px 0 9px;letter-spacing:-.04em}
-.gradient-text{background:linear-gradient(90deg,var(--c3),var(--c1),var(--c7),var(--c5));-webkit-background-clip:text;background-clip:text;color:transparent;background-size:240% 100%;animation:rainbow 7s linear infinite}
-.hero p{max-width:650px;color:#bac6df;font-size:13px;line-height:1.65;margin:0}
-.hero-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
-.btn{border:1px solid #52628e;border-radius:13px;padding:11px 15px;background:#202b49;color:white;font-weight:850;font-size:12px}
-.btn.primary{border:0;background:linear-gradient(105deg,#6b50e9,#1caacb);box-shadow:0 8px 26px #5e51e955}
-.wallets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 22px}
-.wallet{border:1px solid var(--line);border-radius:17px;padding:14px 12px;background:linear-gradient(150deg,#141d34,#0d1324);min-width:0}
-.wallet small{display:block;color:var(--muted);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
-.wallet b{display:block;font-size:clamp(14px,3vw,20px);margin-top:7px;overflow-wrap:anywhere}
-.wallet:nth-child(1){border-color:#6e394b}.wallet:nth-child(2){border-color:#2a6873}.wallet:nth-child(3){border-color:#64538b}
-.section-heading{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:22px 2px 12px}
-.section-heading h2{margin:0;font-size:16px;letter-spacing:.02em}.section-heading span{font-size:11px;color:var(--muted)}
-.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-.tile{position:relative;isolation:isolate;overflow:hidden;min-height:118px;border:1px solid var(--tile-border);border-radius:20px;text-align:left;padding:15px;background:linear-gradient(145deg,var(--tile-bg),#11172a 78%);box-shadow:0 12px 28px #0005;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;animation:tile-in .55s both;animation-delay:calc(var(--i,0)*45ms)}
-.tile:before{content:"";position:absolute;inset:0;background:linear-gradient(125deg,var(--tile-glow),transparent 56%);opacity:.16;z-index:-1}
-.tile:after{content:"";position:absolute;width:115px;height:115px;right:-45px;bottom:-65px;border-radius:50%;background:var(--tile-glow);filter:blur(26px);opacity:.22;z-index:-1}
-.tile:nth-child(even){transform:translateY(13px)}
-.tile:hover,.tile:focus-visible{transform:translateY(-3px) scale(1.01);border-color:var(--tile-glow);box-shadow:0 15px 36px #0008,0 0 25px color-mix(in srgb,var(--tile-glow) 27%,transparent);outline:none}
-.tile:nth-child(even):hover{transform:translateY(9px) scale(1.01)}
-.tile-wide{grid-column:1/-1;min-height:104px}
-.tile-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.tile-icon{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--tile-glow) 18%,#0c1324);border:1px solid color-mix(in srgb,var(--tile-glow) 48%,transparent);font-size:25px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--tile-glow) 50%,transparent))}
-.tile h3{font-size:13px;line-height:1.25;margin:12px 0 4px;font-weight:950;letter-spacing:.015em}
-.tile p{font-size:10px;line-height:1.45;color:#adb9d2;margin:0}
-.tile .arrow{color:var(--tile-glow);font-size:17px;font-weight:900}
-.tile:nth-child(7n+1){--tile-bg:#24152b;--tile-glow:var(--c1);--tile-border:#77324f}
-.tile:nth-child(7n+2){--tile-bg:#2a1d17;--tile-glow:var(--c2);--tile-border:#74482f}
-.tile:nth-child(7n+3){--tile-bg:#292716;--tile-glow:var(--c3);--tile-border:#71632c}
-.tile:nth-child(7n+4){--tile-bg:#142a25;--tile-glow:var(--c4);--tile-border:#28694f}
-.tile:nth-child(7n+5){--tile-bg:#132a34;--tile-glow:var(--c5);--tile-border:#27647b}
-.tile:nth-child(7n+6){--tile-bg:#1c1e38;--tile-glow:var(--c6);--tile-border:#484d8e}
-.tile:nth-child(7n){--tile-bg:#2b1936;--tile-glow:var(--c7);--tile-border:#79438e}
-.motion{display:inline-block;transform-origin:center}
-.motion-rocket{animation:rocket 2.2s ease-in-out infinite}
-.motion-tool{animation:tool 3.5s ease-in-out infinite}
-.motion-gift{animation:gift 2.8s ease-in-out infinite}
-.motion-wallet{animation:pulse 2.2s ease-in-out infinite}
-.motion-game{animation:game 2.7s ease-in-out infinite}
-.motion-chat{animation:bounce 2.5s ease-in-out infinite}
-.motion-gem{animation:gem 3s ease-in-out infinite}
-.motion-bell{animation:ring 3.2s ease-in-out infinite}
-.motion-code{animation:flip 3.2s ease-in-out infinite}
-.panel{border:1px solid var(--line);border-radius:20px;padding:16px;background:linear-gradient(150deg,#141c31,#0d1323);margin-top:14px}
-.panel h3{margin:0 0 12px;font-size:15px}.muted{color:var(--muted)}.small{font-size:11px}
-.product-list{display:grid;gap:10px}
-.product{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:13px;border:1px solid #2a3653;border-radius:15px;background:#0d1426}
-.product b{font-size:13px}.product small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
-.product .price{font-size:13px;color:#fff;font-weight:950;white-space:nowrap}
-.product-actions{display:flex;align-items:center;gap:8px;margin-top:9px}
-.field{width:100%;border:1px solid #344363;background:#0a1020;color:white;border-radius:12px;padding:12px;margin:6px 0 10px;outline:none}
-.field:focus{border-color:var(--c5);box-shadow:0 0 0 3px #35c8ef22}
-.form-label{display:block;color:#b9c5de;font-size:11px;font-weight:800;margin-top:8px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.row-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #27324c}
-.row-card:last-child{border-bottom:0}
-.status{display:inline-flex;border-radius:99px;padding:5px 8px;background:#1b2940;color:#a9dfff;font-size:10px;font-weight:900}
-.qr{display:block;max-width:240px;width:100%;height:auto;max-height:240px;object-fit:contain;margin:12px auto;border-radius:12px;background:white;padding:8px}
-.notice{padding:12px 13px;background:#18233b;border:1px solid #344b70;border-radius:13px;color:#d6e3ff;font-size:12px;line-height:1.55}
-.notice.error{border-color:#864653;background:#311a26;color:#ffd8dc}
-.notice.success{border-color:#267450;background:#122b25;color:#c6ffdf}
-.back{margin:0 0 12px;background:transparent;border:0;color:#c7d8ff;font-size:12px;font-weight:850}
-.bottom-nav{position:fixed;z-index:9;left:0;right:0;bottom:0;padding:10px 14px calc(10px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));background:#0a1023eF;border-top:1px solid #293756;backdrop-filter:blur(18px)}
-.nav-inner{display:flex;max-width:760px;margin:auto;justify-content:space-around;gap:8px}
-.nav-btn{border:0;background:transparent;color:#9aa9c6;border-radius:12px;padding:7px 9px;min-width:64px;font-size:10px;font-weight:850}
-.nav-btn span{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:white;background:#202d4c}
-.loading{padding:22px;text-align:center;color:var(--muted)}
-.toast{position:fixed;z-index:20;bottom:calc(88px + var(--safe-bottom) + var(--tg-safe-bottom) + var(--tg-content-safe-bottom));left:50%;transform:translate(-50%,14px);opacity:0;pointer-events:none;background:#f1f4ff;color:#10152a;padding:11px 16px;border-radius:13px;font-size:12px;font-weight:900;box-shadow:0 10px 30px #0008;transition:.2s;max-width:90vw;text-align:center}
-.toast.show{opacity:1;transform:translate(-50%,0)}
-@keyframes rocket{0%,100%{transform:translate(0,0) rotate(-7deg)}45%{transform:translate(3px,-7px) rotate(5deg)}60%{transform:translate(-1px,-4px) rotate(0)}}
-@keyframes tool{0%,100%{transform:rotate(0)}30%{transform:rotate(-17deg)}60%{transform:rotate(17deg)}}
-@keyframes gift{0%,100%{transform:rotate(0) scale(1)}40%{transform:rotate(-8deg) scale(1.12)}65%{transform:rotate(8deg) scale(1.06)}}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
-@keyframes game{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-5px) rotate(-8deg)}70%{transform:translateY(1px) rotate(8deg)}}
-@keyframes bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-6px)}}
-@keyframes gem{0%,100%{transform:rotate(0) scale(1)}50%{transform:rotate(12deg) scale(1.13)}}
-@keyframes ring{0%,75%,100%{transform:rotate(0)}78%{transform:rotate(15deg)}82%{transform:rotate(-15deg)}86%{transform:rotate(10deg)}90%{transform:rotate(-6deg)}}
-@keyframes flip{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
-@keyframes tile-in{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes brand-glow{0%,100%{box-shadow:0 0 20px #ff4d6d33}50%{box-shadow:0 0 35px #d66bff77}}
-@keyframes orbit{to{transform:rotate(360deg)}}
-@keyframes rainbow{to{background-position:240% 0}}
-@media(min-width:720px){.shell{padding:25px 24px 42px}.tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tile-wide{grid-column:span 2}.tile:nth-child(even){transform:translateY(16px)}.tile:nth-child(3n){transform:translateY(27px)}.tile:nth-child(even):hover,.tile:nth-child(3n):hover{transform:translateY(8px) scale(1.01)}.hero{padding:30px}.wallets{gap:14px}.wallet{padding:17px}}
-@media(max-width:390px){.shell{padding-left:10px;padding-right:10px}.wallet{padding:11px 9px}.tile{padding:12px;min-height:110px}.tile-icon{width:39px;height:39px;font-size:22px}.tile h3{font-size:12px}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
-.hendy-showcase{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(230px,.9fr);align-items:center;gap:6px;min-height:340px}
-.orbit-stage{position:relative;width:min(100%,360px);aspect-ratio:1;margin:0 auto;display:grid;place-items:center;isolation:isolate}
-.orbit-ring{position:absolute;left:50%;top:50%;border:1px dashed #8290c455;border-radius:50%;transform:translate(-50%,-50%);animation:orbit 22s linear infinite}
-.orbit-ring.ring-a{width:68%;height:68%}
-.orbit-ring.ring-b{width:88%;height:88%;animation-direction:reverse;animation-duration:34s}
-.orbit-core{position:relative;z-index:2;width:48%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 45% 35%,#29375f,#0b1022 72%);border:1px solid #7c89c9;box-shadow:0 0 50px #7469ff35, inset 0 0 30px #6c6ad522;animation:core-float 4.4s ease-in-out infinite}
-.orbit-core span{font-size:clamp(48px,8vw,78px);filter:drop-shadow(0 0 14px #31c8ff99)}
-.orbit-node{position:absolute;z-index:3;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#101a32;border:1px solid #58698f;box-shadow:0 12px 30px #0008;font-size:25px;animation:node-float 3.4s ease-in-out infinite}
-.orbit-node.n-rocket{left:7%;top:13%}
-.orbit-node.n-rainbow{left:47%;top:0;animation-delay:.4s}
-.orbit-node.n-gem{right:4%;top:25%;animation-delay:.8s}
-.orbit-node.n-bolt{left:0;bottom:28%;animation-delay:1.2s}
-.orbit-node.n-gift{right:15%;bottom:5%;animation-delay:1.6s}
-@keyframes core-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2deg)}}
-@keyframes node-float{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-9px) rotate(8deg)}}
-.hero.website-login-hero{margin-bottom:18px}
-@media(max-width:720px){.hendy-showcase{grid-template-columns:1fr;min-height:0}.orbit-stage{width:min(82vw,280px);grid-row:1;margin:2px auto 10px}.hero-content{grid-row:2}.orbit-node{width:42px;height:42px;font-size:22px}}
-@media(prefers-reduced-motion:reduce){.orbit-ring,.orbit-core,.orbit-node{animation:none!important}}
-
-/* HENDY Customer Center — reference-inspired member portal */
-.customer-profile{position:relative;overflow:hidden;padding:22px;border-radius:20px;border:1px solid #a72a3d;background:radial-gradient(ellipse at 90% 10%,#41101a66,transparent 38%),linear-gradient(120deg,#07090d,#090b11 58%,#1b080e);box-shadow:0 0 24px #ff263522,inset 0 0 28px #7d0f1e22}
-.customer-profile:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350d 13.2% 13.5%,transparent 13.7% 26%);mask-image:linear-gradient(90deg,#000,transparent 85%)}
-.customer-profile-top{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
-.customer-avatar{width:64px;height:64px;flex:none;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1c2b4e,#080d1b);border:2px solid #e8f0ff;box-shadow:0 0 17px #46dfff66;font-size:26px;font-weight:950;color:#f8fbff}
-.customer-identity{min-width:0;flex:1}.customer-identity h2{margin:0 0 4px;font-size:20px}.customer-identity span{display:inline-block;border:1px solid #00b889;color:#22e5b0;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:900}.customer-identity small{display:block;color:#9eabc3;margin-top:5px;font-size:11px}
-.customer-vip{padding:7px 10px;border-radius:10px;background:linear-gradient(110deg,#a95b10,#f2b437);color:#170e02;font-size:11px;font-weight:950;white-space:nowrap}
-.customer-progress{position:relative;z-index:1;margin-top:18px;max-width:460px}.customer-progress>div:first-child{display:flex;justify-content:space-between;gap:10px;align-items:center}.customer-progress>div:first-child span{font-size:10px;color:#aab6ca;font-weight:900;letter-spacing:.08em}.customer-progress>div:first-child b{font-size:20px;color:#ffdb66}.customer-progress>small{display:block;margin-top:7px;color:#8893a9;font-size:10px}
-.progress-track{height:7px;border-radius:99px;background:#252a36;overflow:hidden;margin-top:8px}.progress-track span{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#ff414f,#ffcf47,#50e6b3);box-shadow:0 0 10px #ff5c66}
-.customer-wallets{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}.customer-wallets>div{padding:12px;border-radius:13px;background:#090d13d9;border:1px solid #2d394b}.customer-wallets small{display:block;color:#aeb9cb;font-size:9px;font-weight:950}.customer-wallets b{display:block;margin-top:6px;font-size:20px;color:#f5f8ff}.customer-wallets>div:first-child b{color:#51ed75}.customer-wallets>div:nth-child(2) b{color:#46d2f7}.customer-wallets>div:nth-child(3) b{color:#ffcf48}
-.customer-section-title{margin:22px 0 10px;font-weight:950;font-size:16px;color:#f1f4fc;letter-spacing:.01em}.customer-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.customer-stats>div{min-height:82px;padding:13px 9px;text-align:center;border:1px solid #303b4f;border-radius:13px;background:linear-gradient(145deg,#10151f,#080b10)}.customer-stats small{display:block;color:#929eb4;font-size:9px;font-weight:900}.customer-stats b{display:block;margin-top:8px;font-size:22px;color:#f3f6ff}.customer-stats .cyan{color:#43d8f6}.customer-stats .green{color:#40df93}.customer-stats .yellow{color:#ffcb43}
-.customer-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.customer-action{min-height:145px;text-align:left;padding:14px 12px;border:1px solid #465067;border-radius:15px;background:linear-gradient(145deg,#10151f,#080b10);color:#fff;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.customer-action:hover{transform:translateY(-3px);box-shadow:0 10px 26px #0008}.customer-action span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#ffc928,#ffeb73);color:#211700;font-size:17px;font-weight:950}.customer-action b{display:block;margin:10px 0 6px;font-size:11px}.customer-action small{display:block;color:#a7b2c7;font-size:10px;line-height:1.5}.customer-action.abuse{border-color:#b87b21}.customer-action.abuse b{color:#ffda4d}.customer-action.support{border-color:#13b8de}.customer-action.support span{background:linear-gradient(135deg,#b12bea,#ee5bff);color:white}.customer-action.support b{color:#e982ff}.customer-action.voucher{border-color:#15b987}.customer-action.voucher span{background:linear-gradient(135deg,#2ce5a1,#7afbc0);color:#062c1d}.customer-action.voucher b{color:#52f0b3}
-.customer-replay{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;padding:17px;border:1px solid #aa25e7;border-radius:15px;background:linear-gradient(110deg,#16091d,#0d0a14);text-decoration:none;color:#fff}.customer-replay>span{display:grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#c40bea;color:#180022;font-size:20px;box-shadow:0 0 17px #bd17ed99}.customer-replay b{display:block;color:#ed8cff;font-size:13px}.customer-replay small{display:block;margin-top:4px;color:#aab4c8;font-size:10px}.customer-replay.disabled{opacity:.75;cursor:not-allowed;border-style:dashed}
-.customer-linked{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px;border-radius:13px;background:#101728;border:1px solid #2f4160}.customer-linked span{display:block;font-size:10px;color:#9eacc7;margin-top:5px}.customer-tabs{display:flex;overflow-x:auto;gap:8px;padding:8px 0;margin-top:18px;scrollbar-width:thin}.customer-tabs button{white-space:nowrap;flex:none;border:1px solid #2d3b56;border-radius:11px;background:#0d1423;color:#aab8d0;padding:11px 13px;font-size:10px;font-weight:950}.customer-tabs button.active{border-color:#22c9ed;color:#fff;background:#103245;box-shadow:0 0 15px #13bde833}.customer-tab-content{min-height:170px;padding:12px;border-radius:15px;border:1px solid #3a465d;background:linear-gradient(145deg,#080b11,#06080d)}.customer-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}.customer-list-head h3{font-size:12px;margin:0}.customer-list-head span{font-size:10px;color:#8f9db5}.customer-record{padding:13px;margin-bottom:9px;border:1px solid #26334b;border-radius:12px;background:#0d1320}.customer-record:last-child{margin-bottom:0}.customer-record .record-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.customer-record .record-top b{display:block;font-size:12px}.customer-record .record-top small{display:block;font-size:9px;color:#8f9eb9;margin-top:4px}.customer-record-foot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #222d42;color:#8f9bb2;font-size:10px}.customer-empty{display:grid;place-items:center;text-align:center;gap:8px;padding:28px 14px;color:#aebbd1}.customer-empty>span{font-size:28px}.customer-empty b{font-size:12px}.customer-empty small{font-size:10px;color:#7e8ba5}.customer-form-card{margin-bottom:13px;padding:14px;border:1px solid #2a3d5f;border-radius:14px;background:#0d1423}.customer-footer{text-align:center;padding:24px 8px 12px;color:#64718b;font-size:10px}
-.positive{color:#5cf09a}.negative{color:#ff7888}
-@media(max-width:650px){.customer-profile{padding:16px}.customer-avatar{width:52px;height:52px}.customer-identity h2{font-size:16px}.customer-wallets{gap:7px}.customer-wallets>div{padding:10px 8px}.customer-wallets small{font-size:8px}.customer-wallets b{font-size:15px}.customer-actions{grid-template-columns:1fr}.customer-action{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:10px}.customer-action span{grid-row:span 2}.customer-action b{margin:1px 0 5px}.customer-action small{grid-column:2}.customer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-section-title{font-size:14px}.customer-tabs button{font-size:9px;padding:10px 11px}}
-
-/* Customer Center dashboard layout matching the supplied HENDY reference. */
-.customer-profile{
-  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);
-  align-items:center;gap:20px;min-height:205px;padding:22px 26px;
-  border-color:#b51f35;
-  background:repeating-linear-gradient(128deg,transparent 0 11%,#f51e3210 11.2% 11.6%,transparent 11.8% 24%),radial-gradient(ellipse at 95% 12%,#5e111c88,transparent 38%),linear-gradient(110deg,#030405,#070708 62%,#18070b);
-  box-shadow:0 0 22px #ff1b342c,inset 0 0 36px #b313271f;
-}
-.customer-profile-main{min-width:0;position:relative;z-index:1}
-.customer-profile-top{display:flex;align-items:center;gap:14px}
-.customer-avatar{width:72px;height:72px;border:2px solid #f8fafc;box-shadow:0 0 18px #e3f8ff44;background:linear-gradient(140deg,#15212e,#05070b);font-size:28px}
-.customer-identity h2{font-size:27px;font-weight:950;letter-spacing:-.02em}
-.customer-identity span{font-size:12px;background:#001b14;border-radius:6px}
-.customer-profile-vip{margin-top:10px}
-.customer-vip{display:inline-block;padding:5px 12px;border-radius:8px;background:linear-gradient(110deg,#ff8b00,#ffd02f);color:#190d00;font-size:12px}
-.customer-progress{max-width:430px;margin-top:10px}
-.customer-progress>div:first-child b{font-size:13px;color:#b9c0cd}
-.customer-progress .progress-track{height:8px;background:#343434}
-.customer-progress .progress-track span{background:linear-gradient(90deg,#ff172e,#ff8c00,#ffe23b)}
-.customer-wallets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;align-content:center}
-.customer-wallets>div{min-height:94px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:0;border-radius:12px;background:#050609b8;padding:13px}
-.customer-wallets small{font-size:10px;color:#edf0f5}
-.customer-wallets b{font-size:26px}
-.customer-wallets>div:first-child b{color:#00f326}
-.customer-wallets>div:nth-child(2) b{color:#ffb900}
-.customer-summary-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);gap:22px;margin-top:24px}
-.customer-summary-panel{min-width:0;padding:0 0 12px;border-radius:13px;background:#0506088a}
-.customer-panel-title{margin:0 0 12px;padding:0 2px 10px;border-bottom:1px dashed #343434;color:#f0f2f5;font-size:17px;font-weight:950}
-.customer-panel-title.green-title{color:#00f326}
-.customer-summary-panel .customer-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.customer-summary-panel .customer-stats>div{min-height:86px;background:linear-gradient(145deg,#0b0d10,#050607);border-color:#333}
-.customer-summary-panel .customer-stats>div:nth-child(2){border-color:#04b9db}
-.customer-summary-panel .customer-stats>div:nth-child(3){border-color:#008f4c}
-.customer-account-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.account-stat{min-height:86px;padding:14px 10px;border:1px solid #8c20b8;border-radius:12px;background:#08070c;text-align:center;display:flex;flex-direction:column;justify-content:center}
-.account-stat.total{grid-column:1/-1;border-color:#00ce25;background:#061409}
-.account-stat:nth-child(2){border-color:#a227d9}
-.account-stat:nth-child(3){border-color:#e4ae00}
-.account-stat.nyc{border-color:#00b9d8}
-.account-stat small{font-size:10px;color:#aab0bb;font-weight:900}
-.account-stat b{display:block;margin-top:8px;color:#fff;font-size:23px}
-.account-stat.total b{color:#00f326}
-.account-stat:nth-child(2) b{color:#fff}
-.account-stat:nth-child(3) b{color:#ffca21}
-.account-stat.nyc b{color:#3dd8f5}
-.customer-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.customer-action{min-height:148px;border-color:#333;background:linear-gradient(145deg,#07090b,#030405)}
-.customer-action.abuse{border-color:#e5a900}
-.customer-action.abuse span{background:linear-gradient(135deg,#ffc400,#ffed76)}
-.customer-action.support{border-color:#00bce6}
-.customer-action.support span{background:linear-gradient(135deg,#c629f3,#f05bff);color:#fff}
-.customer-action.voucher{border-color:#00d88a}
-.customer-action.voucher span{background:linear-gradient(135deg,#00d88a,#70ffd0);color:#062116}
-.customer-replay{margin-top:9px;border-color:#d400ef;background:linear-gradient(110deg,#100817,#09040d)}
-.customer-replay b{color:#df28ff;font-size:15px}
-.customer-replay>span{background:#c400ea;color:white}
-@media(max-width:760px){
-  .customer-profile{grid-template-columns:1fr;gap:16px;padding:17px}
-  .customer-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .customer-wallets>div{min-height:78px}
-  .customer-avatar{width:58px;height:58px}
-  .customer-identity h2{font-size:20px}
-  .customer-summary-grid{grid-template-columns:1fr;gap:12px}
-  .customer-summary-panel .customer-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .customer-actions{grid-template-columns:1fr}
-  .customer-action{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:10px}
-  .customer-action span{grid-row:span 2}
-  .customer-action b{margin:1px 0 5px}
-  .customer-action small{grid-column:2}
-}
-@media(max-width:430px){
-  .customer-summary-panel .customer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .customer-panel-title{font-size:14px}
-  .customer-wallets b{font-size:20px}
-}
-
-/* Shared Customer Center reference layout for browser website and Telegram Mini App. */
-.cc-dashboard{display:grid;gap:14px;max-width:1120px;margin:0 auto;padding:2px 0 28px;color:#f5f7fb}
-.cc-profile{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:center;gap:18px;padding:22px 24px;border:1px solid #ad2438;border-radius:18px;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350b 13.2% 13.5%,transparent 13.7% 26%),radial-gradient(ellipse at 95% 5%,#5f111e88,transparent 36%),linear-gradient(115deg,#030405,#0b0c10 60%,#18070b);box-shadow:0 0 24px #ff263522,inset 0 0 30px #8a11221e}
-.cc-profile-main{min-width:0}.cc-profile-head{display:flex;align-items:center;gap:14px}.cc-avatar{width:66px;height:66px;flex:none;display:grid;place-items:center;border-radius:50%;border:2px solid #f7f8fc;background:linear-gradient(135deg,#212b39,#050608);color:#fff;font-size:26px;font-weight:950;box-shadow:0 0 17px #e4f7ff40}
-.cc-identity{min-width:0}.cc-identity h2{margin:0 0 5px;font-size:23px;line-height:1.2;font-weight:950;overflow-wrap:anywhere}.cc-identity .cc-id{display:inline-flex;gap:5px;padding:4px 8px;border:1px solid #00cb89;border-radius:7px;background:#062219;color:#54efb9;font-size:11px;font-weight:850}.cc-identity small{display:block;margin-top:5px;color:#a5afc0;font-size:11px}
-.cc-vipline{display:flex;align-items:center;gap:8px;margin-top:12px}.cc-vip{display:inline-flex;padding:5px 10px;border-radius:7px;background:linear-gradient(120deg,#ff8b00,#ffd02f);color:#241300;font-size:11px;font-weight:950}.cc-bot-chip{font-size:10px;color:#9eacbf;font-weight:800}
-.cc-progress{max-width:440px;margin-top:12px}.cc-progress-label{display:flex;justify-content:space-between;gap:10px;color:#aeb8c8;font-size:10px}.cc-progress-label strong{color:#fff;font-size:11px}.cc-progress-track{height:9px;margin-top:7px;overflow:hidden;border:1px solid #3e3e3e;border-radius:99px;background:#24262b}.cc-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff192f,#ff8d00,#ffe13b);box-shadow:0 0 12px #ff7b38}
-.cc-wallets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cc-wallet{min-height:104px;padding:14px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;text-align:center;border:1px solid #2d3441;border-radius:13px;background:#05070bd9}.cc-wallet small{color:#d5dae3;font-size:10px;font-weight:900;letter-spacing:.04em}.cc-wallet b{color:#12f23b;font-size:24px;line-height:1.2;font-weight:950}.cc-wallet.voucher b{color:#ffc323}
-.cc-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 1px 0;color:#f1f3f8;font-size:14px;font-weight:950;letter-spacing:.025em}.cc-section-title small{color:#8e9aae;font-size:10px;font-weight:700}
-.cc-support-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.cc-support-card{width:100%;min-height:145px;padding:14px;text-align:left;border:1px solid #38404d;border-radius:14px;background:linear-gradient(145deg,#0c0e13,#050608);color:#fff;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.cc-support-card:hover{transform:translateY(-2px);box-shadow:0 10px 23px #0007}.cc-support-card .cc-number{display:grid;place-items:center;width:32px;height:32px;margin-bottom:9px;border-radius:9px;background:linear-gradient(135deg,#ffc400,#ffed76);color:#201700;font-weight:950}.cc-support-card b{display:block;font-size:11px;margin-bottom:6px}.cc-support-card small{display:block;color:#aab3c3;font-size:10px;line-height:1.5}.cc-support-card.abuse{border-color:#c18d20}.cc-support-card.abuse b{color:#ffda4d}.cc-support-card.ticket{border-color:#0aaed5}.cc-support-card.ticket .cc-number{background:linear-gradient(135deg,#bd28ed,#ef5cff);color:white}.cc-support-card.ticket b{color:#e88aff}.cc-support-card.voucher{border-color:#0ebc83}.cc-support-card.voucher .cc-number{background:linear-gradient(135deg,#00d88a,#7bf5c5);color:#062b1d}.cc-support-card.voucher b{color:#56eab4}
-.cc-replay{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid #c018da;border-radius:14px;background:linear-gradient(105deg,#170a1d,#09070d);color:#fff;text-decoration:none}.cc-replay-icon{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:10px;background:#c20ee7;color:#fff;font-size:20px;box-shadow:0 0 17px #bd17ed80}.cc-replay b{display:block;color:#e38aff;font-size:13px}.cc-replay small{display:block;margin-top:4px;color:#aeb7c8;font-size:10px}.cc-replay.disabled{opacity:.72;border-style:dashed;cursor:not-allowed}
-.cc-summary{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:15px}.cc-summary-card{padding:15px;border:1px solid #303744;border-radius:14px;background:#06080b}.cc-summary-head{padding-bottom:10px;margin-bottom:11px;border-bottom:1px dashed #343b48;font-size:14px;font-weight:950}.cc-summary-head.green{color:#17e87c}.cc-order-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.cc-stat{min-height:77px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:8px 5px;border:1px solid #333b49;border-radius:11px;background:linear-gradient(145deg,#0e1117,#06080a);text-align:center}.cc-stat small{font-size:9px;color:#a3adbd;font-weight:850}.cc-stat b{font-size:20px;color:#f7f8fa}.cc-stat.cyan{border-color:#087f9c}.cc-stat.cyan b{color:#55dff8}.cc-stat.green{border-color:#08794b}.cc-stat.green b{color:#4ee7a0}.cc-stat.yellow{border-color:#806216}.cc-stat.yellow b{color:#ffd34b}
-.cc-account-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cc-account-stat{min-height:77px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:9px;border:1px solid #9233ba;border-radius:11px;background:#09070e;text-align:center}.cc-account-stat.main{grid-column:1/-1;border-color:#078b36;background:#06140a}.cc-account-stat.nyc{border-color:#087f9c}.cc-account-stat.voucher{border-color:#826114}.cc-account-stat small{font-size:9px;color:#a6afbf;font-weight:850}.cc-account-stat b{font-size:18px;color:#fff}.cc-account-stat.main b{color:#42e879}.cc-account-stat.nyc b{color:#4cdcf1}.cc-account-stat.voucher b{color:#ffd34b}
-.cc-linked{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #34445f;border-radius:13px;background:#0d1420}.cc-linked b{display:block;font-size:12px}.cc-linked small{display:block;margin-top:4px;color:#9eacc1;font-size:10px}.cc-btn{border:1px solid #3b526f;border-radius:10px;padding:9px 12px;background:#142743;color:#e9f2ff;font-size:10px;font-weight:900;cursor:pointer}.cc-tabs{display:flex;gap:7px;overflow:auto;padding:6px 0 2px;scrollbar-width:thin}.cc-tabs button{white-space:nowrap;flex:none;border:1px solid #303b52;border-radius:10px;padding:10px 12px;background:#0d1423;color:#aebbd0;font-size:10px;font-weight:950;cursor:pointer}.cc-tabs button.active{border-color:#17bcd9;color:#fff;background:#103245;box-shadow:0 0 13px #13bde833}
-.cc-tab{min-height:150px;padding:13px;border:1px solid #354052;border-radius:14px;background:linear-gradient(145deg,#080b11,#06080d)}.cc-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}.cc-list-head h3{margin:0;font-size:12px;font-weight:950}.cc-list-head span{color:#91a0b7;font-size:10px}.cc-order{margin-bottom:9px;padding:12px;border:1px solid #27354a;border-radius:12px;background:#0d1320}.cc-order:last-child{margin-bottom:0}.cc-order-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.cc-order-top b{display:block;font-size:12px}.cc-order-top small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}.cc-order-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #263044;color:#a4aec0;font-size:10px}.cc-detail-btn{border:1px solid #36516c;border-radius:8px;padding:6px 9px;background:#12263b;color:#bcecff;font-size:9px;font-weight:900}.cc-status{display:inline-flex;flex:none;padding:4px 7px;border:1px solid #44516a;border-radius:7px;color:#d5dceb;font-size:9px;font-weight:850}.cc-empty{display:grid;place-items:center;gap:7px;padding:28px 12px;text-align:center;color:#aebbd1}.cc-empty span{font-size:26px}.cc-empty b{font-size:12px}.cc-empty small{font-size:10px;color:#8290a9}
-.cc-deposit-form{display:grid;gap:9px;margin-bottom:13px;padding:14px;border:1px solid #2b4261;border-radius:13px;background:#0d1423}.cc-field{width:100%;border:1px solid #33415a;border-radius:10px;padding:11px 12px;background:#070c15;color:#fff;outline:none}.cc-field:focus{border-color:#1eb8df;box-shadow:0 0 0 3px #1eb8df22}.cc-record{margin-bottom:8px;padding:12px;border:1px solid #27354a;border-radius:11px;background:#0d1320}.cc-record:last-child{margin-bottom:0}.cc-record-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.cc-record small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}.cc-record-foot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#a4aec0;font-size:10px}.cc-positive{color:#4be49a}.cc-negative{color:#ff7b8d}.cc-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#000b;backdrop-filter:blur(8px)}.cc-modal[hidden]{display:none}.cc-modal-card{width:min(100%,520px);max-height:min(82vh,700px);overflow:auto;padding:18px;border:1px solid #48556b;border-radius:16px;background:#0a0e16;box-shadow:0 24px 80px #000b}.cc-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.cc-modal-head h3{margin:0;font-size:15px}.cc-modal-close{border:1px solid #39475c;border-radius:9px;padding:7px 10px;background:#151e2e;color:#fff}
-@media(max-width:760px){.cc-dashboard{gap:11px}.cc-profile{grid-template-columns:1fr;gap:14px;padding:16px}.cc-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-wallet{min-height:84px}.cc-summary{grid-template-columns:1fr;gap:11px}.cc-support-grid{grid-template-columns:1fr}.cc-support-card{min-height:0;display:grid;grid-template-columns:34px 1fr;column-gap:10px}.cc-support-card .cc-number{grid-row:span 2;margin:0}.cc-support-card b{margin:1px 0 5px}.cc-support-card small{grid-column:2}.cc-order-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-identity h2{font-size:19px}}
-@media(max-width:430px){.cc-order-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-summary-head{font-size:12px}.cc-wallet b{font-size:20px}.cc-identity h2{font-size:17px}.cc-profile{padding:14px}}
-
-
-/* HENDY member portal release 2026.11.07.1 — unified browser + Telegram Mini App skin */
-body:has(.cc-dashboard){
-  background:
-    radial-gradient(ellipse at 4% 12%,#5b10221f,transparent 34%),
-    radial-gradient(ellipse at 95% 15%,#8f16301b,transparent 30%),
-    #050509;
-}
-.cc-dashboard{max-width:1180px;gap:16px;padding-top:5px}
-.cc-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 2px 3px}
-.cc-page-eyebrow{display:flex;align-items:center;gap:8px;color:#ff829d;font-size:10px;font-weight:950;letter-spacing:.17em}
-.cc-page-eyebrow span{width:7px;height:7px;border-radius:50%;background:#ff315d;box-shadow:0 0 12px #ff315d}
-.cc-page-heading h1{margin:8px 0 5px;color:#fff;font-size:clamp(22px,3.4vw,31px);font-weight:1000;letter-spacing:.015em}
-.cc-page-heading p{margin:0;color:#aab0bf;font-size:12px;line-height:1.55}
-.cc-page-chip{flex:none;padding:9px 12px;border:1px solid #71243a;border-radius:999px;background:#180912;color:#ffb7c8;font-size:10px;font-weight:900;letter-spacing:.04em}
-.cc-profile{border-color:#a72a3d;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350b 13.2% 13.5%,transparent 13.7% 26%),radial-gradient(ellipse at 94% 8%,#53101d88,transparent 38%),linear-gradient(115deg,#030405,#0b0c10 60%,#18070b);box-shadow:0 14px 42px #0008,0 0 24px #ff26351b,inset 0 0 30px #8a11221e}
-.cc-avatar{background:linear-gradient(145deg,#2a111a,#08090d);border-color:#ffe4eb;box-shadow:0 0 20px #ff315d35}
-.cc-wallet{background:linear-gradient(145deg,#101016,#07070b);border-color:#3c2730}
-.cc-support-card,.cc-summary-card,.cc-linked,.cc-tab{box-shadow:0 10px 28px #0005}
-.cc-support-card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.cc-support-card:focus-visible,.cc-btn:focus-visible,.cc-tabs button:focus-visible{outline:2px solid #ff7895;outline-offset:3px}
-.cc-support-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px #0008,0 0 18px #ff315d16}
-.cc-replay{border-color:#8e2550;background:linear-gradient(110deg,#1b0711,#0b080d)}
-.cc-replay:not(.disabled):hover{border-color:#ff4b79;box-shadow:0 0 22px #ff315d24}
-.cc-tabs{border-bottom-color:#45202c}
-.cc-tabs button.active{border-color:#ff315d;background:linear-gradient(135deg,#551226,#220b15);color:#fff;box-shadow:0 0 18px #ff315d1f}
-.cc-order,.cc-deposit,.cc-transaction{border-color:#37232c;background:linear-gradient(145deg,#101016,#08080c)}
-.cc-btn{border-color:#a62c49;background:linear-gradient(110deg,#981b3b,#e72f5c);color:#fff}
-.cc-btn:hover{filter:brightness(1.12)}
-@media(max-width:760px){
-  .cc-page-heading{align-items:flex-start;flex-direction:column;gap:10px}
-  .cc-page-chip{padding:7px 10px}
-  .cc-dashboard{gap:12px}
-}
-@media(max-width:430px){
-  .cc-page-heading h1{font-size:21px}
-  .cc-page-heading p{font-size:11px}
-}
-
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="hendy-build" content="2026.11.07.3">
+  <meta name="theme-color" content="#050509">
+  <meta name="robots" content="noindex,nofollow">
+  <title>TRUNG TÂM KHÁCH HÀNG | HENDY CYBERTECH</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      --bg:#050509;--panel:#0d0e13;--panel2:#11131a;--line:#302b33;--muted:#a6aab7;--text:#f7f8fc;
+      --red:#ff315d;--red2:#9c1737;--green:#29e58f;--yellow:#ffd044;--cyan:#44d8f4;--purple:#dc61ff;
+      --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--tg-height:100dvh;
+    }
+    *{box-sizing:border-box}
+    html{min-height:100%;background:var(--bg);overscroll-behavior-y:contain}
+    body{margin:0;min-height:var(--tg-height);padding:calc(14px + var(--safe-top)) 0 calc(24px + var(--safe-bottom));color:var(--text);background:radial-gradient(ellipse at 4% 10%,#5b10221f,transparent 34%),radial-gradient(ellipse at 96% 12%,#8f16301c,transparent 30%),#050509}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .shell{width:min(100%,1160px);margin:0 auto;padding:0 14px 26px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:11px;min-width:0}
+    .brand-mark{width:43px;height:43px;display:grid;place-items:center;flex:none;border:1px solid #ff7693;border-radius:14px;background:linear-gradient(140deg,#ff315d,#6e102a);box-shadow:0 0 24px #ff315d30;font-size:23px}
+    .brand-copy strong{display:block;font-size:16px;letter-spacing:.08em}.brand-copy small{display:block;margin-top:3px;color:#9ca3b2;font-size:9px;letter-spacing:.13em;font-weight:800}
+    .live-chip{display:inline-flex;align-items:center;gap:7px;max-width:48%;padding:8px 11px;border:1px solid #3b2931;border-radius:99px;background:#120b10;color:#ffc2d0;font-size:9px;font-weight:900;letter-spacing:.06em}
+    .live-dot{width:7px;height:7px;border-radius:50%;background:#2ce596;box-shadow:0 0 10px #2ce596}
+    .cc-dashboard{display:grid;gap:16px;max-width:1180px;margin:0 auto;color:#f5f7fb}
+    .cc-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 2px 3px}
+    .cc-page-eyebrow{display:flex;align-items:center;gap:8px;color:#ff829d;font-size:10px;font-weight:950;letter-spacing:.17em}
+    .cc-page-eyebrow span{width:7px;height:7px;border-radius:50%;background:#ff315d;box-shadow:0 0 12px #ff315d}
+    .cc-page-heading h1{margin:8px 0 5px;color:#fff;font-size:clamp(22px,3.4vw,31px);font-weight:1000;letter-spacing:.015em}
+    .cc-page-heading p{margin:0;color:#aab0bf;font-size:12px;line-height:1.55}
+    .cc-page-chip{flex:none;padding:9px 12px;border:1px solid #71243a;border-radius:999px;background:#180912;color:#ffb7c8;font-size:10px;font-weight:900;letter-spacing:.04em}
+    .cc-profile{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:center;gap:18px;padding:22px 24px;border:1px solid #a72a3d;border-radius:18px;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350b 13.2% 13.5%,transparent 13.7% 26%),radial-gradient(ellipse at 94% 8%,#53101d88,transparent 38%),linear-gradient(115deg,#030405,#0b0c10 60%,#18070b);box-shadow:0 14px 42px #0008,0 0 24px #ff26351b,inset 0 0 30px #8a11221e}
+    .cc-profile-main{min-width:0}
+    .cc-profile-head{display:flex;align-items:center;gap:14px}
+    .cc-avatar{width:66px;height:66px;flex:none;display:grid;place-items:center;overflow:hidden;border:2px solid #ffe4eb;border-radius:50%;background:linear-gradient(145deg,#2a111a,#08090d);box-shadow:0 0 20px #ff315d35;color:#fff;font-size:25px;font-weight:950}
+    .cc-avatar img{width:100%;height:100%;object-fit:cover}
+    .cc-identity{min-width:0}.cc-identity h2{margin:0 0 5px;font-size:23px;font-weight:950;overflow-wrap:anywhere}
+    .cc-id{display:inline-flex;gap:5px;padding:4px 8px;border:1px solid #00cb89;border-radius:7px;background:#062219;color:#54efb9;font-size:11px;font-weight:850}
+    .cc-identity small{display:block;margin-top:5px;color:#a5afc0;font-size:11px}
+    .cc-vipline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .cc-vip{padding:5px 10px;border-radius:7px;background:linear-gradient(120deg,#ff8b00,#ffd02f);color:#241300;font-size:11px;font-weight:950}
+    .cc-bot-chip{color:#9eacbf;font-size:10px;font-weight:800}
+    .cc-progress{max-width:440px;margin-top:12px}
+    .cc-progress-label{display:flex;justify-content:space-between;gap:10px;color:#aeb8c8;font-size:10px}
+    .cc-progress-label strong{color:#fff;font-size:11px}
+    .cc-progress-track{height:9px;margin-top:7px;overflow:hidden;border:1px solid #3e3e3e;border-radius:99px;background:#24262b}
+    .cc-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff192f,#ff8d00,#ffe13b);box-shadow:0 0 12px #ff7b38}
+    .cc-wallets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .cc-wallet{min-height:104px;padding:14px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;text-align:center;border:1px solid #3c2730;border-radius:13px;background:linear-gradient(145deg,#101016,#07070b)}
+    .cc-wallet small{color:#d5dae3;font-size:10px;font-weight:900;letter-spacing:.04em}
+    .cc-wallet b{color:#12f23b;font-size:24px;font-weight:950}.cc-wallet.voucher b{color:#ffc323}
+    .cc-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 1px 0;color:#f1f3f8;font-size:14px;font-weight:950;letter-spacing:.025em}
+    .cc-section-title small{color:#8e9aae;font-size:10px;font-weight:700}
+    .cc-support-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+    .cc-support-card{width:100%;min-height:145px;padding:14px;text-align:left;border:1px solid #38404d;border-radius:14px;background:linear-gradient(145deg,#0c0e13,#050608);color:#fff;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s;box-shadow:0 10px 28px #0005}
+    .cc-support-card:hover{transform:translateY(-2px);box-shadow:0 10px 23px #0007}
+    .cc-support-card .cc-number{display:grid;place-items:center;width:32px;height:32px;margin-bottom:9px;border-radius:9px;background:linear-gradient(135deg,#ffc400,#ffed76);color:#201700;font-weight:950}
+    .cc-support-card b{display:block;margin-bottom:6px;font-size:11px}.cc-support-card small{display:block;color:#aab3c3;font-size:10px;line-height:1.5}
+    .cc-support-card.abuse{border-color:#c18d20}.cc-support-card.abuse b{color:#ffda4d}
+    .cc-support-card.ticket{border-color:#0aaed5}.cc-support-card.ticket .cc-number{background:linear-gradient(135deg,#bd28ed,#ef5cff);color:#fff}.cc-support-card.ticket b{color:#e88aff}
+    .cc-support-card.voucher{border-color:#0ebc83}.cc-support-card.voucher .cc-number{background:linear-gradient(135deg,#00d88a,#7bf5c5);color:#062b1d}.cc-support-card.voucher b{color:#56eab4}
+    .cc-replay{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid #8e2550;border-radius:14px;background:linear-gradient(110deg,#1b0711,#0b080d);color:#fff;transition:.2s}
+    .cc-replay:hover{border-color:#ff4b79;box-shadow:0 0 22px #ff315d24}
+    .cc-replay-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:10px;background:#c20ee7;color:#fff;font-size:20px;box-shadow:0 0 17px #bd17ed80}
+    .cc-replay b{display:block;color:#e38aff;font-size:13px}.cc-replay small{display:block;margin-top:4px;color:#aeb7c8;font-size:10px}
+    .cc-replay.disabled{border-style:dashed;opacity:.72;cursor:not-allowed}
+    .cc-summary{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:15px}
+    .cc-summary-card{padding:15px;border:1px solid #303744;border-radius:14px;background:#06080b;box-shadow:0 10px 28px #0005}
+    .cc-summary-head{padding-bottom:10px;margin-bottom:11px;border-bottom:1px dashed #343b48;font-size:14px;font-weight:950}
+    .cc-summary-head.green{color:#17e87c}
+    .cc-order-stats,.cc-account-stats{display:grid;gap:8px}
+    .cc-order-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .cc-account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .cc-stat,.cc-account-stat{min-height:77px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:8px 5px;border:1px solid #333b49;border-radius:11px;background:linear-gradient(145deg,#0e1117,#06080a);text-align:center}
+    .cc-stat small,.cc-account-stat small{font-size:9px;color:#a3adbd;font-weight:850}
+    .cc-stat b,.cc-account-stat b{font-size:20px;color:#f7f8fa}
+    .cc-stat.cyan{border-color:#087f9c}.cc-stat.cyan b{color:#55dff8}
+    .cc-stat.green{border-color:#08794b}.cc-stat.green b{color:#4ee7a0}
+    .cc-stat.yellow{border-color:#806216}.cc-stat.yellow b{color:#ffd34b}
+    .cc-account-stat.main{grid-column:1/-1;border-color:#078b36;background:#06140a}.cc-account-stat.main b{color:#42e879}
+    .cc-account-stat.nyc{border-color:#9233ba}.cc-account-stat.nyc b{color:#fff}
+    .cc-account-stat.voucher{border-color:#826114}.cc-account-stat.voucher b{color:#ffd34b}
+    .cc-linked{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #34445f;border-radius:13px;background:#0d1420;box-shadow:0 10px 28px #0005}
+    .cc-linked b{display:block;font-size:12px}.cc-linked small{display:block;margin-top:4px;color:#9eacc1;font-size:10px}
+    .cc-btn{border:1px solid #a62c49;border-radius:10px;padding:9px 12px;background:linear-gradient(110deg,#981b3b,#e72f5c);color:#fff;font-size:10px;font-weight:900}
+    .cc-tabs{display:flex;gap:7px;overflow:auto;padding:6px 0 2px;scrollbar-width:thin}
+    .cc-tabs button{white-space:nowrap;flex:none;border:1px solid #303b52;border-radius:10px;padding:10px 12px;background:#0d1423;color:#aebbd0;font-size:10px;font-weight:950}
+    .cc-tabs button.active{border-color:#ff315d;background:linear-gradient(135deg,#551226,#220b15);color:#fff;box-shadow:0 0 18px #ff315d1f}
+    .cc-tab{min-height:150px;padding:13px;border:1px solid #354052;border-radius:14px;background:linear-gradient(145deg,#080b11,#06080d);box-shadow:0 10px 28px #0005}
+    .cc-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}
+    .cc-list-head h3{margin:0;font-size:12px;font-weight:950}.cc-list-head span{color:#91a0b7;font-size:10px}
+    .cc-order,.cc-record{margin-bottom:9px;padding:12px;border:1px solid #27354a;border-radius:12px;background:#0d1320}
+    .cc-order-top,.cc-record-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .cc-order-top b,.cc-record-top b{display:block;font-size:12px}
+    .cc-order-top small,.cc-record-top small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}
+    .cc-order-foot,.cc-record-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #263044;color:#a4aec0;font-size:10px}
+    .cc-detail-btn{border:1px solid #36516c;border-radius:8px;padding:6px 9px;background:#12263b;color:#bcecff;font-size:9px;font-weight:900}
+    .cc-status{display:inline-flex;flex:none;padding:4px 7px;border:1px solid #44516a;border-radius:7px;color:#d5dceb;font-size:9px;font-weight:850}
+    .cc-empty{display:grid;place-items:center;gap:7px;padding:30px 12px;text-align:center;color:#aebbd1}
+    .cc-empty span{font-size:26px}.cc-empty b{font-size:12px}.cc-empty small{font-size:10px;color:#8290a9}
+    .cc-deposit-form,.cc-form-card{display:grid;gap:9px;margin-bottom:13px;padding:14px;border:1px solid #333e54;border-radius:12px;background:#0d111b}
+    .cc-field{width:100%;min-height:42px;padding:10px 12px;border:1px solid #33415a;border-radius:10px;background:#070c15;color:#fff;outline:none}
+    .cc-field:focus{border-color:#e72f5c;box-shadow:0 0 0 3px #e72f5c22}
+    .cc-form-label{display:block;margin:2px 0 0;color:#b9c5de;font-size:11px;font-weight:800}
+    .cc-primary{width:100%;min-height:42px;padding:10px 14px;border:1px solid #a62c49;border-radius:10px;background:linear-gradient(110deg,#981b3b,#e72f5c);color:#fff;font-size:11px;font-weight:950}
+    .cc-secondary{width:100%;min-height:40px;padding:9px 12px;border:1px solid #3b526f;border-radius:10px;background:#142743;color:#e9f2ff;font-size:10px;font-weight:900}
+    .cc-notice{padding:12px 13px;border:1px solid #344b70;border-radius:13px;background:#18233b;color:#d6e3ff;font-size:11px;line-height:1.55}
+    .cc-notice.warning{border-color:#866846;background:#31261a;color:#ffdcba}
+    .cc-positive{color:#42e879!important}.cc-negative{color:#ff718f!important}
+    .cc-qr{display:block;width:min(100%,260px);margin:8px auto;border:8px solid #fff;border-radius:10px;background:#fff}
+    .cc-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#000b;backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .2s}
+    .cc-modal[hidden]{display:none}
+    .cc-modal.show{opacity:1;pointer-events:auto}
+    .cc-modal-card{width:min(100%,560px);max-height:min(86vh,760px);overflow:auto;padding:20px;border:1px solid #6b293e;border-radius:16px;background:#090a0f;box-shadow:0 24px 80px #000c}
+    .cc-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .cc-modal-head h3{margin:0;color:#ffcf4d;font-size:14px}
+    .cc-modal-close{border:1px solid #39475c;border-radius:9px;padding:7px 10px;background:#151e2e;color:#fff;font-size:10px;font-weight:900}
+    .cc-modal-actions{display:grid;gap:8px;margin-top:12px}
+    .cc-record+.cc-record{margin-top:8px}
+    .cc-footer{padding:8px 0 3px;text-align:center;color:#687183;font-size:9px;font-weight:800;letter-spacing:.1em}
+    .loading,.error-state,.login-card{max-width:650px;margin:40px auto;padding:25px;border:1px solid #512033;border-radius:18px;background:linear-gradient(145deg,#151016,#09090e);box-shadow:0 18px 55px #0008}
+    .loading{text-align:center;color:#ffb7c8}.error-state h2,.login-card h1{margin:0 0 10px}.login-card p{color:#abb3c3;line-height:1.65;font-size:13px}.login-card .cc-primary{display:block;margin:16px 0;text-align:center;line-height:22px}
+    .toast{position:fixed;left:50%;bottom:calc(16px + var(--safe-bottom));z-index:2000;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #64243a;border-radius:12px;background:#160b12;color:#fff;font-size:12px;box-shadow:0 12px 30px #0009;opacity:0;transform:translate(-50%,14px);pointer-events:none;transition:.2s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    button:focus-visible,a:focus-visible{outline:2px solid #ff7895;outline-offset:3px}
+    @media(max-width:760px){
+      .cc-page-heading{align-items:flex-start;flex-direction:column;gap:10px}
+      .cc-profile{grid-template-columns:1fr;gap:14px;padding:16px}
+      .cc-summary{grid-template-columns:1fr;gap:11px}
+      .cc-support-grid{grid-template-columns:1fr}
+      .cc-support-card{min-height:0;display:grid;grid-template-columns:34px 1fr;column-gap:10px}
+      .cc-support-card .cc-number{grid-row:span 2;margin:0}
+      .cc-support-card b{margin:1px 0 5px}.cc-support-card small{grid-column:2}
+      .cc-order-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media(max-width:430px){
+      .brand-copy strong{font-size:14px}.live-chip{font-size:8px;padding:7px 8px}
+      .cc-page-heading h1{font-size:21px}.cc-page-heading p{font-size:11px}
+      .cc-identity h2{font-size:18px}.cc-avatar{width:58px;height:58px}
+      .cc-order-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .cc-wallet{min-height:88px}.cc-wallet b{font-size:20px}
+      .cc-modal-card{padding:15px}
+    }
+  </style>
 </head>
 <body>
-<div class="shell">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">💠</div>
-      <div><strong>HENDY <span class="gradient-text">DIGITAL</span></strong><small>TECHNOLOGY · LIVE · SERVICES</small></div>
-    </div>
-    <div id="bot-chip" class="bot-chip">BOT · ĐANG KẾT NỐI</div>
-  </header>
-  <main id="app"><div class="loading">🌈 Đang khởi tạo HENDY Website...</div></main>
-</div>
-<nav class="bottom-nav" aria-label="Điều hướng chính">
-  <div class="nav-inner">
-    <button class="nav-btn active" data-nav="home"><span>🏠</span>Trang chủ</button>
-    <button class="nav-btn" data-nav="services"><span>🚀</span>Dịch vụ</button>
-    <button class="nav-btn" data-nav="wallet"><span>💳</span>Ví tiền</button>
-    <button class="nav-btn" data-nav="customer"><span>👤</span>Khách hàng</button>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="HENDY CYBERTECH">
+        <span class="brand-mark">💠</span>
+        <span class="brand-copy"><strong>HENDY <span style="color:#ff7895">CYBERTECH</span></strong><small>CUSTOMER CENTER · MEMBER PORTAL</small></span>
+      </a>
+      <span class="live-chip"><span class="live-dot"></span><span id="connection-label">ĐANG KẾT NỐI</span></span>
+    </header>
+    <main id="app"><div class="loading">💠 Đang tải Trung tâm khách hàng HENDY...</div></main>
+    <footer class="cc-footer">HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</footer>
   </div>
-</nav>
-<div id="toast" class="toast"></div>
-<script>
-(() => {
-  'use strict';
-  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-  const params = new URLSearchParams(window.location.search);
-  const savedBotKey = !params.has('bot') ? localStorage.getItem('hendy_bot_key') : '';
-  const botKey = params.get('bot') === 'secondary' || (!params.has('bot') && savedBotKey === 'secondary') ? 'secondary' : 'primary';
-  const state = { boot:null, center:null, section:'home', products:[], payment:null, accounts:[], referrals:null, vip:null, lastAction:null };
-  let realtimeSocket=null;
-  let realtimeRetry=null;
-  let realtimeHeartbeat=null;
-  let realtimeRetryCount=0;
-  let realtimeStopped=false;
-  let realtimeRefreshing=false;
-  const $ = (selector, root=document) => root.querySelector(selector);
-  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
-
-  function hapticImpact(style='light'){
-    try{if(typeof tg?.HapticFeedback?.impactOccurred==='function')tg.HapticFeedback.impactOccurred(style);}catch(_){}
-  }
-  function hapticSelection(){
-    try{if(typeof tg?.HapticFeedback?.selectionChanged==='function')tg.HapticFeedback.selectionChanged();}catch(_){}
-  }
-  function hapticNotification(kind='success'){
-    try{
-      if(typeof tg?.HapticFeedback?.notificationOccurred==='function')tg.HapticFeedback.notificationOccurred(kind);
-      else hapticImpact(kind==='error'?'heavy':'light');
-    }catch(_){}
-  }
-  const safeColor = value => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value : '';
-  function applyTelegramTheme(){
-    if(!tg)return;
-    const theme=tg.themeParams||{};
-    const root=document.documentElement;
-    const map={
-      '--bg':theme.bg_color,
-      '--panel':theme.secondary_bg_color,
-      '--text':theme.text_color,
-      '--muted':theme.hint_color,
-      '--line':theme.section_separator_color,
-      '--tg-accent':theme.button_color
-    };
-    for(const [name,value] of Object.entries(map)){
-      const color=safeColor(value);if(color)root.style.setProperty(name,color);
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+  <script>
+  (() => {
+    'use strict';
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    const params = new URLSearchParams(location.search);
+    let savedBotKey = '';
+    try { savedBotKey = params.has('bot') ? '' : (localStorage.getItem('hendy_bot_key') || ''); } catch (_) {}
+    const botKey = params.get('bot') === 'secondary' || (!params.has('bot') && savedBotKey === 'secondary') ? 'secondary' : 'primary';
+    const state = {boot:null,center:null,orders:[],accounts:[],payments:[],tickets:[],vouchers:{eligibleOrders:[],requests:[]},vip:{},tab:'active',supportType:'support'};
+    const $ = (selector,root=document) => root.querySelector(selector);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const money = value => new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
+    const fmtDate = value => { const d = new Date(value); return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('vi-VN'); };
+    function toast(message,kind='success'){
+      const el=$('#toast');if(!el)return;el.textContent=message;el.style.borderColor=kind==='error'?'#b52c4d':'#64243a';el.classList.add('show');
+      if(tg?.HapticFeedback?.notificationOccurred){try{tg.HapticFeedback.notificationOccurred(kind==='error'?'error':'success');}catch(_){}}
+      window.clearTimeout(toast.timer);toast.timer=window.setTimeout(()=>el.classList.remove('show'),2800);
     }
-    if(tg.colorScheme)root.dataset.telegramTheme=tg.colorScheme;
-    if(tg.platform)root.dataset.telegramPlatform=tg.platform;
-    try{
-      tg.setHeaderColor(safeColor(theme.header_bg_color)||safeColor(theme.bg_color)||'#080b18');
-      tg.setBackgroundColor(safeColor(theme.bg_color)||'#080b18');
-      if(typeof tg.setBottomBarColor==='function' && safeColor(theme.bottom_bar_bg_color))tg.setBottomBarColor(theme.bottom_bar_bg_color);
-    }catch(_){}
-  }
-  function applyTelegramViewport(){
-    if(!tg)return;
-    const root=document.documentElement;
-    const safe=tg.safeAreaInset||{};
-    const content=tg.contentSafeAreaInset||{};
-    const pairs=[
-      ['--tg-safe-top',safe.top],['--tg-safe-bottom',safe.bottom],
-      ['--tg-content-safe-top',content.top],['--tg-content-safe-bottom',content.bottom]
-    ];
-    for(const [name,value] of pairs){
-      const number=Number(value);if(Number.isFinite(number)&&number>=0)root.style.setProperty(name,number+'px');
+    function setTelegramViewport(){
+      if(!tg)return;
+      const safe=tg.safeAreaInset||{},content=tg.contentSafeAreaInset||{};
+      const pairs=[['--safe-top',Number(safe.top||0)+Number(content.top||0)],['--safe-bottom',Number(safe.bottom||0)+Number(content.bottom||0)]];
+      pairs.forEach(([key,val])=>{if(Number.isFinite(val)&&val>=0)document.documentElement.style.setProperty(key,val+'px');});
+      const h=Number(tg.viewportStableHeight||tg.viewportHeight||0);
+      if(h>200)document.documentElement.style.setProperty('--tg-height',h+'px');
     }
-    const stable=Number(tg.viewportStableHeight||tg.viewportHeight||0);
-    if(Number.isFinite(stable)&&stable>200)root.style.setProperty('--tg-viewport-stable-height',stable+'px');
-    document.body?.classList.toggle('telegram-mini-app',Boolean(tg.initData));
-  }
-  function syncMiniAppControls(){
-    if(!tg?.initData)return;
-    const back=tg.BackButton;
-    if(back){
-      if(state.section && state.section!=='home' && state.section!=='website-login')back.show();
-      else back.hide();
+    function initTelegram(){
+      if(!tg?.initData)return;
+      try{tg.ready();tg.expand();tg.setHeaderColor?.('#050509');tg.setBackgroundColor?.('#050509');}catch(_){}
+      setTelegramViewport();
+      tg.onEvent?.('viewportChanged',setTelegramViewport);
+      tg.onEvent?.('safeAreaChanged',setTelegramViewport);
+      tg.onEvent?.('contentSafeAreaChanged',setTelegramViewport);
+      tg.onEvent?.('themeChanged',()=>{try{tg.setHeaderColor?.('#050509');tg.setBackgroundColor?.('#050509');}catch(_){}});
     }
-    const main=tg.MainButton;
-    if(!main)return;
-    const wantsDeposit=state.section==='wallet' || (state.section==='customer' && state.customerTab==='deposit');
-    if(wantsDeposit){
-      main.setText('TẠO QR VIETQR');
-      main.show();
-      if(typeof main.enable==='function')main.enable();
-    }else{
-      main.hide();
+    async function api(path,options={}){
+      const auth = tg?.initData ? {'Authorization':'tma '+tg.initData} : {};
+      const headers = {...auth,'X-Telegram-Bot-Key':botKey,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})};
+      const response=await fetch(path,{method:options.method||'GET',headers,credentials:'same-origin',cache:'no-store',body:options.body?JSON.stringify(options.body):undefined});
+      let data={};try{data=await response.json();}catch(_){throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');}
+      if(!response.ok){const error=new Error(data.error||data.message||('HTTP '+response.status));error.status=response.status;throw error;}
+      return data;
     }
-  }
-  function initTelegramMiniApp(){
-    if(!tg?.initData)return;
-    try{tg.ready();tg.expand();}catch(_){}
-    applyTelegramTheme();
-    applyTelegramViewport();
-    if(typeof tg.onEvent==='function'){
-      tg.onEvent('themeChanged',applyTelegramTheme);
-      tg.onEvent('viewportChanged',applyTelegramViewport);
-      tg.onEvent('safeAreaChanged',applyTelegramViewport);
-      tg.onEvent('contentSafeAreaChanged',applyTelegramViewport);
+    async function fetchPublicConfig(){
+      try{const r=await fetch('/api/v1/public/config',{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok)return await r.json();}catch(_){}
+      return {};
     }
-    if(tg.BackButton && typeof tg.BackButton.onClick==='function'){
-      tg.BackButton.onClick(()=>{hapticImpact('light');openSection('home');});
+    function loginView(config){
+      const bot=botKey==='secondary'?(config.secondaryBotUrl||''):(config.botUrl||'');
+      const other=botKey==='secondary'?(config.botUrl||''):(config.secondaryBotUrl||'');
+      const makeLink=url=>url?url+(url.includes('?')?'&':'?')+'start=web_login':'';
+      const link=makeLink(bot),otherLink=makeLink(other);
+      $('#connection-label').textContent='CHƯA XÁC THỰC';
+      $('#app').innerHTML='<section class="login-card"><div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · SECURE ACCESS</div><h1>TRUNG TÂM KHÁCH HÀNG</h1><p>Đây là khu vực quản lý hồ sơ, ví tiền, VIP, đơn hàng và yêu cầu hỗ trợ. Vui lòng đăng nhập bằng tài khoản Telegram để tải dữ liệu thành viên của bạn.</p>'+(link?'<a class="cc-primary" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">🔐 ĐĂNG NHẬP QUA TELEGRAM</a>':'<div class="cc-notice warning">Bot Telegram chưa được cấu hình liên kết công khai. Vui lòng liên hệ CSKH.</div>')+(otherLink?'<a class="cc-secondary" href="'+esc(otherLink)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;margin-top:8px">↗ ĐĂNG NHẬP QUA BOT CÒN LẠI</a>':'')+'<div class="cc-notice">Mở bot HENDY → gửi /start → yêu cầu liên kết đăng nhập Website. Liên kết có thời hạn ngắn, chỉ dùng một lần và được xác minh ở máy chủ. Không nhập mật khẩu Telegram, OTP hoặc PIN tại website.</div></section>';
     }
-    if(tg.MainButton && typeof tg.MainButton.onClick==='function'){
-      tg.MainButton.onClick(async()=>{
-        try{
-          tg.MainButton.disable?.();
-          tg.MainButton.showProgress?.();
-          await createDeposit();
-          hapticNotification('success');
-        }catch(error){
-          showToast(error.message||'Không thể tạo yêu cầu nạp.','error');
-        }finally{
-          tg.MainButton.hideProgress?.();
-          tg.MainButton.enable?.();
-        }
-      });
+    function statusLabel(status){
+      const map={pending:'Chờ xác nhận',processing:'Đang xử lý',completed:'Hoàn tất',cancelled:'Đã hủy',refunded:'Đã hoàn tiền',rejected:'Từ chối',approved:'Đã duyệt',open:'Mới tạo'};
+      return map[String(status||'').toLowerCase()]||String(status||'Đang cập nhật');
     }
-    syncMiniAppControls();
-  }
-  const showToast = (message,kind='success') => {
-    const toast = $('#toast'); toast.textContent = message; toast.classList.add('show');
-    hapticNotification(kind);
-    window.setTimeout(() => toast.classList.remove('show'), 2600);
-  };
-  async function api(path, options={}) {
-    const authHeaders = tg && tg.initData ? {'Authorization':'tma ' + tg.initData} : {};
-    const response = await fetch(path, {
-      method: options.method || 'GET',
-      headers: {
-        ...authHeaders,
-        'X-Telegram-Bot-Key': botKey,
-        ...(options.body ? {'Content-Type':'application/json'} : {}),
-        ...(options.headers || {})
-      },
-      credentials:'same-origin',
-      body: options.body ? JSON.stringify(options.body) : undefined,
-      cache:'no-store'
-    });
-    let data={};
-    try { data=await response.json(); } catch (_) { throw new Error('Máy chủ trả về dữ liệu không hợp lệ.'); }
-    if (!response.ok) throw new Error(data.error || data.message || ('Yêu cầu lỗi HTTP ' + response.status));
-    return data;
-  }
-
-  async function refreshWebsiteData(){
-    if(realtimeRefreshing || !state.boot) return;
-    realtimeRefreshing=true;
-    try{
-      const data=await api('/api/bootstrap');
-      if(data.botKey!==botKey) return;
-      state.boot=data;
-      if(state.section==='home') renderHome();
-      else await openSection(state.section);
-      showToast('✨ Dữ liệu HENDY vừa được cập nhật.');
-    }catch(error){
-      console.warn('HENDY realtime refresh failed:',error.message);
-    }finally{
-      realtimeRefreshing=false;
+    function initials(user){
+      const name=String(user.name||user.username||'H').replace(/^@/,'').trim();
+      return esc(name.slice(0,1).toUpperCase()||'H');
     }
-  }
-
-  async function connectWebsiteRealtime(){
-    if(!state.boot || realtimeStopped || realtimeSocket) return;
-    try{
-      const ticket=await api('/api/realtime-ticket',{method:'POST',body:{}});
-      const socket=new WebSocket(ticket.url);
-      realtimeSocket=socket;
-      socket.addEventListener('open',()=>{
-        socket.send(JSON.stringify({type:'auth',ticket:ticket.ticket}));
-      });
-      socket.addEventListener('message',event=>{
-        let message;
-        try{message=JSON.parse(event.data);}catch(_){return;}
-        if(message.type==='realtime.ready'){
-          realtimeRetryCount=0;
-          const badge=$('#bot-chip');
-          if(badge)badge.textContent='BOT '+(botKey==='secondary'?'02':'01')+' · HENDY LIVE';
-          window.clearInterval(realtimeHeartbeat);
-          realtimeHeartbeat=window.setInterval(()=>{
-            if(realtimeSocket===socket && socket.readyState===WebSocket.OPEN)
-              socket.send(JSON.stringify({type:'ping',timestamp:Date.now()}));
-          },25000);
-          return;
-        }
-        if(message.type==='pong') return;
-        if(message.type==='auth.failed' || message.type==='origin.rejected') {
-          const badge=$('#bot-chip');if(badge)badge.textContent='HENDY · ĐANG ĐỒNG BỘ LẠI';
-          return;
-        }
-        if(message.type==='user.data.changed' || message.type.startsWith('admin.'))
-          void refreshWebsiteData();
-      });
-      socket.addEventListener('close',()=>{
-        if(realtimeSocket===socket)realtimeSocket=null;
-        window.clearInterval(realtimeHeartbeat);realtimeHeartbeat=null;
-        if(!realtimeStopped){
-          realtimeRetryCount=Math.min(realtimeRetryCount+1,6);
-          const delay=Math.min(30000,1000*(2**realtimeRetryCount))+Math.floor(Math.random()*400);
-          window.clearTimeout(realtimeRetry);
-          realtimeRetry=window.setTimeout(connectWebsiteRealtime,delay);
-        }
-      });
-      socket.addEventListener('error',()=>{const badge=$('#bot-chip');if(badge)badge.textContent='HENDY · ĐANG KẾT NỐI';});
-    }catch(error){
-      if(!realtimeStopped){
-        realtimeRetryCount=Math.min(realtimeRetryCount+1,6);
-        const delay=Math.min(30000,1000*(2**realtimeRetryCount))+Math.floor(Math.random()*400);
-        window.clearTimeout(realtimeRetry);
-        realtimeRetry=window.setTimeout(connectWebsiteRealtime,delay);
-      }
+    function currentOrderList(){
+      const selected=state.tab;
+      if(selected==='active')return state.orders.filter(x=>['pending','processing'].includes(String(x.status)));
+      return state.orders;
     }
-  }
-
-  const tileData = [
-    {key:'live',icon:'🚀',motion:'motion-rocket',title:'MINIGAME LIVE',desc:'Tài khoản, liên kết và hỗ trợ đơn',section:'minigame'},
-    {key:'tools',icon:'🧰',motion:'motion-tool',title:'THUÊ TOOL',desc:'Kho công cụ và thời hạn sử dụng',section:'tools'},
-    {key:'codes',icon:'🎁',motion:'motion-gift',title:'MUA CODE',desc:'Mã dịch vụ và đơn hàng',section:'codes'},
-    {key:'wallet',icon:'💳',motion:'motion-wallet',title:'NẠP TIỀN',desc:'Tạo yêu cầu QR VietQR',section:'wallet',wide:true},
-    {key:'otp',icon:'📲',motion:'motion-rocket',title:'OTP & PROXY',desc:'Thuê OTP SMS, Proxy xoay và Proxy tĩnh',section:'otp-center'},
-    {key:'viptools',icon:'💎',motion:'motion-gem',title:'KHO VIP',desc:'Ưu đãi và sản phẩm VIP',section:'vip'},
-    {key:'customer',icon:'👤',motion:'motion-chat',title:'TRUNG TÂM KHÁCH HÀNG',desc:'Thông tin, ví và tài khoản',section:'customer',wide:true},
-    {key:'history',icon:'📜',motion:'motion-code',title:'LỊCH SỬ',desc:'Giao dịch và đơn hàng',section:'history'},
-    {key:'ref',icon:'🎊',motion:'motion-gift',title:'GIỚI THIỆU REF',desc:'Link mời và hoa hồng',section:'ref'},
-    {key:'group',icon:'💬',motion:'motion-chat',title:'NHÓM CHAT',desc:'Kết nối cộng đồng HENDY',section:'community'},
-    {key:'news',icon:'📢',motion:'motion-bell',title:'KÊNH THÔNG BÁO',desc:'Tin tức và cập nhật',section:'community'},
-    {key:'gift',icon:'🎟️',motion:'motion-gift',title:'GIFTCODE',desc:'Kích hoạt mã quà tặng',section:'gift'},
-    {key:'support',icon:'🧑‍💻',motion:'motion-chat',title:'LIÊN HỆ CSKH',desc:'Tạo ticket hỗ trợ',section:'support'},
-    {key:'vietsub',icon:'🎬',motion:'motion-game',title:'VIETSUB',desc:'Tạo yêu cầu xử lý video',section:'vietsub'}
-  ];
-  function memberName(){ return state.boot?.user?.name || state.boot?.user?.username || 'HENDY MEMBER'; }
-  function renderHome(){
-    const user=state.boot.user;
-    const first=String(memberName()).split(' ')[0];
-    $('#app').innerHTML = `
-      <section class="hero hendy-showcase">
-        <div class="hero-content">
-          <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM · BOT ${botKey==='secondary'?'02':'01'}</div>
-          <h1>Xin chào <span class="gradient-text">${escapeHtml(first)}</span>!</h1>
-          <p>Công nghệ kết nối giá trị thật. Một hệ sinh thái dịch vụ công nghệ, Mini Game Live, Tool, Code, OTP, Proxy và tiện ích thành viên được đồng bộ theo từng bot HENDY.</p>
-          <div class="hero-actions">
-            <button class="btn primary" data-open="services">🚀 Khám phá dịch vụ</button>
-            <button class="btn" data-open="customer">👤 Hồ sơ thành viên</button>
-          </div>
-        </div>
-        <div class="orbit-stage" aria-hidden="true">
-          <div class="orbit-ring ring-a"></div><div class="orbit-ring ring-b"></div>
-          <div class="orbit-core"><span>💠</span></div>
-          <span class="orbit-node n-rocket">🚀</span><span class="orbit-node n-rainbow">🌈</span>
-          <span class="orbit-node n-gem">💎</span><span class="orbit-node n-bolt">⚡</span>
-          <span class="orbit-node n-gift">🎁</span>
-        </div>
-      </section>
-      <section class="wallets">
-        <div class="wallet"><small>💰 VÍ CHÍNH</small><b>${money(user.balance)}</b></div>
-        <div class="wallet"><small>🪙 VÍ NYC</small><b>${money(user.nycWallet)}</b></div>
-        <div class="wallet"><small>🎟️ VÍ VOUCHER</small><b>${money(user.voucherWallet)}</b></div>
-      </section>
-      <div class="section-heading"><h2>🌈 HỆ SINH THÁI HENDY</h2><span>7 sắc màu · icon động</span></div>
-      <section class="tiles">${tileData.map((tile,index)=>`
-        <button class="tile ${tile.wide?'tile-wide':''}" style="--i:${index}" data-open="${tile.section}">
-          <div class="tile-top"><span class="tile-icon"><span class="motion ${tile.motion}">${tile.icon}</span></span><span class="arrow">↗</span></div>
-          <h3>${tile.title}</h3><p>${tile.desc}</p>
-        </button>`).join('')}</section>
-      <section class="panel">
-        <h3>👑 THÀNH VIÊN HENDY</h3>
-        <div class="row-card"><span class="muted small">Telegram ID</span><b>${escapeHtml(user.id)}</b></div>
-        <div class="row-card"><span class="muted small">Hạng thành viên</span><span class="status">${Number(user.vipLevel||0)>0?'VIP '+user.vipLevel:'MEMBER'}</span></div>
-        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(user.totalDeposited)}</b></div>
-        <div class="row-card"><span class="muted small">Bot đang kết nối</span><b>HENDY ${botKey==='secondary'?'BOT 2':'BOT 1'}</b></div>
-      </section>`;
-    setNav('home');
-    syncMiniAppControls();
-  }
-  function setNav(nav){
-    document.querySelectorAll('[data-nav]').forEach(btn=>btn.classList.toggle('active',btn.dataset.nav===nav));
-  }
-  function pageFrame(title,subtitle,body){
-    $('#app').innerHTML = `<button class="back" data-open="home">← TRỞ VỀ HENDY</button>
-      <div class="section-heading"><h2>${title}</h2><span>${subtitle||''}</span></div>${body}`;
-    syncMiniAppControls();
-  }
-  async function loadProducts(category,title){
-    state.section=category; setNav('services');
-    pageFrame('⏳ ĐANG TẢI '+title,'Kho PostgreSQL','<div class="panel loading">Đang lấy sản phẩm và tồn kho thực tế...</div>');
-    const data=await api('/api/products?category='+encodeURIComponent(category));
-    state.products=data.products||[];
-    const body=state.products.length?'<div class="product-list">'+state.products.map(product=>`
-      <article class="product">
-        <div><b>${escapeHtml(product.name)}</b><small>${escapeHtml(product.description||'')||'Dịch vụ HENDY'} · Kho: ${product.stock===null?'Có sẵn':Number(product.stock)}</small><small>Ví thanh toán: ${['otp','proxy'].includes(product.category)?'Ví NYC':'Ví Chính'} ${Number(product.vipLevel||0)>0?'· Yêu cầu VIP '+product.vipLevel:''}</small></div>
-        <div style="text-align:right"><div class="price">${money(product.price)}</div><button class="btn primary" style="margin-top:8px" data-buy="${product.id}">MUA</button></div>
-      </article>`).join('')+'</div>':'<div class="notice">Kho hiện chưa có sản phẩm đang bán. Admin có thể thêm sản phẩm trong Dashboard.</div>';
-    pageFrame(title,'Giá và tồn kho đang lấy trực tiếp từ PostgreSQL',body);
-  }
-  async function loadWallet(){
-    state.section='wallet';setNav('wallet');
-    const [user,requests]=await Promise.all([api('/api/me'),api('/api/wallet/payment-requests')]);
-    const u=user.user, list=requests.requests||[];
-    pageFrame('💳 VÍ & NẠP TIỀN','VietQR · đối soát thủ công',`
-      <section class="wallets"><div class="wallet"><small>VÍ CHÍNH</small><b>${money(u.balance)}</b></div><div class="wallet"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div><div class="wallet"><small>VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div></section>
-      <div class="panel"><h3>＋ TẠO YÊU CẦU NẠP</h3><label class="form-label" for="deposit-amount">Số tiền (VNĐ)</label><input id="deposit-amount" class="field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO QR VIETQR</button><p class="muted small">Ví chỉ được cộng sau khi Admin xác minh sao kê ngân hàng.</p><div id="payment-result"></div></div>
-      <div class="panel"><h3>🧾 YÊU CẦU NẠP GẦN ĐÂY</h3>${list.length?list.map(item=>`<div class="row-card"><div><b>${money(item.amount)}</b><small class="muted small" style="display:block">${escapeHtml(item.payment_id)} · CK: ${escapeHtml(item.transfer_content)}</small></div><span class="status">${escapeHtml(item.status)}</span></div>`).join(''):'<p class="muted small">Chưa có yêu cầu nạp.</p>'}</div>`);
-  }
-  async function createDeposit(){
-    const amount=Number($('#deposit-amount')?.value||0);
-    const result=$('#payment-result');
-    if(!Number.isInteger(amount)||amount<10000||amount>500000000) throw new Error('Số tiền nạp từ 10.000 đến 500.000.000 VNĐ.');
-    result.innerHTML='<p class="muted small">Đang tạo yêu cầu VietQR...</p>';
-    const data=await api('/api/wallet/payment-requests',{method:'POST',body:{amount}});
-    const item=data.request;
-    state.payment=data;
-    result.innerHTML=`<div class="notice success">Đã tạo yêu cầu <b>${escapeHtml(item.payment_id)}</b>. Hãy chuyển đúng số tiền và nội dung bên dưới.</div>
-      <img class="qr" alt="Mã QR VietQR" src="${escapeHtml(data.qrUrl)}">
-      <div class="row-card"><span class="muted small">Ngân hàng</span><b>${escapeHtml(item.bank_id||'')}</b></div>
-      <div class="row-card"><span class="muted small">Số tài khoản</span><b>${escapeHtml(item.account_number||'')}</b></div>
-      <div class="row-card"><span class="muted small">Chủ tài khoản</span><b>${escapeHtml(item.account_holder||'')}</b></div>
-      <div class="row-card"><span class="muted small">Số tiền</span><b>${money(item.amount)}</b></div>
-      <div class="row-card"><span class="muted small">Nội dung chuyển khoản</span><b>${escapeHtml(item.transfer_content)}</b></div>`;
-    showToast('Đã tạo yêu cầu nạp, chờ Admin đối soát.');
-  }
-  async function loadAccounts(){
-    state.section='minigame';setNav('services');
-    const data=await api('/api/linked-accounts');state.accounts=data.accounts||[];
-    const brands=['QQ88','HI88','78WIN','RR88','MM88','GG88','ABCVIP','XX8','U888','J88','ABC8','88CLB','AD88','SC88','C168','CM88','F8BET'];
-    pageFrame('🚀 TÀI KHOẢN MINI GAME','Chỉ lưu username, không nhập mật khẩu/OTP',`
-      <div class="panel"><h3>＋ LIÊN KẾT TÀI KHOẢN</h3><label class="form-label">Thương hiệu</label><select id="account-brand" class="field">${brands.map(b=>'<option>'+b+'</option>').join('')}</select><label class="form-label">Tên đăng nhập</label><input id="account-username" class="field" maxlength="64" placeholder="Username tài khoản"><button class="btn primary" data-action="link-account">LIÊN KẾT</button><p class="muted small">ABCVIP chỉ được xác thực khi nhà cung cấp cấp OAuth/SSO chính thức. Không nhập mật khẩu trong Website.</p></div>
-      <div class="panel"><h3>🔗 TÀI KHOẢN ĐÃ LIÊN KẾT</h3>${state.accounts.length?state.accounts.map(item=>`<div class="row-card"><div><b>${escapeHtml(item.brand)}</b><small class="muted small" style="display:block">${escapeHtml(item.username)}</small></div><button class="btn" data-delete-account="${item.id}">XÓA</button></div>`).join(''):'<p class="muted small">Bạn chưa liên kết tài khoản nào.</p>'}</div>`);
-  }
-  async function linkAccount(){
-    const brand=$('#account-brand').value,username=$('#account-username').value.trim();
-    if(username.length<3||username.length>64)throw new Error('Username phải từ 3 đến 64 ký tự.');
-    await api('/api/linked-accounts',{method:'POST',body:{brand,username}});
-    showToast('Đã liên kết tài khoản.');await loadAccounts();
-  }
-  async function deleteAccount(id){await api('/api/linked-accounts/'+encodeURIComponent(id),{method:'DELETE'});showToast('Đã xóa liên kết.');await loadAccounts();}
-  async function loadCustomer(tab='active', refresh=true){
-    state.section='customer';
-    state.customerTab=tab;
-    setNav('customer');
-    if(refresh || !state.customerData){
-      const [center,accounts,orders,payments,tickets,vouchers,vip]=await Promise.all([
-        api('/api/customer-center'),
-        api('/api/linked-accounts'),
-        api('/api/orders'),
-        api('/api/wallet/payment-requests'),
-        api('/api/support/tickets'),
-        api('/api/vouchers'),
-        api('/api/vip')
-      ]);
-      state.customerData={center,accounts:accounts.accounts||[],orders:orders.orders||[],payments:payments.requests||[],tickets:tickets.tickets||[],vouchers,vip};
-      state.center=center;
-      state.accounts=accounts.accounts||[];
-    }
-    renderCustomer();
-  }
-
-  function customerStatus(status){
-    const labels={pending:'Chờ xác nhận',processing:'Đang xử lý',completed:'Hoàn tất',cancelled:'Đã hủy',refunded:'Đã hoàn tiền',rejected:'Từ chối',approved:'Đã duyệt'};
-    return labels[status]||status||'Đang cập nhật';
-  }
-
-  function renderCustomer(){
-    const data=state.customerData;
-    if(!data)return;
-    const center=data.center||{};
-    const u=center.user||state.boot.user||{};
-    const stats=center.statistics||{};
-    const ticketCounts=center.tickets||{};
-    const vip=data.vip||{};
-    const selected=state.customerTab||'active';
-    const orders=data.orders||[];
-    const activeOrders=orders.filter(item=>['pending','processing'].includes(String(item.status)));
-    const visibleOrders=selected==='active'?activeOrders:orders;
-    const orderRows=visibleOrders.length?visibleOrders.map(order=>`
-      <article class="cc-order">
-        <div class="cc-order-top">
-          <div><b>${escapeHtml(order.product_name||'Đơn hàng HENDY')}</b><small>${escapeHtml(order.order_code||'')} · ${new Date(order.created_at).toLocaleString('vi-VN')}</small></div>
-          <span class="cc-status">${customerStatus(order.status)}</span>
-        </div>
-        <div class="cc-order-foot"><span>Giá trị đơn: <b>${money(order.amount)}</b></span><button class="cc-detail-btn" type="button" data-order-detail="${escapeHtml(order.order_code||'')}">CHI TIẾT</button></div>
-      </article>`).join(''):'<div class="cc-empty"><span>📭</span><b>'+ (selected==='active'?'Không có đơn hàng đang chạy':'Chưa có lịch sử đơn hàng') +'</b><small>Đơn phát sinh sẽ được cập nhật tại đây.</small></div>';
-
-    let tabContent='';
-    if(selected==='active'||selected==='orders'){
-      tabContent='<div class="cc-list-head"><h3>'+(selected==='active'?'🚀 ĐANG CHẠY & CHỜ XÁC NHẬN':'📜 LỊCH SỬ ĐƠN HÀNG')+'</h3><span>'+(selected==='active'?activeOrders.length:orders.length)+' đơn</span></div>'+orderRows;
-    }else if(selected==='deposit'){
-      const payments=data.payments||[];
-      tabContent='<div class="cc-list-head"><h3>💳 NẠP TIỀN</h3><span>'+payments.length+' yêu cầu</span></div>'+
-        '<div class="cc-deposit-form"><label for="deposit-amount">Số tiền muốn nạp (VNĐ)</label><input id="deposit-amount" class="cc-field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO YÊU CẦU VIETQR</button><small class="muted">Ví chỉ được cộng sau khi Admin xác minh giao dịch ngân hàng.</small><div id="payment-result"></div></div>'+
-        (payments.length?payments.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+money(item.amount)+'</b><small>'+escapeHtml(item.payment_id)+' · '+escapeHtml(item.transfer_content||'')+'</small></div><span class="cc-status">'+customerStatus(item.status)+'</span></div><div class="cc-record-foot"><span>'+escapeHtml(item.bank_id||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="cc-empty"><span>💳</span><b>Chưa có yêu cầu nạp</b><small>Tạo yêu cầu để nhận mã VietQR riêng.</small></div>');
-    }else{
-      const ledger=center.walletHistory||[];
-      const transactions=center.recentTransactions||[];
-      tabContent='<div class="cc-list-head"><h3>📒 GIAO DỊCH VÀ BIẾN ĐỘNG VÍ</h3><span>'+ledger.length+' biến động</span></div>'+
-        (ledger.length?ledger.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+escapeHtml(item.description||item.transaction_type||'Giao dịch')+'</b><small>'+escapeHtml(item.reference_code||'')+' · '+escapeHtml(item.wallet_type||'MAIN')+'</small></div><b class="'+(Number(item.amount)>=0?'cc-positive':'cc-negative')+'">'+(Number(item.amount)>0?'+':'')+money(item.amount)+'</b></div><div class="cc-record-foot"><span>'+escapeHtml(item.transaction_type||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="cc-empty"><span>📒</span><b>Chưa có biến động ví</b><small>Lịch sử sẽ xuất hiện khi tài khoản phát sinh giao dịch.</small></div>')+
-        (transactions.length?'<div class="cc-list-head" style="margin-top:14px"><h3>GIAO DỊCH GẦN ĐÂY</h3></div>'+transactions.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+escapeHtml(item.type)+'</b><small>'+escapeHtml(item.reference_code||'')+'</small></div><b>'+money(item.amount)+'</b></div></article>').join(''):'');
-    }
-
-    const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
-    const replayValid=(()=>{try{return new URL(replayUrl).protocol==='https:'&&Boolean(new URL(replayUrl).hostname);}catch(_){return false;}})();
-    const currentLevel=Number(vip.currentLevel??u.vipLevel??0);
-    const vipLabel=currentLevel>0?'VIP '+currentLevel:'VIP 0 · THÀNH VIÊN';
-    const totalDeposited=Number(vip.totalDeposited??u.totalDeposited??0);
-    const progress=Number(vip.progressPercent||0);
-    const nextThreshold=vip.nextThreshold;
-    const progressText=nextThreshold===null?'ĐÃ ĐẠT VIP TỐI ĐA':money(totalDeposited)+' / '+money(nextThreshold);
-    const accountName=u.username?'@'+u.username:'HENDY MEMBER';
-    const ticketTotal=Number(ticketCounts.total||0);
-    const voucherRequests=Array.isArray(data.vouchers?.requests)?data.vouchers.requests.length:0;
-    const nycBalance=Number(u.nycWallet||0);
-    const orderDetailsMarkup='<div class="cc-modal" id="cc-order-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cc-order-modal-title"><div class="cc-modal-card"><div class="cc-modal-head"><h3 id="cc-order-modal-title">🧾 CHI TIẾT ĐƠN HÀNG</h3><button type="button" class="cc-modal-close" data-close-order-detail>ĐÓNG ✕</button></div><div id="cc-order-content"></div></div></div>';
-
-    $('#app').innerHTML=`
-      <div class="cc-dashboard">
-        <div class="cc-page-heading">
-          <div>
-            <div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · MEMBER PORTAL</div>
-            <h1>TRUNG TÂM KHÁCH HÀNG</h1>
-            <p>Quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ trong một nơi.</p>
-          </div>
-          <span class="cc-page-chip">💠 KHU VỰC THÀNH VIÊN</span>
-        </div>
-        <section class="cc-profile">
-          <div class="cc-profile-main">
-            <div class="cc-profile-head">
-              <div class="cc-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
-              <div class="cc-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span class="cc-id">🆔 TELEGRAM ID: ${escapeHtml(u.id||'')}</span><small>${escapeHtml(accountName)} · ${botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH'}</small></div>
-            </div>
-            <div class="cc-vipline"><span class="cc-vip">💎 ${escapeHtml(vipLabel)}</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div>
-            <div class="cc-progress">
-              <div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>${money(totalDeposited)}</strong></div>
-              <div class="cc-progress-track"><span style="width:${Math.max(0,Math.min(100,progress))}%"></span></div>
-              <div class="cc-progress-label" style="margin-top:6px"><span>${progressText}</span><strong>${Math.max(0,Math.min(100,progress))}%</strong></div>
-            </div>
-          </div>
-          <div class="cc-wallets">
-            <div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
-            <div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
-          </div>
-        </section>
-
-        <div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>${ticketTotal} ticket · ${voucherRequests} yêu cầu voucher</small></div>
-        <section class="cc-support-grid">
-          <button class="cc-support-card abuse" type="button" data-action="support-abuse"><span class="cc-number">1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi mã đơn đã hoàn thành để CSKH kiểm tra trường hợp chưa nhận được điểm. Không gửi mật khẩu, mã OTP hoặc PIN.</small></button>
-          <button class="cc-support-card ticket" type="button" data-action="support-general"><span class="cc-number">2</span><b>TICKET HỖ TRỢ</b><small>Tạo yêu cầu, khiếu nại và theo dõi phản hồi của đội ngũ chăm sóc khách hàng HENDY.</small></button>
-          <button class="cc-support-card voucher" type="button" data-action="open-vouchers"><span class="cc-number">3</span><b>VOUCHER 72H</b><small>Gửi yêu cầu kiểm tra đơn chờ xử lý quá 72 giờ. Voucher chỉ được cộng sau khi Admin duyệt.</small></button>
-        </section>
-
-        <a class="cc-replay ${replayValid?'':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"'}><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Xem lại video live các đơn hàng đã hoàn tất (nếu nhà cung cấp có lưu replay).':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.'}</small></div></a>
-
-        <section class="cc-summary">
-          <div class="cc-summary-card">
-            <div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div>
-            <div class="cc-order-stats">
-              <div class="cc-stat"><small>TỔNG ĐƠN</small><b>${Number(stats.totalOrders||0)}</b></div>
-              <div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>${Number(stats.processingOrders||0)}</b></div>
-              <div class="cc-stat green"><small>HOÀN TẤT</small><b>${Number(stats.completedOrders||0)}</b></div>
-              <div class="cc-stat"><small>ĐÃ HỦY</small><b>${Number(stats.cancelledOrders||0)}</b></div>
-              <div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>${Number(stats.refundedOrders||0)}</b></div>
-            </div>
-          </div>
-          <div class="cc-summary-card">
-            <div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div>
-            <div class="cc-account-stats">
-              <div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>${money(totalDeposited)}</b></div>
-              <div class="cc-account-stat"><small>POINT (CŨ)</small><b>${Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')}</b></div>
-              <div class="cc-account-stat nyc"><small>VÍ NYC</small><b>${money(nycBalance)}</b></div>
-              <div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
-            </div>
-          </div>
-        </section>
-
-        <div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>
-        <section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>${(data.accounts||[]).length} tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-open="minigame">QUẢN LÝ</button></section>
-        <div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng">
-          <button class="${selected==='active'?'active':''}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
-          <button class="${selected==='orders'?'active':''}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
-          <button class="${selected==='deposit'?'active':''}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
-          <button class="${selected==='transactions'?'active':''}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
-        </div>
-        <section class="cc-tab">${tabContent}</section>
-        <div class="customer-footer">💠 HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</div>
-        ${orderDetailsMarkup}
-      </div>`;
-    syncMiniAppControls();
-  }
-
-  async function openCustomerSupport(type){
-    state.supportTicketType=type;
-    state.section='support';
-    const result=await api('/api/support/tickets');
-    const tickets=result.tickets||[];
-    const title=type==='dinh_lam'?'HỖ TRỢ DÍNH LẠM (60%)':'TICKET HỖ TRỢ CSKH';
-    pageFrame('🎧 '+title,'Tạo yêu cầu và theo dõi phản hồi',`
-      <div class="notice">Không gửi mật khẩu, mã OTP hoặc PIN. Chỉ mô tả mã đơn, thời điểm phát sinh và vấn đề cần hỗ trợ.</div>
-      <div class="customer-form-card"><label class="form-label">Tiêu đề yêu cầu</label><input id="support-title" class="field" maxlength="120" placeholder="Nhập tiêu đề"><label class="form-label">Nội dung chi tiết</label><textarea id="support-message" class="field" rows="4" maxlength="3000" placeholder="Mô tả tình trạng đơn hàng hoặc vấn đề..."></textarea><button class="btn primary" data-action="send-support">GỬI YÊU CẦU CSKH</button></div>
-      <div class="customer-list-head"><h3>LỊCH SỬ YÊU CẦU</h3><span>${tickets.length} ticket</span></div>
-      ${tickets.length?tickets.map(ticket=>'<article class="customer-record"><div class="record-top"><div><b>#'+ticket.id+' · '+escapeHtml(ticket.subject)+'</b><small>'+ (ticket.ticket_type==='dinh_lam'?'Hỗ trợ dính lạm dụng (60%)':'Ticket hỗ trợ')+'</small></div><span class="status">'+customerStatus(ticket.status)+'</span></div><p>'+escapeHtml(ticket.message)+'</p>'+(ticket.admin_reply?'<div class="notice success"><b>Phản hồi CSKH</b><br>'+escapeHtml(ticket.admin_reply)+'</div>':'')+'</article>').join(''):'<div class="customer-empty"><b>Chưa có ticket</b></div>'}`);
-  }
-
-  async function openCustomerVouchers(){
-    state.section='customer';
-    const data=state.customerData?.vouchers || await api('/api/vouchers');
-    const eligible=data.eligibleOrders||[], requests=data.requests||[];
-    pageFrame('🎟️ VOUCHER 72H','Đền bù cho đơn chậm xử lý',`
-      <div class="notice">Chỉ đơn đủ điều kiện (đang chờ/đang xử lý ít nhất 72 giờ) mới xuất hiện. Gửi yêu cầu không tự cộng tiền; Admin phải kiểm tra và duyệt.</div>
-      ${eligible.length?'<div class="customer-form-card"><label class="form-label">Chọn đơn hàng</label><select id="voucher-order" class="field">'+eligible.map(order=>'<option value="'+escapeHtml(order.id)+'">'+escapeHtml(order.order_code)+' · '+escapeHtml(order.product_name)+' · '+money(order.amount)+'</option>').join('')+'</select><label class="form-label">Lý do yêu cầu</label><textarea id="voucher-reason" class="field" rows="3" maxlength="1000" placeholder="Mô tả lý do yêu cầu voucher..."></textarea><button class="btn primary" data-action="submit-voucher">GỬI YÊU CẦU VOUCHER</button></div>':'<div class="customer-empty"><span>🎟️</span><b>Chưa có đơn đủ điều kiện</b><small>Đơn cần quá 72 giờ ở trạng thái chờ hoặc đang xử lý.</small></div>'}
-      <div class="customer-list-head"><h3>LỊCH SỬ VOUCHER</h3><span>${requests.length} yêu cầu</span></div>
-      ${requests.length?requests.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+escapeHtml(item.order_code)+' · '+escapeHtml(item.product_name||'')+'</b><small>'+new Date(item.created_at).toLocaleString('vi-VN')+'</small></div><span class="status">'+customerStatus(item.status)+'</span></div><p>'+escapeHtml(item.reason)+'</p>'+(Number(item.reward_amount)>0?'<b>'+money(item.reward_amount)+'</b>':'')+(item.admin_note?'<p>'+escapeHtml(item.admin_note)+'</p>':'')+'</article>').join(''):'<div class="customer-empty"><b>Chưa có yêu cầu Voucher</b></div>'}`);
-  }
-
-  async function loadHistory(){
-    state.section='history';
-    const data=await api('/api/customer-center');
-    pageFrame('📜 LỊCH SỬ HOẠT ĐỘNG','Giao dịch · Đơn hàng · Ví',`
-      <div class="panel"><h3>GIAO DỊCH</h3>${(data.recentTransactions||[]).map(x=>`<div class="row-card"><div><b>${escapeHtml(x.type)}</b><small class="muted small" style="display:block">${escapeHtml(x.reference_code||'')} · ${escapeHtml(x.wallet_type||'MAIN')}</small></div><b>${money(x.amount)}</b></div>`).join('')||'<p class="muted small">Chưa có giao dịch.</p>'}</div>
-      <div class="panel"><h3>ĐƠN HÀNG</h3>${(data.recentOrders||[]).map(x=>`<div class="row-card"><div><b>${escapeHtml(x.product_name)}</b><small class="muted small" style="display:block">${escapeHtml(x.order_code)}</small></div><span class="status">${escapeHtml(x.status)}</span></div>`).join('')||'<p class="muted small">Chưa có đơn hàng.</p>'}</div>`);
-  }
-  async function loadReferrals(){
-    state.section='ref';const data=await api('/api/referrals');state.referrals=data;
-    pageFrame('🎊 GIỚI THIỆU REF','Mã giới thiệu theo từng bot',`
-      <div class="panel"><h3>THỐNG KÊ REF</h3><div class="row-card"><span class="muted small">Thành viên đã mời</span><b>${data.totalInvited||0}</b></div><div class="row-card"><span class="muted small">Hoa hồng đã nhận</span><b>${money(data.totalReward)}</b></div><div class="row-card"><span class="muted small">Tỷ lệ hoa hồng</span><b>${Number(data.commissionPercent||0)}%</b></div>
-      <label class="form-label">Liên kết giới thiệu của bot này</label><input class="field" id="ref-link" readonly value="${escapeHtml(data.referralLink||'')}"><button class="btn primary" data-action="copy-ref">SAO CHÉP LINK</button></div>`);
-  }
-  async function loadVip(){
-    state.section='vip';const data=await api('/api/vip');
-    const currentLevel=Number(data.currentLevel||0);
-    pageFrame('👑 TRUNG TÂM VIP','Cấp bậc · Điểm danh',`
-      <div class="panel"><h3>HẠNG THÀNH VIÊN</h3>
-        <div class="row-card"><span class="muted small">Cấp VIP</span><span class="status">${currentLevel>0?'VIP '+currentLevel:'MEMBER'}</span></div>
-        <div class="row-card"><span class="muted small">Tổng nạp</span><b>${money(data.totalDeposited)}</b></div>
-        <div class="row-card"><span class="muted small">Điểm thành viên</span><b>${Number(data.pointOld||0).toLocaleString('vi-VN')}</b></div>
-        <div class="row-card"><span class="muted small">Chuỗi điểm danh</span><b>${Number(data.streak||0)} ngày</b></div>
-        <div class="row-card"><span class="muted small">Hôm nay</span><span class="status">${data.checkedInToday?'Đã điểm danh':'Chưa điểm danh'}</span></div>
-        ${data.nextThreshold===null?'<div class="notice success">Bạn đang ở cấp VIP cao nhất.</div>':'<div class="notice">Cần nạp thêm <b>'+money(data.amountToNext)+'</b> để đạt VIP '+(currentLevel+1)+'.</div>'}
-        <button class="btn primary" data-action="vip-checkin" ${data.checkedInToday?'disabled':''}>🎁 ĐIỂM DANH HÔM NAY · +${Number(data.checkinPoints||0)} ĐIỂM</button>
-      </div>
-      <div class="panel"><h3>🎖️ CÁC MỐC VIP</h3>${(data.levels||[]).map(level=>`<div class="row-card"><b>${escapeHtml(level.name)}</b><span class="muted small">Tổng nạp từ ${money(level.threshold)}</span></div>`).join('')}</div>
-      <div class="panel"><h3>GÓI VIP ĐANG MỞ</h3>${(data.products||[]).map(p=>`<div class="row-card"><div><b>${escapeHtml(p.name)}</b><small class="muted small" style="display:block">${escapeHtml(p.description||'')}</small></div><b>${money(p.price)}</b></div>`).join('')||'<p class="muted small">Chưa có gói VIP.</p>'}</div>`);
-  }
-  async function loadCommunity(){
-    state.section='community';const settings=state.boot.settings||{};
-    const group=settings.GROUP_URL||'https://t.me/Hendy_Support_Group';
-    const channel=settings.CHANNEL_URL||'';
-    pageFrame('💬 CỘNG ĐỒNG HENDY','Kết nối và nhận cập nhật',`
-      <div class="panel"><h3>💬 NHÓM CHAT</h3><p class="muted small">Trao đổi, nhận hỗ trợ và thông tin dịch vụ.</p><a class="btn primary" target="_blank" rel="noopener" href="${escapeHtml(group)}">MỞ NHÓM CHAT</a></div>
-      <div class="panel"><h3>📢 KÊNH THÔNG BÁO</h3><p class="muted small">Theo dõi tin tức và cập nhật dịch vụ HENDY.</p>${channel?'<a class="btn primary" target="_blank" rel="noopener" href="'+escapeHtml(channel)+'">MỞ KÊNH</a>':'<div class="notice">Kênh thông báo chưa được cấu hình.</div>'}</div>`);
-  }
-  function loadGift(){
-    state.section='gift';pageFrame('🎟️ GIFTCODE','Nhập mã quà tặng',`
-      <div class="panel"><h3>KÍCH HOẠT GIFTCODE</h3><label class="form-label">Mã quà tặng</label><input class="field" id="gift-code" maxlength="64" placeholder="NHẬP MÃ GIFTCODE"><button class="btn primary" data-action="redeem-gift">KÍCH HOẠT</button></div>`);
-  }
-  function loadSupport(){
-    state.section='support';pageFrame('🧑‍💻 LIÊN HỆ CSKH','Tạo ticket hỗ trợ',`
-      <div class="panel"><h3>GỬI YÊU CẦU HỖ TRỢ</h3><label class="form-label">Tiêu đề</label><input id="support-title" class="field" maxlength="120" placeholder="Mô tả ngắn vấn đề"><label class="form-label">Nội dung</label><textarea id="support-message" class="field" rows="4" maxlength="3000" placeholder="Nêu chi tiết yêu cầu cần hỗ trợ..."></textarea><button class="btn primary" data-action="send-support">GỬI TICKET</button></div>`);
-  }
-  function loadVietsub(){
-    state.section='vietsub';pageFrame('🎬 DỊCH VỤ VIETSUB','Tạo job trong Telegram',`
-      <div class="panel"><h3>VIDEO SUBTITLE SERVICE</h3><p class="muted small">Để giữ một luồng xử lý thống nhất giữa hai bot, hãy gửi URL video bằng lệnh /vietsub trong đúng bot này. Job sẽ gắn với BOT ${botKey==='secondary'?'2':'1'}.</p><button class="btn primary" data-action="open-bot">MỞ CUỘC TRÒ CHUYỆN TELEGRAM</button></div>`);
-  }
-  async function openSection(section){
-    state.section=section;
-    syncMiniAppControls();
-    try {
-      if(section==='home'){renderHome();return;}
-      if(section!=='services'){
-        const title=({
-          wallet:'💳 VÍ & NẠP TIỀN',customer:'👤 TRUNG TÂM KHÁCH HÀNG',minigame:'🚀 MINIGAME LIVE',
-          history:'📜 LỊCH SỬ HOẠT ĐỘNG',ref:'🎊 GIỚI THIỆU REF',vip:'👑 TRUNG TÂM VIP',
-          community:'💬 CỘNG ĐỒNG HENDY',gift:'🎟️ GIFTCODE',support:'🧑‍💻 LIÊN HỆ CSKH',
-          vietsub:'🎬 DỊCH VỤ VIETSUB',tools:'🧰 THUÊ TOOL',codes:'🎁 MUA CODE',
-          otp:'📲 KHO OTP SMS',proxy:'🌐 KHO PROXY',viptools:'💎 KHO VIP','otp-center':'📲 OTP & PROXY CENTER'
-        })[section]||'DỊCH VỤ HENDY';
-        pageFrame('⏳ '+title,'Đang tải dữ liệu trực tiếp từ máy chủ…','<div class="panel loading" role="status" aria-live="polite">🌈 Đang xử lý yêu cầu của bạn...</div>');
-        await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
-      }
-      if(section==='services'){pageFrame('🌈 DỊCH VỤ HENDY','Chọn nhóm dịch vụ','<section class="tiles">'+tileData.map((tile,i)=>'<button class="tile" style="--i:'+i+'" data-open="'+tile.section+'"><div class="tile-icon">'+tile.icon+'</div><h3>'+tile.title+'</h3><p>'+tile.desc+'</p></button>').join('')+'</section>');setNav('services');return;}
-      if(section==='wallet'){await loadWallet();return;}
-      if(section==='customer'){await loadCustomer();return;}
-      if(section==='minigame'){await loadAccounts();return;}
-      if(section==='otp-center'){
-        state.section='otp-center';setNav('services');
-        pageFrame('📲 OTP & PROXY CENTER','Ví NYC · dịch vụ số',`
-          <div class="wallets"><div class="wallet"><small>🪙 VÍ NYC</small><b>${money(state.boot.user.nycWallet)}</b></div><div class="wallet"><small>💰 VÍ CHÍNH</small><b>${money(state.boot.user.balance)}</b></div><div class="wallet"><small>👑 VIP</small><b>${Number(state.boot.user.vipLevel||0)}</b></div></div>
-          <section class="tiles">
-            <button class="tile" data-open="otp"><div class="tile-icon">📲</div><h3>THUÊ OTP SMS</h3><p>Chọn dịch vụ và xem giá.</p></button>
-            <button class="tile" data-open="proxy"><div class="tile-icon">🌐</div><h3>PROXY CENTER</h3><p>Proxy xoay, tĩnh và kho đã thuê.</p></button>
-            <button class="tile tile-wide" data-open="history"><div class="tile-icon">📜</div><h3>LỊCH SỬ GIAO DỊCH</h3><p>Tra cứu đơn hàng OTP, Proxy và biến động ví.</p></button>
-          </section>
-          <div class="panel"><h3>🪙 NẠP VÍ NYC</h3><p class="muted small">Chuyển nội bộ từ Ví Chính sang Ví NYC bằng menu OTP & Proxy trong cuộc trò chuyện Telegram. Việc chuyển ví được ghi vào sổ cái PostgreSQL.</p><button class="btn" data-action="open-bot">MỞ BOT ĐỂ CHUYỂN VÍ NYC</button></div>`);
-        return;
-      }
-      if(section==='history'){await loadHistory();return;}
-      if(section==='ref'){await loadReferrals();return;}
-      if(section==='vip'){await loadVip();return;}
-      if(section==='community'){await loadCommunity();return;}
-      if(section==='gift'){loadGift();return;}
-      if(section==='support'){loadSupport();return;}
-      if(section==='vietsub'){loadVietsub();return;}
-      const categories={tools:['tools','🧰 THUÊ TOOL'],codes:['codes','🎁 MUA CODE'],otp:['otp','📲 KHO OTP SMS'],proxy:['proxy','🌐 KHO PROXY']};
-      if(categories[section]){await loadProducts(...categories[section]);return;}
-      if(section==='viptools'){await loadProducts('vip','💎 KHO VIP');return;}
-      throw new Error('Mục chức năng chưa được triển khai.');
-    } catch(error) { showToast(error.message || 'Không thể tải dữ liệu.','error'); }
-  }
-  async function createOrder(id){
-    const result=await api('/api/orders',{method:'POST',body:{productId:String(id)}});
-    showToast(result.message||'Đã tạo đơn hàng.');
-    await loadProducts(state.section, state.section.toUpperCase());
-  }
-  async function handleAction(action){
-    if(action==='deposit'){await createDeposit();return;}
-    if(action==='link-account'){await linkAccount();return;}
-    if(action==='vip-checkin'){const data=await api('/api/vip/checkin',{method:'POST',body:{}});showToast(data.message||'Điểm danh thành công.');await loadVip();return;}
-    if(action==='copy-ref'){const value=$('#ref-link')?.value||'';if(!value)throw new Error('Chưa có link giới thiệu.');if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);else{const input=$('#ref-link');input.select();document.execCommand('copy');}showToast('Đã sao chép link giới thiệu.');return;}
-    if(action==='redeem-gift'){const code=$('#gift-code')?.value.trim()||'';const data=await api('/api/giftcodes/redeem',{method:'POST',body:{code}});showToast(data.message||'Đã kích hoạt Giftcode.');await loadCustomer();return;}
-    if(action==='support-abuse'){await openCustomerSupport('dinh_lam');return;}
-    if(action==='support-general'){await openCustomerSupport('support');return;}
-    if(action==='open-vouchers'){await openCustomerVouchers();return;}
-    if(action==='send-support'){
-      const subject=$('#support-title')?.value.trim()||'',message=$('#support-message')?.value.trim()||'';
-      const ticketType=state.supportTicketType==='dinh_lam'?'dinh_lam':'support';
-      const data=await api('/api/support/tickets',{method:'POST',body:{ticketType,subject,message}});
-      showToast(data.message||'Đã tạo ticket.');
-      await openCustomerSupport(ticketType);
-      return;
-    }
-    if(action==='submit-voucher'){
-      const orderId=Number($('#voucher-order')?.value||0),reason=$('#voucher-reason')?.value.trim()||'';
-      if(!orderId||reason.length<5)throw new Error('Chọn đơn hàng và nhập lý do ít nhất 5 ký tự.');
-      const data=await api('/api/vouchers',{method:'POST',body:{orderId,reason}});
-      showToast(data.message||'Đã gửi yêu cầu Voucher.');
-      state.customerData=null;
-      await loadCustomer('active',true);
-      return;
-    }
-    if(action==='open-bot'){
-      const link=typeof state.boot.botUrl==='string'?state.boot.botUrl:'';
-      if(link){
-        if(tg?.openTelegramLink)tg.openTelegramLink(link);
-        else window.open(link,'_blank','noopener');
-      } else {
-        showToast('Chưa cấu hình liên kết Telegram Bot công khai.');
-      }
-      return;
-    }
-  }
-  $('#app').addEventListener('click',async event=>{
-    const orderDetailButton=event.target.closest('[data-order-detail]');
-    if(orderDetailButton){
-      const order=(state.customerData?.orders||[]).find(item=>String(item.order_code||'')===String(orderDetailButton.dataset.orderDetail||''));
-      if(!order){showToast('Không tìm thấy thông tin đơn hàng.','error');return;}
-      $('#cc-order-content').innerHTML='<div class="cc-record"><div class="cc-record-top"><div><small>MÃ ĐƠN HÀNG</small><b>'+escapeHtml(order.order_code||'')+'</b></div><span class="cc-status">'+customerStatus(order.status)+'</span></div>'+
-        '<div class="cc-record-foot"><span>Dịch vụ</span><b>'+escapeHtml(order.product_name||'—')+'</b></div>'+
-        '<div class="cc-record-foot"><span>Giá trị</span><b>'+money(order.amount)+'</b></div>'+
-        '<div class="cc-record-foot"><span>Thời gian</span><b>'+new Date(order.created_at).toLocaleString('vi-VN')+'</b></div>'+
-        (order.delivery_text?'<div class="notice" style="margin-top:12px"><b>THÔNG TIN BÀN GIAO</b><br>'+escapeHtml(order.delivery_text)+'</div>':'')+
-        (order.admin_note?'<div class="notice" style="margin-top:12px"><b>GHI CHÚ CSKH</b><br>'+escapeHtml(order.admin_note)+'</div>':'')+
-        '</div>';
-      $('#cc-order-modal').hidden=false;
-      return;
-    }
-    if(event.target.closest('[data-close-order-detail]')||event.target.id==='cc-order-modal'){
-      const modal=$('#cc-order-modal');if(modal)modal.hidden=true;
-      return;
-    }
-    const customerTab=event.target.closest('[data-customer-tab]');
-    if(customerTab){
-      document.querySelectorAll('[data-customer-tab]').forEach(button=>button.classList.toggle('active',button===customerTab));
-      state.customerTab=customerTab.dataset.customerTab;
-      hapticSelection();
-      renderCustomer();
-      return;
-    }
-    const buy=event.target.closest('[data-buy]');
-    const del=event.target.closest('[data-delete-account]');
-    const open=event.target.closest('[data-open]');
-    const action=event.target.closest('[data-action]');
-    const pressed=event.target.closest('button:not(:disabled)');
-    if(pressed)hapticImpact('light');
-    const originalBuyText=buy?.textContent||'';
-    const originalActionText=action?.textContent||'';
-    try{
-      if(buy){buy.disabled=true;buy.textContent='ĐANG XỬ LÝ…';await createOrder(buy.dataset.buy);return;}
-      if(del){del.disabled=true;del.textContent='ĐANG XÓA…';await deleteAccount(del.dataset.deleteAccount);return;}
-      if(open){await openSection(open.dataset.open);return;}
-      if(action){action.disabled=true;action.textContent='ĐANG XỬ LÝ…';await handleAction(action.dataset.action);}
-    }catch(error){showToast(error.message||'Thao tác thất bại.','error');}
-    finally{
-      if(buy && buy.isConnected){buy.disabled=false;buy.textContent=originalBuyText;}
-      if(del && del.isConnected){del.disabled=false;del.textContent='XÓA';}
-      if(action && action.isConnected){action.disabled=false;action.textContent=originalActionText;}
-    }
-  });
-  document.querySelectorAll('[data-nav]').forEach(btn=>btn.addEventListener('click',()=>openSection(btn.dataset.nav)));
-  async function renderWebsiteLogin() {
-    let identities = {};
-    try {
-      const response = await fetch('/api/v1/public/config', {headers:{Accept:'application/json'},cache:'no-store'});
-      if (response.ok) identities = await response.json();
-    } catch (_) {}
-    const primaryBotUrl = typeof identities.botUrl === 'string' ? identities.botUrl.trim() : '';
-    const secondaryBotUrl = typeof identities.secondaryBotUrl === 'string' ? identities.secondaryBotUrl.trim() : '';
-    const withLoginStart = url => url ? url + (url.includes('?') ? '&' : '?') + 'start=web_login' : '';
-    const primaryUrl = withLoginStart(primaryBotUrl);
-    const secondaryUrl = withLoginStart(secondaryBotUrl);
-    const selectedUrl = botKey === 'secondary' ? secondaryUrl : primaryUrl;
-    const selectedLabel = botKey === 'secondary' ? 'BOT DỰ PHÒNG' : 'BOT CHÍNH';
-    const otherUrl = botKey === 'secondary' ? primaryUrl : secondaryUrl;
-    const otherLabel = botKey === 'secondary' ? 'BOT CHÍNH' : 'BOT DỰ PHÒNG';
-    const loginButtons = [
-      selectedUrl ? '<a class="btn primary" href="' + escapeHtml(selectedUrl) + '" target="_blank" rel="noopener noreferrer">🔐 ĐĂNG NHẬP QUA ' + selectedLabel + '</a>' : '',
-      otherUrl ? '<a class="btn" href="' + escapeHtml(otherUrl) + '" target="_blank" rel="noopener noreferrer">↗ ĐĂNG NHẬP QUA ' + otherLabel + '</a>' : ''
-    ].filter(Boolean).join('');
-    $('#bot-chip').textContent = 'HENDY WEBSITE · ĐĂNG NHẬP';
-    $('#app').innerHTML = `
-      <section class="hero hendy-showcase website-login-hero">
-        <div class="hero-content">
-          <div class="hero-kicker">💠 HENDY DIGITAL ECOSYSTEM</div>
-          <h1>Chào mừng đến với <span class="gradient-text">HENDY.</span></h1>
-          <p>Website chính thức quản lý dịch vụ, đơn hàng, số dư và tài khoản liên kết. Đăng nhập bằng Telegram để tiếp tục trên cùng giao diện HENDY — không cần cài thêm ứng dụng riêng.</p>
-          <div class="hero-actions">${loginButtons || '<span class="notice error">Đường dẫn đăng nhập Telegram chưa được cấu hình. Vui lòng liên hệ CSKH.</span>'}</div>
-          <div class="notice">Quy trình: mở bot → Telegram gửi link đăng nhập riêng → mở link trong 5 phút. Link chỉ dùng một lần; website nhận cookie bảo mật sau khi máy chủ xác minh.</div>
-        </div>
-        <div class="orbit-stage" aria-hidden="true">
-          <div class="orbit-ring ring-a"></div><div class="orbit-ring ring-b"></div><div class="orbit-core"><span>💠</span></div>
-          <span class="orbit-node n-rocket">🚀</span><span class="orbit-node n-rainbow">🌈</span><span class="orbit-node n-gem">💎</span><span class="orbit-node n-bolt">⚡</span><span class="orbit-node n-gift">🎁</span>
-        </div>
-      </section>
-      <section class="tiles">
-        <article class="tile"><div class="tile-icon">🚀</div><h3>MINIGAME LIVE</h3><p>Dịch vụ và tài khoản liên kết.</p></article>
-        <article class="tile"><div class="tile-icon">🧰</div><h3>TOOL & CODE</h3><p>Quản lý sản phẩm và đơn hàng.</p></article>
-        <article class="tile"><div class="tile-icon">💳</div><h3>VÍ & GIAO DỊCH</h3><p>VietQR, lịch sử và các loại ví.</p></article>
-        <article class="tile"><div class="tile-icon">💎</div><h3>VIP & ƯU ĐÃI</h3><p>Quyền lợi và điểm thành viên.</p></article>
-      </section>`;
-  }
-
-  async function start(){
-    initTelegramMiniApp();
-    $('#bot-chip').textContent = tg && tg.initData ? (botKey==='secondary'?'BOT 2 · MINI APP':'BOT 1 · MINI APP') : 'HENDY WEBSITE';
-    try{
-      state.boot=await api('/api/bootstrap');
-      localStorage.setItem('hendy_bot_key', botKey);
-      if(state.boot.botKey!==botKey)throw new Error('Phiên đăng nhập thuộc bot khác. Hãy mở đúng địa chỉ website BOT 1 hoặc BOT 2.');
-      if(params.get('view')==='customer' || ['/customer','/customer/','/customer-center','/customer-center/','/miniapp','/miniapp/','/mini-app','/mini-app/','/app','/app/'].includes(location.pathname.toLowerCase()) || location.pathname.toLowerCase().includes('/khach-hang/trung-tam-khach-hang/')){
-        await loadCustomer('active',true);
+    function renderTabs(){
+      const selected=state.tab;
+      let body='';
+      if(selected==='active'||selected==='orders'){
+        const list=currentOrderList();
+        body='<div class="cc-list-head"><h3>'+(selected==='active'?'🚀 ĐANG CHẠY & CHỜ XÁC NHẬN':'📜 LỊCH SỬ ĐƠN HÀNG')+'</h3><span>'+list.length+' đơn</span></div>'+
+          (list.length?list.map(order=>'<article class="cc-order"><div class="cc-order-top"><div><b>'+esc(order.product_name||'Đơn hàng HENDY')+'</b><small>'+esc(order.order_code||'')+' · '+fmtDate(order.created_at)+'</small></div><span class="cc-status">'+esc(statusLabel(order.status))+'</span></div><div class="cc-order-foot"><span>Giá trị đơn: <b>'+money(order.amount)+'</b></span><button class="cc-detail-btn" type="button" data-order-detail="'+esc(order.order_code||'')+'">CHI TIẾT</button></div></article>').join(''):'<div class="cc-empty"><span>📭</span><b>'+(selected==='active'?'Bạn không có đơn hàng nào đang chạy lúc này.':'Chưa có lịch sử đơn hàng.')+'</b><small>Đơn phát sinh sẽ được cập nhật tại đây.</small></div>');
+      }else if(selected==='deposit'){
+        body='<div class="cc-list-head"><h3>💳 NẠP TIỀN</h3><span>'+state.payments.length+' yêu cầu</span></div><div class="cc-deposit-form"><label class="cc-form-label" for="deposit-amount">Số tiền muốn nạp (VNĐ)</label><input id="deposit-amount" class="cc-field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="cc-primary" type="button" data-action="deposit">TẠO YÊU CẦU VIETQR</button><small style="color:#9aa4b6;font-size:10px">Ví chỉ được cộng sau khi Admin xác minh giao dịch ngân hàng.</small><div id="payment-result"></div></div>'+
+          (state.payments.length?state.payments.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+money(item.amount)+'</b><small>'+esc(item.payment_id||'')+' · '+esc(item.transfer_content||'')+'</small></div><span class="cc-status">'+esc(statusLabel(item.status))+'</span></div><div class="cc-record-foot"><span>'+esc(item.bank_id||'')+'</span><span>'+fmtDate(item.created_at)+'</span></div></article>').join(''):'<div class="cc-empty"><span>💳</span><b>Chưa có yêu cầu nạp tiền</b><small>Tạo yêu cầu để nhận mã VietQR riêng.</small></div>');
       }else{
-        renderHome();
+        const ledger=state.center?.walletHistory||[],recent=state.center?.recentTransactions||[];
+        body='<div class="cc-list-head"><h3>📒 GIAO DỊCH VÀ BIẾN ĐỘNG VÍ</h3><span>'+ledger.length+' biến động</span></div>'+
+          (ledger.length?ledger.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(item.description||item.transaction_type||'Giao dịch')+'</b><small>'+esc(item.reference_code||'')+' · '+esc(item.wallet_type||'MAIN')+'</small></div><b class="'+(Number(item.amount)>=0?'cc-positive':'cc-negative')+'">'+(Number(item.amount)>0?'+':'')+money(item.amount)+'</b></div><div class="cc-record-foot"><span>'+esc(item.transaction_type||'')+'</span><span>'+fmtDate(item.created_at)+'</span></div></article>').join(''):'<div class="cc-empty"><span>📒</span><b>Chưa có biến động ví</b><small>Lịch sử sẽ xuất hiện khi tài khoản phát sinh giao dịch.</small></div>')+
+          (recent.length?'<div class="cc-list-head" style="margin-top:16px"><h3>GIAO DỊCH GẦN ĐÂY</h3></div>'+recent.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(item.type||'Giao dịch')+'</b><small>'+esc(item.reference_code||'')+'</small></div><b>'+money(item.amount)+'</b></div><div class="cc-record-foot"><span>'+esc(item.status||'')+'</span><span>'+fmtDate(item.created_at)+'</span></div></article>').join(''):'');
       }
-      connectWebsiteRealtime();
-    }catch(error){
-      if(!tg || !tg.initData){renderWebsiteLogin();return;}
-      $('#app').innerHTML='<div class="notice error">Không thể xác thực tài khoản Telegram: '+escapeHtml(error.message)+'<br>Hãy mở lại Mini App HENDY từ đúng bot.</div>';
-      syncMiniAppControls();
+      return body;
     }
-  }
-  window.addEventListener('beforeunload',()=>{
-    realtimeStopped=true;
-    window.clearTimeout(realtimeRetry);
-    window.clearInterval(realtimeHeartbeat);
-    if(realtimeSocket)realtimeSocket.close();
-  });
-  start();
-})();
-</script>
+    function renderDashboard(){
+      const center=state.center||{},u=center.user||state.boot.user||{},stats=center.statistics||{},ticketCounts=center.tickets||{},vip=state.vip||{};
+      const name=u.name||u.username||'HENDY MEMBER';
+      const level=Number(vip.currentLevel??u.vipLevel??0);
+      const total=Number(vip.totalDeposited??u.totalDeposited??0);
+      const progress=Math.max(0,Math.min(100,Number(vip.progressPercent||0)));
+      const next=vip.nextThreshold===null?'ĐÃ ĐẠT VIP TỐI ĐA':(vip.nextThreshold!==undefined?money(vip.nextThreshold):'');
+      const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
+      let replayValid=false;try{const url=new URL(replayUrl);replayValid=url.protocol==='https:'&&Boolean(url.hostname);}catch(_){}
+      const eligible=(state.vouchers.eligibleOrders||[]).length;
+      const requests=(state.vouchers.requests||[]).length;
+      const accountCount=state.accounts.length;
+      $('#app').innerHTML='<div class="cc-dashboard">'+
+        '<div class="cc-page-heading"><div><div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · MEMBER PORTAL</div><h1>TRUNG TÂM KHÁCH HÀNG</h1><p>Quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ trong một nơi.</p></div><span class="cc-page-chip">💠 KHU VỰC THÀNH VIÊN</span></div>'+
+        '<section class="cc-profile"><div class="cc-profile-main"><div class="cc-profile-head"><div class="cc-avatar">'+initials(u)+'</div><div class="cc-identity"><h2>'+esc(name)+'</h2><span class="cc-id">🆔 TELEGRAM ID: '+esc(u.id||'')+'</span><small>'+(u.username?'@'+esc(String(u.username).replace(/^@/,'')):'HENDY MEMBER')+' · '+(botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH')+'</small></div></div><div class="cc-vipline"><span class="cc-vip">💎 '+(level>0?'VIP '+level:'VIP 0 · THÀNH VIÊN')+'</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div><div class="cc-progress"><div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>'+money(total)+'</strong></div><div class="cc-progress-track"><span style="width:'+progress+'%"></span></div><div class="cc-progress-label" style="margin-top:6px"><span>'+(vip.nextThreshold===null?'ĐÃ ĐẠT VIP TỐI ĐA':money(total)+' / '+next)+'</span><strong>'+progress+'%</strong></div></div></div><div class="cc-wallets"><div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>'+money(u.balance)+'</b></div><div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></section>'+
+        '<div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>'+Number(ticketCounts.total||0)+' ticket · '+requests+' yêu cầu voucher</small></div>'+
+        '<section class="cc-support-grid"><button class="cc-support-card abuse" type="button" data-action="support-abuse"><span class="cc-number">1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi mã đơn đã hoàn thành để CSKH kiểm tra trường hợp chưa nhận được điểm. Không gửi mật khẩu, mã OTP hoặc PIN.</small></button><button class="cc-support-card ticket" type="button" data-action="support-general"><span class="cc-number">2</span><b>TICKET HỖ TRỢ</b><small>Tạo yêu cầu, khiếu nại và theo dõi phản hồi của đội ngũ chăm sóc khách hàng HENDY.</small></button><button class="cc-support-card voucher" type="button" data-action="open-vouchers"><span class="cc-number">3</span><b>VOUCHER 72H</b><small>'+(eligible?'Có '+eligible+' đơn đủ điều kiện để gửi yêu cầu.':'Kiểm tra đơn chờ xử lý quá 72 giờ. Voucher chỉ được cộng sau khi Admin duyệt.')+'</small></button></section>'+
+        '<a class="cc-replay '+(replayValid?'':'disabled')+'" '+(replayValid?'href="'+esc(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"')+'><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>'+(replayValid?'Xem lại video live các đơn hàng đã hoàn tất.':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.')+'</small></div></a>'+
+        '<section class="cc-summary"><div class="cc-summary-card"><div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div><div class="cc-order-stats"><div class="cc-stat"><small>TỔNG ĐƠN</small><b>'+Number(stats.totalOrders||0)+'</b></div><div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>'+Number(stats.processingOrders||0)+'</b></div><div class="cc-stat green"><small>HOÀN TẤT</small><b>'+Number(stats.completedOrders||0)+'</b></div><div class="cc-stat"><small>ĐÃ HỦY</small><b>'+Number(stats.cancelledOrders||0)+'</b></div><div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>'+Number(stats.refundedOrders||0)+'</b></div></div></div><div class="cc-summary-card"><div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div><div class="cc-account-stats"><div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>'+money(total)+'</b></div><div class="cc-account-stat"><small>POINT (CŨ)</small><b>'+Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')+'</b></div><div class="cc-account-stat nyc"><small>VÍ NYC</small><b>'+money(u.nycWallet)+'</b></div><div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></div></section>'+
+        '<div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>'+
+        '<section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>'+accountCount+' tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-action="manage-accounts">QUẢN LÝ</button></section>'+
+        '<div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng"><button class="'+(state.tab==='active'?'active':'')+'" data-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button><button class="'+(state.tab==='orders'?'active':'')+'" data-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button><button class="'+(state.tab==='deposit'?'active':'')+'" data-tab="deposit">💳 NẠP TIỀN</button><button class="'+(state.tab==='transactions'?'active':'')+'" data-tab="transactions">🛒 GD ĐƠN HÀNG</button></div>'+
+        '<section class="cc-tab">'+renderTabs()+'</section></div>';
+      updateMiniAppButton();
+    }
+    function updateMiniAppButton(){
+      if(!tg?.initData||!tg.MainButton)return;
+      if(state.tab==='deposit'){tg.MainButton.setText('TẠO QR VIETQR');tg.MainButton.show();tg.MainButton.enable?.();}
+      else tg.MainButton.hide();
+    }
+    async function reloadData(){
+      $('#connection-label').textContent='ĐANG ĐỒNG BỘ';
+      const values=await Promise.all([
+        api('/api/bootstrap'),api('/api/customer-center'),api('/api/linked-accounts'),api('/api/orders'),
+        api('/api/wallet/payment-requests'),api('/api/support/tickets'),api('/api/vouchers'),api('/api/vip')
+      ]);
+      const [boot,center,accounts,orders,payments,tickets,vouchers,vip]=values;
+      if(boot.botKey!==botKey)throw new Error('Phiên đăng nhập thuộc bot khác. Hãy mở đúng liên kết của HENDY.');
+      state.boot=boot;state.center=center;state.accounts=accounts.accounts||[];state.orders=orders.orders||[];
+      state.payments=payments.requests||[];state.tickets=tickets.tickets||[];state.vouchers=vouchers;state.vip=vip;
+      try{localStorage.setItem('hendy_bot_key',botKey);}catch(_){}
+      $('#connection-label').textContent='THÀNH VIÊN ĐÃ XÁC THỰC';
+      renderDashboard();
+    }
+    function showModal(title,body){
+      const root=$('#modal-root');
+      root.innerHTML='<div class="cc-modal show" role="dialog" aria-modal="true"><section class="cc-modal-card"><div class="cc-modal-head"><h3>'+esc(title)+'</h3><button class="cc-modal-close" type="button" data-close-modal>ĐÓNG ✕</button></div><div class="cc-modal-body">'+body+'</div></section></div>';
+      root.querySelector('.cc-modal').addEventListener('click',e=>{if(e.target.classList.contains('cc-modal'))closeModal();});
+    }
+    function closeModal(){$('#modal-root').innerHTML='';}
+    function supportModal(type){
+      state.supportType=type;
+      const abuse=type==='dinh_lam';
+      showModal(abuse?'⚠️ HỖ TRỢ DÍNH LẠM (60%)':'🎧 TICKET HỖ TRỢ CSKH',
+        '<div class="cc-notice '+(abuse?'warning':'')+'">'+(abuse?'Gửi mã đơn đã hoàn thành và mô tả tình trạng chưa nhận điểm. CSKH sẽ kiểm tra điều kiện và phản hồi. Không nhập mật khẩu game, mã OTP hoặc PIN.':'Mô tả vấn đề, mã đơn liên quan và cách liên hệ để đội ngũ CSKH kiểm tra.')+'</div>'+
+        '<form id="support-form" class="cc-form-card"><label class="cc-form-label" for="support-subject">Tiêu đề yêu cầu</label><input id="support-subject" class="cc-field" maxlength="120" required placeholder="Ví dụ: Đơn hàng chưa nhận điểm"><label class="cc-form-label" for="support-message">Nội dung chi tiết</label><textarea id="support-message" class="cc-field" rows="4" maxlength="3000" required placeholder="Nhập mã đơn hàng và mô tả tình trạng..."></textarea><button class="cc-primary" type="submit">GỬI YÊU CẦU CSKH</button></form>'+
+        (state.tickets.length?'<div class="cc-list-head"><h3>LỊCH SỬ YÊU CẦU</h3><span>'+state.tickets.length+' ticket</span></div>'+state.tickets.map(t=>'<article class="cc-record"><div class="cc-record-top"><div><b>#'+Number(t.id)+' · '+esc(t.subject)+'</b><small>'+esc(statusLabel(t.status))+' · '+fmtDate(t.created_at)+'</small></div></div><p style="color:#aab3c3;font-size:11px;line-height:1.5">'+esc(t.message)+'</p>'+(t.admin_reply?'<div class="cc-notice"><b>Phản hồi CSKH</b><br>'+esc(t.admin_reply)+'</div>':'')+'</article>').join(''):''));
+    }
+    function voucherModal(){
+      const eligible=state.vouchers.eligibleOrders||[],requests=state.vouchers.requests||[];
+      showModal('🎟️ VOUCHER 72H',
+        '<div class="cc-notice">Chỉ đơn đang chờ xử lý tối thiểu 72 giờ mới đủ điều kiện. Việc gửi yêu cầu không tự cộng tiền; Admin phải kiểm tra và duyệt.</div>'+
+        (eligible.length?'<form id="voucher-form" class="cc-form-card"><label class="cc-form-label" for="voucher-order">Chọn đơn hàng đủ điều kiện</label><select id="voucher-order" class="cc-field">'+eligible.map(o=>'<option value="'+Number(o.id)+'">'+esc(o.order_code)+' · '+esc(o.product_name)+' · '+money(o.amount)+'</option>').join('')+'</select><label class="cc-form-label" for="voucher-reason">Lý do yêu cầu</label><textarea id="voucher-reason" class="cc-field" rows="3" maxlength="1000" required placeholder="Mô tả vấn đề của đơn hàng..."></textarea><button class="cc-primary" type="submit">GỬI YÊU CẦU VOUCHER</button></form>':'<div class="cc-empty"><span>🎟️</span><b>Chưa có đơn đủ điều kiện</b><small>Đơn chờ tối thiểu 72 giờ sẽ hiển thị tại đây.</small></div>')+
+        (requests.length?'<div class="cc-list-head"><h3>YÊU CẦU ĐÃ GỬI</h3><span>'+requests.length+'</span></div>'+requests.map(v=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(v.order_code)+' · '+esc(v.product_name||'Đơn hàng')+'</b><small>'+fmtDate(v.created_at)+'</small></div><span class="cc-status">'+esc(statusLabel(v.status))+'</span></div><small style="color:#9ca7b8">Phần thưởng: '+money(v.reward_amount||0)+'</small></article>').join(''):''));
+    }
+    function accountsModal(){
+      const brands=['QQ88','HI88','78WIN','RR88','MM88','GG88','ABCVIP','XX8','U888','J88','ABC8','88CLB','AD88','SC88','C168','CM88','F8BET'];
+      showModal('🔗 TÀI KHOẢN MINI GAME',
+        '<div class="cc-notice">Chỉ lưu thương hiệu và username. Không nhập mật khẩu, mã OTP hoặc PIN của tài khoản bên thứ ba.</div><form id="account-form" class="cc-form-card"><label class="cc-form-label" for="account-brand">Thương hiệu</label><select id="account-brand" class="cc-field">'+brands.map(b=>'<option>'+b+'</option>').join('')+'</select><label class="cc-form-label" for="account-username">Tên đăng nhập</label><input id="account-username" class="cc-field" maxlength="64" required minlength="3" placeholder="Username tài khoản"><button class="cc-primary" type="submit">LIÊN KẾT TÀI KHOẢN</button></form>'+
+        (state.accounts.length?state.accounts.map(a=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(a.brand)+'</b><small>'+esc(a.username)+' · '+fmtDate(a.created_at)+'</small></div><button class="cc-detail-btn" type="button" data-delete-account="'+Number(a.id)+'">XÓA</button></div></article>').join(''):'<div class="cc-empty"><span>🔗</span><b>Chưa liên kết tài khoản</b></div>'));
+    }
+    function orderModal(orderCode){
+      const item=state.orders.find(o=>String(o.order_code)===String(orderCode));if(!item)return;
+      showModal('🧾 CHI TIẾT ĐƠN HÀNG',
+        '<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(item.product_name)+'</b><small>'+esc(item.order_code)+'</small></div><span class="cc-status">'+esc(statusLabel(item.status))+'</span></div>'+
+        '<div class="cc-record-foot"><span>Giá trị</span><b>'+money(item.amount)+'</b></div><div class="cc-record-foot"><span>Ngày tạo</span><span>'+fmtDate(item.created_at)+'</span></div>'+
+        (item.admin_note?'<p style="color:#aab3c3;font-size:11px">Ghi chú CSKH: '+esc(item.admin_note)+'</p>':'')+
+        (item.delivery_text?'<div class="cc-notice"><b>Thông tin giao hàng</b><br>'+esc(item.delivery_text)+'</div>':'')+'</article>');
+    }
+    async function createDeposit(){
+      const amount=Number($('#deposit-amount')?.value||0),result=$('#payment-result');
+      if(!Number.isInteger(amount)||amount<10000||amount>500000000)throw new Error('Số tiền nạp phải từ 10.000 đến 500.000.000 VNĐ.');
+      if(result)result.innerHTML='<p style="color:#aab3c3;font-size:11px">Đang tạo yêu cầu VietQR...</p>';
+      const data=await api('/api/wallet/payment-requests',{method:'POST',body:{amount}});
+      const r=data.request;
+      if(result)result.innerHTML='<div class="cc-notice">Đã tạo yêu cầu <b>'+esc(r.payment_id)+'</b>. Chuyển đúng số tiền và nội dung để Admin đối soát.</div><img class="cc-qr" alt="Mã QR VietQR" src="'+esc(data.qrUrl)+'"><div class="cc-record"><div class="cc-record-foot"><span>Ngân hàng</span><b>'+esc(r.bank_id||'')+'</b></div><div class="cc-record-foot"><span>Số tài khoản</span><b>'+esc(r.account_number||'')+'</b></div><div class="cc-record-foot"><span>Chủ tài khoản</span><b>'+esc(r.account_holder||'')+'</b></div><div class="cc-record-foot"><span>Số tiền</span><b>'+money(r.amount)+'</b></div><div class="cc-record-foot"><span>Nội dung chuyển khoản</span><b>'+esc(r.transfer_content)+'</b></div></div>';
+      state.payments.unshift(r);toast(data.message||'Đã tạo yêu cầu nạp.'); 
+    }
+    async function submitForm(event){
+      const form=event.target;
+      if(form.id==='support-form'){
+        event.preventDefault();
+        const subject=$('#support-subject').value.trim(),message=$('#support-message').value.trim();
+        if(subject.length<3||message.length<5)throw new Error('Vui lòng nhập tiêu đề và nội dung ít nhất 5 ký tự.');
+        const data=await api('/api/support/tickets',{method:'POST',body:{ticketType:state.supportType,subject,message}});
+        toast(data.message||'Đã gửi ticket.');closeModal();await reloadData();return;
+      }
+      if(form.id==='voucher-form'){
+        event.preventDefault();const orderId=Number($('#voucher-order').value),reason=$('#voucher-reason').value.trim();
+        if(!orderId||reason.length<5)throw new Error('Chọn đơn hàng và nhập lý do ít nhất 5 ký tự.');
+        const data=await api('/api/vouchers',{method:'POST',body:{orderId,reason}});
+        toast(data.message||'Đã gửi yêu cầu voucher.');closeModal();await reloadData();return;
+      }
+      if(form.id==='account-form'){
+        event.preventDefault();const brand=$('#account-brand').value,username=$('#account-username').value.trim();
+        if(username.length<3||username.length>64)throw new Error('Username phải từ 3 đến 64 ký tự.');
+        await api('/api/linked-accounts',{method:'POST',body:{brand,username}});
+        toast('Đã liên kết tài khoản.');await reloadData();accountsModal();return;
+      }
+    }
+    async function handleClick(event){
+      const tab=event.target.closest('[data-tab]');
+      if(tab){state.tab=tab.dataset.tab;renderDashboard();return;}
+      const detail=event.target.closest('[data-order-detail]');
+      if(detail){orderModal(detail.dataset.orderDetail);return;}
+      if(event.target.closest('[data-close-modal]')){closeModal();return;}
+      const del=event.target.closest('[data-delete-account]');
+      if(del){await api('/api/linked-accounts/'+encodeURIComponent(del.dataset.deleteAccount),{method:'DELETE'});toast('Đã xóa liên kết.');await reloadData();accountsModal();return;}
+      const action=event.target.closest('[data-action]')?.dataset.action;
+      if(!action)return;
+      if(action==='support-abuse'){supportModal('dinh_lam');return;}
+      if(action==='support-general'){supportModal('support');return;}
+      if(action==='open-vouchers'){voucherModal();return;}
+      if(action==='manage-accounts'){accountsModal();return;}
+      if(action==='deposit'){await createDeposit();return;}
+    }
+    $('#app').addEventListener('click',event=>{handleClick(event).catch(error=>toast(error.message||'Không thể xử lý yêu cầu.','error'));});
+    $('#app').addEventListener('submit',event=>{submitForm(event).catch(error=>toast(error.message||'Không thể gửi yêu cầu.','error'));});
+    $('#modal-root').addEventListener('click',event=>{handleClick(event).catch(error=>toast(error.message||'Không thể xử lý yêu cầu.','error'));});
+    $('#modal-root').addEventListener('submit',event=>{submitForm(event).catch(error=>toast(error.message||'Không thể gửi yêu cầu.','error'));});
+    document.addEventListener('click',event=>{if(event.target.closest('[data-close-modal]'))closeModal();});
+    async function start(){
+      initTelegram();
+      try{await reloadData();}
+      catch(error){
+        if(error.status===401||error.status===403){loginView(await fetchPublicConfig());return;}
+        $('#connection-label').textContent='LỖI KẾT NỐI';
+        $('#app').innerHTML='<section class="error-state"><h2>Không thể tải Trung tâm khách hàng</h2><p style="color:#aab3c3;line-height:1.6">'+esc(error.message||'Lỗi hệ thống')+'</p><button class="cc-primary" type="button" id="retry-load">THỬ LẠI</button></section>';
+        $('#retry-load')?.addEventListener('click',()=>start());
+      }
+      if(tg?.MainButton){
+        tg.MainButton.onClick(()=>createDeposit().catch(e=>toast(e.message,'error')));
+      }
+    }
+    start();
+  })();
+  </script>
 </body>
 </html>
