@@ -41,6 +41,15 @@ $assert(TelegramLink::normalize('https://example.com/hendy_cyber_bot') === '', '
 
 $assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','tools','codes','wallet','otp','viptools','customer','matchmaking','ref','vip','group','news','gift','support'], 'menu có đủ 14 mục theo giao diện HENDY mới');
 $assert(BotMenuDefinition::LAYOUT === [['live','tools'],['codes'],['wallet','otp'],['viptools'],['customer'],['matchmaking'],['ref','vip'],['group','news'],['gift','support'],['admin']], 'layout đúng thứ tự hai cột và các hàng toàn chiều rộng');
+$botServiceSource = file_get_contents(dirname(__DIR__) . '/app/BotService.php');
+$assert(str_contains($botServiceSource, "'menu_mode' => 'inline_keyboard'"), 'menu mặc định là Inline Keyboard');
+$assert(str_contains($botServiceSource, "return ['inline_keyboard' => \$rows];"), 'menu luôn gửi Inline Keyboard, kể cả cấu hình cũ');
+$assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
+$customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
+$assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');
+$adminUiSource = file_get_contents(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
+$assert(!str_contains($adminUiSource, 'telegram-web-app.js'), 'Admin không tải Telegram Mini App SDK');
+$assert(str_contains($adminUiSource, 'value="inline_keyboard"'), 'trình quản lý menu chỉ lưu Inline Keyboard');
 $webhookSecret = 'sample-webhook-secret-for-tests-000001';
 $assert(WebhookSecurity::verifySecret($webhookSecret, $webhookSecret), 'webhook secret đúng được chấp nhận');
 $assert(!WebhookSecurity::verifySecret($webhookSecret, 'wrong-webhook-secret-for-tests-000001'), 'webhook secret sai bị từ chối');
