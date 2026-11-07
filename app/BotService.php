@@ -116,11 +116,13 @@ final class BotService
                 return;
             }
             $this->clearPending($userId);
+            $this->removeLegacyReplyKeyboard($chatId);
             $this->sendHome($chatId, $from);
             return;
         }
 
         if (preg_match('/^\/menu(?:@\w+)?$/u', $text)) {
+            $this->removeLegacyReplyKeyboard($chatId);
             $this->sendHome($chatId, $from);
             return;
         }
@@ -316,6 +318,19 @@ final class BotService
         return is_array($parts)
             && strtolower((string) ($parts['scheme'] ?? '')) === 'https'
             && !empty($parts['host']);
+    }
+
+    private function removeLegacyReplyKeyboard(string $chatId): void
+    {
+        try {
+            $this->telegram->sendMessage(
+                $chatId,
+                '♻️ Menu HENDY đã chuyển sang Inline Menu mới. Các nút hiện hiển thị ngay bên dưới tin nhắn.',
+                ['reply_markup' => ['remove_keyboard' => true]]
+            );
+        } catch (Throwable $error) {
+            error_log('[telegram:' . $this->botKey . '] Không thể gỡ Reply Keyboard cũ: ' . $error->getMessage());
+        }
     }
 
     private function sendHome(string $chatId, array $from): void
