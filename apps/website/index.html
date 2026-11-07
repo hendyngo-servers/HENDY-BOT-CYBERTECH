@@ -31,6 +31,7 @@
     .brand-copy strong{display:block;font-size:16px;letter-spacing:.08em}.brand-copy small{display:block;margin-top:3px;color:#9ca3b2;font-size:9px;letter-spacing:.13em;font-weight:800}
     .live-chip{display:inline-flex;align-items:center;gap:7px;max-width:48%;padding:8px 11px;border:1px solid #3b2931;border-radius:99px;background:#120b10;color:#ffc2d0;font-size:9px;font-weight:900;letter-spacing:.06em}
     .live-dot{width:7px;height:7px;border-radius:50%;background:#2ce596;box-shadow:0 0 10px #2ce596}
+    .build-label{color:#798293;font-size:8px;font-weight:800;letter-spacing:.08em;white-space:nowrap}
     .cc-dashboard{display:grid;gap:16px;max-width:1180px;margin:0 auto;color:#f5f7fb}
     .cc-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 2px 3px}
     .cc-page-eyebrow{display:flex;align-items:center;gap:8px;color:#ff829d;font-size:10px;font-weight:950;letter-spacing:.17em}
@@ -159,7 +160,7 @@
         <span class="brand-mark">💠</span>
         <span class="brand-copy"><strong>HENDY <span style="color:#ff7895">CYBERTECH</span></strong><small>CUSTOMER CENTER · MEMBER PORTAL</small></span>
       </a>
-      <span class="live-chip"><span class="live-dot"></span><span id="connection-label">ĐANG KẾT NỐI</span></span>
+      <span class="live-chip"><span class="live-dot"></span><span id="connection-label">ĐANG KẾT NỐI</span><small class="build-label">· BUILD 2026.11.07.3</small></span>
     </header>
     <main id="app"><div class="loading">💠 Đang tải Trung tâm khách hàng HENDY...</div></main>
     <footer class="cc-footer">HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</footer>
@@ -193,7 +194,7 @@
       const h=Number(tg.viewportStableHeight||tg.viewportHeight||0);
       if(h>200)document.documentElement.style.setProperty('--tg-height',h+'px');
     }
-    function initTelegram(){
+    function initTelegramMiniApp(){
       if(!tg?.initData)return;
       try{tg.ready();tg.expand();tg.setHeaderColor?.('#050509');tg.setBackgroundColor?.('#050509');}catch(_){}
       setTelegramViewport();
@@ -201,6 +202,12 @@
       tg.onEvent?.('safeAreaChanged',setTelegramViewport);
       tg.onEvent?.('contentSafeAreaChanged',setTelegramViewport);
       tg.onEvent?.('themeChanged',()=>{try{tg.setHeaderColor?.('#050509');tg.setBackgroundColor?.('#050509');}catch(_){}});
+      if(tg.BackButton && typeof tg.BackButton.onClick==='function'){
+        tg.BackButton.onClick(()=>{
+          if($('#modal-root .cc-modal')){closeModal();return;}
+          state.tab='active';renderDashboard();updateMiniAppButton();
+        });
+      }
     }
     async function api(path,options={}){
       const auth = tg?.initData ? {'Authorization':'tma '+tg.initData} : {};
@@ -274,12 +281,17 @@
         '<section class="cc-summary"><div class="cc-summary-card"><div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div><div class="cc-order-stats"><div class="cc-stat"><small>TỔNG ĐƠN</small><b>'+Number(stats.totalOrders||0)+'</b></div><div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>'+Number(stats.processingOrders||0)+'</b></div><div class="cc-stat green"><small>HOÀN TẤT</small><b>'+Number(stats.completedOrders||0)+'</b></div><div class="cc-stat"><small>ĐÃ HỦY</small><b>'+Number(stats.cancelledOrders||0)+'</b></div><div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>'+Number(stats.refundedOrders||0)+'</b></div></div></div><div class="cc-summary-card"><div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div><div class="cc-account-stats"><div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>'+money(total)+'</b></div><div class="cc-account-stat"><small>POINT (CŨ)</small><b>'+Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')+'</b></div><div class="cc-account-stat nyc"><small>VÍ NYC</small><b>'+money(u.nycWallet)+'</b></div><div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></div></section>'+
         '<div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>'+
         '<section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>'+accountCount+' tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-action="manage-accounts">QUẢN LÝ</button></section>'+
-        '<div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng"><button class="'+(state.tab==='active'?'active':'')+'" data-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button><button class="'+(state.tab==='orders'?'active':'')+'" data-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button><button class="'+(state.tab==='deposit'?'active':'')+'" data-tab="deposit">💳 NẠP TIỀN</button><button class="'+(state.tab==='transactions'?'active':'')+'" data-tab="transactions">🛒 GD ĐƠN HÀNG</button></div>'+
+        '<div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng"><button class="'+(state.tab==='active'?'active':'')+'" data-tab="active" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button><button class="'+(state.tab==='orders'?'active':'')+'" data-tab="orders" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button><button class="'+(state.tab==='deposit'?'active':'')+'" data-tab="deposit" data-customer-tab="deposit">💳 NẠP TIỀN</button><button class="'+(state.tab==='transactions'?'active':'')+'" data-tab="transactions" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button></div>'+
         '<section class="cc-tab">'+renderTabs()+'</section></div>';
       updateMiniAppButton();
     }
     function updateMiniAppButton(){
-      if(!tg?.initData||!tg.MainButton)return;
+      if(!tg?.initData)return;
+      if(tg.BackButton){
+        if(state.tab!=='active')tg.BackButton.show?.();
+        else tg.BackButton.hide?.();
+      }
+      if(!tg.MainButton)return;
       if(state.tab==='deposit'){tg.MainButton.setText('TẠO QR VIETQR');tg.MainButton.show();tg.MainButton.enable?.();}
       else tg.MainButton.hide();
     }
@@ -315,7 +327,7 @@
       const eligible=state.vouchers.eligibleOrders||[],requests=state.vouchers.requests||[];
       showModal('🎟️ VOUCHER 72H',
         '<div class="cc-notice">Chỉ đơn đang chờ xử lý tối thiểu 72 giờ mới đủ điều kiện. Việc gửi yêu cầu không tự cộng tiền; Admin phải kiểm tra và duyệt.</div>'+
-        (eligible.length?'<form id="voucher-form" class="cc-form-card"><label class="cc-form-label" for="voucher-order">Chọn đơn hàng đủ điều kiện</label><select id="voucher-order" class="cc-field">'+eligible.map(o=>'<option value="'+Number(o.id)+'">'+esc(o.order_code)+' · '+esc(o.product_name)+' · '+money(o.amount)+'</option>').join('')+'</select><label class="cc-form-label" for="voucher-reason">Lý do yêu cầu</label><textarea id="voucher-reason" class="cc-field" rows="3" maxlength="1000" required placeholder="Mô tả vấn đề của đơn hàng..."></textarea><button class="cc-primary" type="submit">GỬI YÊU CẦU VOUCHER</button></form>':'<div class="cc-empty"><span>🎟️</span><b>Chưa có đơn đủ điều kiện</b><small>Đơn chờ tối thiểu 72 giờ sẽ hiển thị tại đây.</small></div>')+
+        (eligible.length?'<form id="voucher-form" class="cc-form-card"><label class="cc-form-label" for="voucher-order">Chọn đơn hàng đủ điều kiện</label><select id="voucher-order" class="cc-field">'+eligible.map(o=>'<option value="'+Number(o.id)+'">'+esc(o.order_code)+' · '+esc(o.product_name)+' · '+money(o.amount)+'</option>').join('')+'</select><label class="cc-form-label" for="voucher-reason">Lý do yêu cầu</label><textarea id="voucher-reason" class="cc-field" rows="3" maxlength="1000" required placeholder="Mô tả vấn đề của đơn hàng..."></textarea><button class="cc-primary" type="submit" data-action="submit-voucher">GỬI YÊU CẦU VOUCHER</button></form>':'<div class="cc-empty"><span>🎟️</span><b>Chưa có đơn đủ điều kiện</b><small>Đơn chờ tối thiểu 72 giờ sẽ hiển thị tại đây.</small></div>')+
         (requests.length?'<div class="cc-list-head"><h3>YÊU CẦU ĐÃ GỬI</h3><span>'+requests.length+'</span></div>'+requests.map(v=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+esc(v.order_code)+' · '+esc(v.product_name||'Đơn hàng')+'</b><small>'+fmtDate(v.created_at)+'</small></div><span class="cc-status">'+esc(statusLabel(v.status))+'</span></div><small style="color:#9ca7b8">Phần thưởng: '+money(v.reward_amount||0)+'</small></article>').join(''):''));
     }
     function accountsModal(){
@@ -385,7 +397,7 @@
     $('#modal-root').addEventListener('submit',event=>{submitForm(event).catch(error=>toast(error.message||'Không thể gửi yêu cầu.','error'));});
     document.addEventListener('click',event=>{if(event.target.closest('[data-close-modal]'))closeModal();});
     async function start(){
-      initTelegram();
+      initTelegramMiniApp();
       try{await reloadData();}
       catch(error){
         if(error.status===401||error.status===403){loginView(await fetchPublicConfig());return;}
