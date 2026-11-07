@@ -682,7 +682,7 @@ final class BotService
                 $this->showProducts($chatId, ['codes'], '🎁 KHO MÃ CODE', $userId);
                 return;
             case 'matchmaking':
-                $this->telegram->sendMessage($chatId, '⚔️ <b>HỆ THỐNG GHÉP ĐỐI ĐẤU HENDY</b>' . "\\n" .
+                $this->telegram->sendMessage($chatId, '⚔️ <b>HỆ THỐNG GHÉP ĐỐI ĐẤU HENDY</b>' . "\n" .
                     'Giao diện menu đã sẵn sàng. Hệ thống ghép trận, xác nhận kết quả và xếp hạng đang được hoàn thiện; bot chưa đưa người chơi vào hàng chờ để tránh tạo trận chưa có cơ chế xử lý đầy đủ.',
                     ['reply_markup' => $this->inlineMenu([
                         [['text' => '🏠 MENU CHÍNH', 'callback_data' => 'member:home']],
@@ -2346,7 +2346,7 @@ final class BotService
             $this->telegram->sendMessage($chatId, 'Không thể tạo phiên Admin lúc này. Vui lòng thử lại sau.');
             return;
         }
-        $this->telegram->sendMessage($chatId, implode("\\n", [
+        $this->telegram->sendMessage($chatId, implode("\n", [
             '🛡️ <b>HENDY ADMIN DASHBOARD</b>',
             'Mở bảng điều khiển trực tiếp trên trình duyệt. Không cần Telegram Mini App.',
             'Liên kết bảo mật chỉ dùng một lần và hết hạn sau <b>5 phút</b>.',
