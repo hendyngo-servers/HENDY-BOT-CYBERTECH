@@ -225,6 +225,26 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
   .customer-panel-title{font-size:14px}
   .customer-wallets b{font-size:20px}
 }
+
+/* Shared Customer Center reference layout for browser website and Telegram Mini App. */
+.cc-dashboard{display:grid;gap:14px;max-width:1120px;margin:0 auto;padding:2px 0 28px;color:#f5f7fb}
+.cc-profile{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:center;gap:18px;padding:22px 24px;border:1px solid #ad2438;border-radius:18px;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350b 13.2% 13.5%,transparent 13.7% 26%),radial-gradient(ellipse at 95% 5%,#5f111e88,transparent 36%),linear-gradient(115deg,#030405,#0b0c10 60%,#18070b);box-shadow:0 0 24px #ff263522,inset 0 0 30px #8a11221e}
+.cc-profile-main{min-width:0}.cc-profile-head{display:flex;align-items:center;gap:14px}.cc-avatar{width:66px;height:66px;flex:none;display:grid;place-items:center;border-radius:50%;border:2px solid #f7f8fc;background:linear-gradient(135deg,#212b39,#050608);color:#fff;font-size:26px;font-weight:950;box-shadow:0 0 17px #e4f7ff40}
+.cc-identity{min-width:0}.cc-identity h2{margin:0 0 5px;font-size:23px;line-height:1.2;font-weight:950;overflow-wrap:anywhere}.cc-identity .cc-id{display:inline-flex;gap:5px;padding:4px 8px;border:1px solid #00cb89;border-radius:7px;background:#062219;color:#54efb9;font-size:11px;font-weight:850}.cc-identity small{display:block;margin-top:5px;color:#a5afc0;font-size:11px}
+.cc-vipline{display:flex;align-items:center;gap:8px;margin-top:12px}.cc-vip{display:inline-flex;padding:5px 10px;border-radius:7px;background:linear-gradient(120deg,#ff8b00,#ffd02f);color:#241300;font-size:11px;font-weight:950}.cc-bot-chip{font-size:10px;color:#9eacbf;font-weight:800}
+.cc-progress{max-width:440px;margin-top:12px}.cc-progress-label{display:flex;justify-content:space-between;gap:10px;color:#aeb8c8;font-size:10px}.cc-progress-label strong{color:#fff;font-size:11px}.cc-progress-track{height:9px;margin-top:7px;overflow:hidden;border:1px solid #3e3e3e;border-radius:99px;background:#24262b}.cc-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff192f,#ff8d00,#ffe13b);box-shadow:0 0 12px #ff7b38}
+.cc-wallets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cc-wallet{min-height:104px;padding:14px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;text-align:center;border:1px solid #2d3441;border-radius:13px;background:#05070bd9}.cc-wallet small{color:#d5dae3;font-size:10px;font-weight:900;letter-spacing:.04em}.cc-wallet b{color:#12f23b;font-size:24px;line-height:1.2;font-weight:950}.cc-wallet.voucher b{color:#ffc323}
+.cc-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 1px 0;color:#f1f3f8;font-size:14px;font-weight:950;letter-spacing:.025em}.cc-section-title small{color:#8e9aae;font-size:10px;font-weight:700}
+.cc-support-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.cc-support-card{width:100%;min-height:145px;padding:14px;text-align:left;border:1px solid #38404d;border-radius:14px;background:linear-gradient(145deg,#0c0e13,#050608);color:#fff;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.cc-support-card:hover{transform:translateY(-2px);box-shadow:0 10px 23px #0007}.cc-support-card .cc-number{display:grid;place-items:center;width:32px;height:32px;margin-bottom:9px;border-radius:9px;background:linear-gradient(135deg,#ffc400,#ffed76);color:#201700;font-weight:950}.cc-support-card b{display:block;font-size:11px;margin-bottom:6px}.cc-support-card small{display:block;color:#aab3c3;font-size:10px;line-height:1.5}.cc-support-card.abuse{border-color:#c18d20}.cc-support-card.abuse b{color:#ffda4d}.cc-support-card.ticket{border-color:#0aaed5}.cc-support-card.ticket .cc-number{background:linear-gradient(135deg,#bd28ed,#ef5cff);color:white}.cc-support-card.ticket b{color:#e88aff}.cc-support-card.voucher{border-color:#0ebc83}.cc-support-card.voucher .cc-number{background:linear-gradient(135deg,#00d88a,#7bf5c5);color:#062b1d}.cc-support-card.voucher b{color:#56eab4}
+.cc-replay{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid #c018da;border-radius:14px;background:linear-gradient(105deg,#170a1d,#09070d);color:#fff;text-decoration:none}.cc-replay-icon{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:10px;background:#c20ee7;color:#fff;font-size:20px;box-shadow:0 0 17px #bd17ed80}.cc-replay b{display:block;color:#e38aff;font-size:13px}.cc-replay small{display:block;margin-top:4px;color:#aeb7c8;font-size:10px}.cc-replay.disabled{opacity:.72;border-style:dashed;cursor:not-allowed}
+.cc-summary{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:15px}.cc-summary-card{padding:15px;border:1px solid #303744;border-radius:14px;background:#06080b}.cc-summary-head{padding-bottom:10px;margin-bottom:11px;border-bottom:1px dashed #343b48;font-size:14px;font-weight:950}.cc-summary-head.green{color:#17e87c}.cc-order-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.cc-stat{min-height:77px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:8px 5px;border:1px solid #333b49;border-radius:11px;background:linear-gradient(145deg,#0e1117,#06080a);text-align:center}.cc-stat small{font-size:9px;color:#a3adbd;font-weight:850}.cc-stat b{font-size:20px;color:#f7f8fa}.cc-stat.cyan{border-color:#087f9c}.cc-stat.cyan b{color:#55dff8}.cc-stat.green{border-color:#08794b}.cc-stat.green b{color:#4ee7a0}.cc-stat.yellow{border-color:#806216}.cc-stat.yellow b{color:#ffd34b}
+.cc-account-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cc-account-stat{min-height:77px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:9px;border:1px solid #9233ba;border-radius:11px;background:#09070e;text-align:center}.cc-account-stat.main{grid-column:1/-1;border-color:#078b36;background:#06140a}.cc-account-stat.nyc{border-color:#087f9c}.cc-account-stat.voucher{border-color:#826114}.cc-account-stat small{font-size:9px;color:#a6afbf;font-weight:850}.cc-account-stat b{font-size:18px;color:#fff}.cc-account-stat.main b{color:#42e879}.cc-account-stat.nyc b{color:#4cdcf1}.cc-account-stat.voucher b{color:#ffd34b}
+.cc-linked{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #34445f;border-radius:13px;background:#0d1420}.cc-linked b{display:block;font-size:12px}.cc-linked small{display:block;margin-top:4px;color:#9eacc1;font-size:10px}.cc-btn{border:1px solid #3b526f;border-radius:10px;padding:9px 12px;background:#142743;color:#e9f2ff;font-size:10px;font-weight:900;cursor:pointer}.cc-tabs{display:flex;gap:7px;overflow:auto;padding:6px 0 2px;scrollbar-width:thin}.cc-tabs button{white-space:nowrap;flex:none;border:1px solid #303b52;border-radius:10px;padding:10px 12px;background:#0d1423;color:#aebbd0;font-size:10px;font-weight:950;cursor:pointer}.cc-tabs button.active{border-color:#17bcd9;color:#fff;background:#103245;box-shadow:0 0 13px #13bde833}
+.cc-tab{min-height:150px;padding:13px;border:1px solid #354052;border-radius:14px;background:linear-gradient(145deg,#080b11,#06080d)}.cc-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}.cc-list-head h3{margin:0;font-size:12px;font-weight:950}.cc-list-head span{color:#91a0b7;font-size:10px}.cc-order{margin-bottom:9px;padding:12px;border:1px solid #27354a;border-radius:12px;background:#0d1320}.cc-order:last-child{margin-bottom:0}.cc-order-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.cc-order-top b{display:block;font-size:12px}.cc-order-top small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}.cc-order-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #263044;color:#a4aec0;font-size:10px}.cc-detail-btn{border:1px solid #36516c;border-radius:8px;padding:6px 9px;background:#12263b;color:#bcecff;font-size:9px;font-weight:900}.cc-status{display:inline-flex;flex:none;padding:4px 7px;border:1px solid #44516a;border-radius:7px;color:#d5dceb;font-size:9px;font-weight:850}.cc-empty{display:grid;place-items:center;gap:7px;padding:28px 12px;text-align:center;color:#aebbd1}.cc-empty span{font-size:26px}.cc-empty b{font-size:12px}.cc-empty small{font-size:10px;color:#8290a9}
+.cc-deposit-form{display:grid;gap:9px;margin-bottom:13px;padding:14px;border:1px solid #2b4261;border-radius:13px;background:#0d1423}.cc-field{width:100%;border:1px solid #33415a;border-radius:10px;padding:11px 12px;background:#070c15;color:#fff;outline:none}.cc-field:focus{border-color:#1eb8df;box-shadow:0 0 0 3px #1eb8df22}.cc-record{margin-bottom:8px;padding:12px;border:1px solid #27354a;border-radius:11px;background:#0d1320}.cc-record:last-child{margin-bottom:0}.cc-record-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.cc-record small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}.cc-record-foot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#a4aec0;font-size:10px}.cc-positive{color:#4be49a}.cc-negative{color:#ff7b8d}.cc-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#000b;backdrop-filter:blur(8px)}.cc-modal[hidden]{display:none}.cc-modal-card{width:min(100%,520px);max-height:min(82vh,700px);overflow:auto;padding:18px;border:1px solid #48556b;border-radius:16px;background:#0a0e16;box-shadow:0 24px 80px #000b}.cc-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.cc-modal-head h3{margin:0;font-size:15px}.cc-modal-close{border:1px solid #39475c;border-radius:9px;padding:7px 10px;background:#151e2e;color:#fff}
+@media(max-width:760px){.cc-dashboard{gap:11px}.cc-profile{grid-template-columns:1fr;gap:14px;padding:16px}.cc-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-wallet{min-height:84px}.cc-summary{grid-template-columns:1fr;gap:11px}.cc-support-grid{grid-template-columns:1fr}.cc-support-card{min-height:0;display:grid;grid-template-columns:34px 1fr;column-gap:10px}.cc-support-card .cc-number{grid-row:span 2;margin:0}.cc-support-card b{margin:1px 0 5px}.cc-support-card small{grid-column:2}.cc-order-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-identity h2{font-size:19px}}
+@media(max-width:430px){.cc-order-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-summary-head{font-size:12px}.cc-wallet b{font-size:20px}.cc-identity h2{font-size:17px}.cc-profile{padding:14px}}
+
 </style>
 </head>
 <body>
@@ -586,15 +606,16 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     state.customerTab=tab;
     setNav('customer');
     if(refresh || !state.customerData){
-      const [center,accounts,orders,payments,tickets,vouchers]=await Promise.all([
+      const [center,accounts,orders,payments,tickets,vouchers,vip]=await Promise.all([
         api('/api/customer-center'),
         api('/api/linked-accounts'),
         api('/api/orders'),
         api('/api/wallet/payment-requests'),
         api('/api/support/tickets'),
-        api('/api/vouchers')
+        api('/api/vouchers'),
+        api('/api/vip')
       ]);
-      state.customerData={center,accounts:accounts.accounts||[],orders:orders.orders||[],payments:payments.requests||[],tickets:tickets.tickets||[],vouchers};
+      state.customerData={center,accounts:accounts.accounts||[],orders:orders.orders||[],payments:payments.requests||[],tickets:tickets.tickets||[],vouchers,vip};
       state.center=center;
       state.accounts=accounts.accounts||[];
     }
@@ -608,96 +629,120 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 
   function renderCustomer(){
     const data=state.customerData;
-    if(!data){return;}
+    if(!data)return;
     const center=data.center||{};
     const u=center.user||state.boot.user||{};
-    const s=center.statistics||{};
-    const counts=center.tickets||{};
+    const stats=center.statistics||{};
+    const ticketCounts=center.tickets||{};
+    const vip=data.vip||{};
     const selected=state.customerTab||'active';
     const orders=data.orders||[];
-    const activeOrders=orders.filter(x=>['pending','processing'].includes(String(x.status)));
-    const showOrders=selected==='active'?activeOrders:orders;
-    const orderRows=showOrders.length?showOrders.map(order=>`
-      <article class="customer-record">
-        <div class="record-top"><div><b>${escapeHtml(order.product_name||'Đơn hàng HENDY')}</b><small>${escapeHtml(order.order_code||'')} · ${new Date(order.created_at).toLocaleString('vi-VN')}</small></div><span class="status ${escapeHtml(order.status)}">${customerStatus(order.status)}</span></div>
-        <div class="customer-record-foot"><span>Giá trị đơn</span><b>${money(order.amount)}</b></div>
-        ${order.admin_note?'<p class="muted small">'+escapeHtml(order.admin_note)+'</p>':''}
-      </article>`).join(''):'<div class="customer-empty"><span>📭</span><b>'+ (selected==='active'?'Không có đơn hàng đang chạy':'Chưa có lịch sử đơn hàng') +'</b><small>Các đơn phát sinh từ hệ thống sẽ được cập nhật tại đây.</small></div>';
+    const activeOrders=orders.filter(item=>['pending','processing'].includes(String(item.status)));
+    const visibleOrders=selected==='active'?activeOrders:orders;
+    const orderRows=visibleOrders.length?visibleOrders.map(order=>`
+      <article class="cc-order">
+        <div class="cc-order-top">
+          <div><b>\${${escapeHtml(order.product_name||'Đơn hàng HENDY')}}</b><small>\${${escapeHtml(order.order_code||'')}} · \${${new Date(order.created_at).toLocaleString('vi-VN')}}</small></div>
+          <span class="cc-status">\${${customerStatus(order.status)}}</span>
+        </div>
+        <div class="cc-order-foot"><span>Giá trị đơn: <b>\${${money(order.amount)}}</b></span><button class="cc-detail-btn" type="button" data-order-detail="\${${escapeHtml(order.order_code||'')}}">CHI TIẾT</button></div>
+      </article>`).join(''):'<div class="cc-empty"><span>📭</span><b>'+ (selected==='active'?'Không có đơn hàng đang chạy':'Chưa có lịch sử đơn hàng') +'</b><small>Đơn phát sinh sẽ được cập nhật tại đây.</small></div>';
 
     let tabContent='';
     if(selected==='active'||selected==='orders'){
-      tabContent='<div class="customer-list-head"><h3>'+(selected==='active'?'🚀 ĐANG CHẠY & CHỜ XÁC NHẬN':'📜 LỊCH SỬ ĐƠN HÀNG')+'</h3><span>'+(selected==='active'?activeOrders.length:orders.length)+' đơn</span></div>'+orderRows;
+      tabContent='<div class="cc-list-head"><h3>'+(selected==='active'?'🚀 ĐANG CHẠY & CHỜ XÁC NHẬN':'📜 LỊCH SỬ ĐƠN HÀNG')+'</h3><span>'+(selected==='active'?activeOrders.length:orders.length)+' đơn</span></div>'+orderRows;
     }else if(selected==='deposit'){
       const payments=data.payments||[];
-      tabContent='<div class="customer-list-head"><h3>💳 NẠP TIỀN</h3><span>'+payments.length+' yêu cầu</span></div>'+
-        '<div class="customer-form-card"><label class="form-label" for="deposit-amount">Số tiền muốn nạp (VNĐ)</label><input id="deposit-amount" class="field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO QR VIETQR</button><p class="muted small">Số dư chỉ được cộng sau khi Admin xác minh giao dịch ngân hàng.</p><div id="payment-result"></div></div>'+
-        (payments.length?payments.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+money(item.amount)+'</b><small>'+escapeHtml(item.payment_id)+' · '+escapeHtml(item.transfer_content||'')+'</small></div><span class="status">'+customerStatus(item.status)+'</span></div><div class="customer-record-foot"><span>Ngân hàng '+escapeHtml(item.bank_id||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="customer-empty"><span>💳</span><b>Chưa có yêu cầu nạp</b><small>Tạo yêu cầu để nhận mã VietQR riêng của bạn.</small></div>');
+      tabContent='<div class="cc-list-head"><h3>💳 NẠP TIỀN</h3><span>'+payments.length+' yêu cầu</span></div>'+
+        '<div class="cc-deposit-form"><label for="deposit-amount">Số tiền muốn nạp (VNĐ)</label><input id="deposit-amount" class="cc-field" type="number" min="10000" max="500000000" step="1000" value="50000"><button class="btn primary" data-action="deposit">TẠO YÊU CẦU VIETQR</button><small class="muted">Ví chỉ được cộng sau khi Admin xác minh giao dịch ngân hàng.</small><div id="payment-result"></div></div>'+
+        (payments.length?payments.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+money(item.amount)+'</b><small>'+escapeHtml(item.payment_id)+' · '+escapeHtml(item.transfer_content||'')+'</small></div><span class="cc-status">'+customerStatus(item.status)+'</span></div><div class="cc-record-foot"><span>'+escapeHtml(item.bank_id||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="cc-empty"><span>💳</span><b>Chưa có yêu cầu nạp</b><small>Tạo yêu cầu để nhận mã VietQR riêng.</small></div>');
     }else{
       const ledger=center.walletHistory||[];
       const transactions=center.recentTransactions||[];
-      tabContent='<div class="customer-list-head"><h3>📒 GIAO DỊCH VÀ BIẾN ĐỘNG VÍ</h3><span>'+ledger.length+' biến động</span></div>'+
-        (ledger.length?ledger.map(item=>'<article class="customer-record"><div class="record-top"><div><b>'+escapeHtml(item.description||item.transaction_type||'Giao dịch')+'</b><small>'+escapeHtml(item.reference_code||'')+' · '+escapeHtml(item.wallet_type||'MAIN')+'</small></div><b class="'+(Number(item.amount)>=0?'positive':'negative')+'">'+(Number(item.amount)>0?'+':'')+money(item.amount)+'</b></div><div class="customer-record-foot"><span>'+escapeHtml(item.transaction_type||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="customer-empty"><span>📒</span><b>Chưa có biến động ví</b><small>Lịch sử giao dịch sẽ xuất hiện khi tài khoản phát sinh hoạt động.</small></div>')+
-        (transactions.length?'<div class="customer-list-head"><h3>GIAO DỊCH GẦN ĐÂY</h3></div>'+transactions.map(item=>'<div class="row-card"><div><b>'+escapeHtml(item.type)+'</b><small class="muted small" style="display:block">'+escapeHtml(item.reference_code||'')+'</small></div><b>'+money(item.amount)+'</b></div>').join(''):'');
+      tabContent='<div class="cc-list-head"><h3>📒 GIAO DỊCH VÀ BIẾN ĐỘNG VÍ</h3><span>'+ledger.length+' biến động</span></div>'+
+        (ledger.length?ledger.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+escapeHtml(item.description||item.transaction_type||'Giao dịch')+'</b><small>'+escapeHtml(item.reference_code||'')+' · '+escapeHtml(item.wallet_type||'MAIN')+'</small></div><b class="'+(Number(item.amount)>=0?'cc-positive':'cc-negative')+'">'+(Number(item.amount)>0?'+':'')+money(item.amount)+'</b></div><div class="cc-record-foot"><span>'+escapeHtml(item.transaction_type||'')+'</span><span>'+new Date(item.created_at).toLocaleString('vi-VN')+'</span></div></article>').join(''):'<div class="cc-empty"><span>📒</span><b>Chưa có biến động ví</b><small>Lịch sử sẽ xuất hiện khi tài khoản phát sinh giao dịch.</small></div>')+
+        (transactions.length?'<div class="cc-list-head" style="margin-top:14px"><h3>GIAO DỊCH GẦN ĐÂY</h3></div>'+transactions.map(item=>'<article class="cc-record"><div class="cc-record-top"><div><b>'+escapeHtml(item.type)+'</b><small>'+escapeHtml(item.reference_code||'')+'</small></div><b>'+money(item.amount)+'</b></div></article>').join(''):'');
     }
 
     const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
-    const replayValid=/^https:\/\//i.test(replayUrl);
-    const status=Number(u.vipLevel||0)>0?'VIP '+Number(u.vipLevel):'Bình thường';
+    const replayValid=/^https:\\/\\//i.test(replayUrl);
+    const currentLevel=Number(vip.currentLevel??u.vipLevel??0);
+    const vipLabel=currentLevel>0?'VIP '+currentLevel:'VIP 0 · THÀNH VIÊN';
+    const totalDeposited=Number(vip.totalDeposited??u.totalDeposited??0);
+    const progress=Number(vip.progressPercent||0);
+    const nextThreshold=vip.nextThreshold;
+    const progressText=nextThreshold===null?'ĐÃ ĐẠT VIP TỐI ĐA':money(totalDeposited)+' / '+money(nextThreshold);
+    const accountName=u.username?'@'+u.username:'HENDY MEMBER';
+    const ticketTotal=Number(ticketCounts.total||0);
+    const voucherRequests=Array.isArray(data.vouchers?.requests)?data.vouchers.requests.length:0;
+    const nycBalance=Number(u.nycWallet||0);
+    const orderDetailsMarkup='<div class="cc-modal" id="cc-order-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cc-order-modal-title"><div class="cc-modal-card"><div class="cc-modal-head"><h3 id="cc-order-modal-title">🧾 CHI TIẾT ĐƠN HÀNG</h3><button type="button" class="cc-modal-close" data-close-order-detail>ĐÓNG ✕</button></div><div id="cc-order-content"></div></div></div>';
+
     $('#app').innerHTML=`
-      <section class="customer-profile">
-        <div class="customer-profile-main">
-          <div class="customer-profile-top">
-            <div class="customer-avatar">${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
-            <div class="customer-identity"><h2>${escapeHtml(u.name||memberName())}</h2><span>🟢 ID: ${escapeHtml(u.id||'')}</span><small>${u.username?'@'+escapeHtml(u.username):'HENDY MEMBER'}</small></div>
+      <div class="cc-dashboard">
+        <section class="cc-profile">
+          <div class="cc-profile-main">
+            <div class="cc-profile-head">
+              <div class="cc-avatar">\${${escapeHtml(String(u.name||memberName()).slice(0,1).toUpperCase())}</div>
+              <div class="cc-identity"><h2>\${${escapeHtml(u.name||memberName())}</h2><span class="cc-id">🆔 TELEGRAM ID: \${${escapeHtml(u.id||'')}}</span><small>\${${escapeHtml(accountName)}} · \${${botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH'}}</small></div>
+            </div>
+            <div class="cc-vipline"><span class="cc-vip">💎 \${${escapeHtml(vipLabel)}}</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div>
+            <div class="cc-progress">
+              <div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>\${${money(totalDeposited)}}</strong></div>
+              <div class="cc-progress-track"><span style="width:\${${Math.max(0,Math.min(100,progress))}}%"></span></div>
+              <div class="cc-progress-label" style="margin-top:6px"><span>\${${progressText}}</span><strong>\${${Math.max(0,Math.min(100,progress))}}%</strong></div>
+            </div>
           </div>
-          <div class="customer-profile-vip"><span class="customer-vip">💎 ${escapeHtml(status)}</span></div>
-          <div class="customer-progress"><div><span>TỔNG NẠP TÍCH LŨY</span><b>${money(u.totalDeposited)}</b></div><div class="progress-track"><span style="width:${Math.min(100,Number(u.vipProgressPercent||0))}%"></span></div><small>${Number(u.pointOld||0).toLocaleString('vi-VN')} POINT · ${botKey==='secondary'?'BOT 2':'BOT 1'}</small></div>
+          <div class="cc-wallets">
+            <div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>\${${money(u.balance)}}</b></div>
+            <div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>\${${money(u.voucherWallet)}}</b></div>
+          </div>
+        </section>
+
+        <div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>\${${ticketTotal}} ticket · \${${voucherRequests}} yêu cầu voucher</small></div>
+        <section class="cc-support-grid">
+          <button class="cc-support-card abuse" type="button" data-action="support-abuse"><span class="cc-number">1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi mã đơn đã hoàn thành để CSKH kiểm tra trường hợp chưa nhận được điểm. Không gửi mật khẩu, mã OTP hoặc PIN.</small></button>
+          <button class="cc-support-card ticket" type="button" data-action="support-general"><span class="cc-number">2</span><b>TICKET HỖ TRỢ</b><small>Tạo yêu cầu, khiếu nại và theo dõi phản hồi của đội ngũ chăm sóc khách hàng HENDY.</small></button>
+          <button class="cc-support-card voucher" type="button" data-action="open-vouchers"><span class="cc-number">3</span><b>VOUCHER 72H</b><small>Gửi yêu cầu kiểm tra đơn chờ xử lý quá 72 giờ. Voucher chỉ được cộng sau khi Admin duyệt.</small></button>
+        </section>
+
+        <a class="cc-replay \${${replayValid?'':'disabled'}}" \${${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"'}}><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>\${${replayValid?'Xem lại video live các đơn hàng đã hoàn tất (nếu nhà cung cấp có lưu replay).':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.'}}</small></div></a>
+
+        <section class="cc-summary">
+          <div class="cc-summary-card">
+            <div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div>
+            <div class="cc-order-stats">
+              <div class="cc-stat"><small>TỔNG ĐƠN</small><b>\${${Number(stats.totalOrders||0)}}</b></div>
+              <div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>\${${Number(stats.processingOrders||0)}}</b></div>
+              <div class="cc-stat green"><small>HOÀN TẤT</small><b>\${${Number(stats.completedOrders||0)}}</b></div>
+              <div class="cc-stat"><small>ĐÃ HỦY</small><b>\${${Number(stats.cancelledOrders||0)}}</b></div>
+              <div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>\${${Number(stats.refundedOrders||0)}}</b></div>
+            </div>
+          </div>
+          <div class="cc-summary-card">
+            <div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div>
+            <div class="cc-account-stats">
+              <div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>\${${money(totalDeposited)}}</b></div>
+              <div class="cc-account-stat"><small>POINT (CŨ)</small><b>\${${Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')}}</b></div>
+              <div class="cc-account-stat nyc"><small>VÍ NYC</small><b>\${${money(nycBalance)}}</b></div>
+              <div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>\${${money(u.voucherWallet)}}</b></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>
+        <section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>\${${(data.accounts||[]).length}} tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-open="minigame">QUẢN LÝ</button></section>
+
+        <div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng">
+          <button class="\${${selected==='active'?'active':''}}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
+          <button class="\${${selected==='orders'?'active':''}}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
+          <button class="\${${selected==='deposit'?'active':''}}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
+          <button class="\${${selected==='transactions'?'active':''}}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
         </div>
-        <div class="customer-wallets">
-          <div><small>▣ VÍ CHÍNH (NẠP)</small><b>${money(u.balance)}</b></div>
-          <div><small>▣ VÍ VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
-        </div>
-      </section>
-      <div class="customer-section-title">⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</div>
-      <section class="customer-actions">
-        <button class="customer-action abuse" data-action="support-abuse"><span>1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi yêu cầu tại đây khi đơn hàng ĐÃ HOÀN THÀNH nhưng tài khoản bị dính lạm dụng nên KHÔNG NHẬN ĐƯỢC ĐIỂM.</small></button>
-        <button class="customer-action support" data-action="support-general"><span>2</span><b>TICKET HỖ TRỢ</b><small>Tất cả vấn đề thắc mắc, khiếu nại, cần hỗ trợ khác vui lòng sử dụng tính năng Gửi Ticket này để được CSKH xử lý.</small></button>
-        <button class="customer-action voucher" data-action="open-vouchers"><span>3</span><b>VOUCHER 72H</b><small>Yêu cầu nhận Voucher đền bù cho đơn hàng quá 72 giờ vẫn chưa HOÀN TẤT. Tặng ngay Voucher 100% giá trị đơn đó.</small></button>
-      </section>
-      <a class="customer-replay ${replayValid?'available':'disabled'}" ${replayValid?'href="'+escapeHtml(replayUrl)+'" target="_blank" rel="noopener"':'aria-disabled="true"'}><span>▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>${replayValid?'Xem lại Video Live các đơn hàng đã hoàn tất (Hỗ trợ trong 48H)':'Chưa kết nối nguồn Replay Live; liên hệ CSKH để yêu cầu kiểm tra.'}</small></div></a>
-      <section class="customer-summary-grid">
-        <div class="customer-summary-panel">
-          <div class="customer-panel-title">▰ THỐNG KÊ ĐƠN HÀNG</div>
-          <section class="customer-stats">
-            <div><small>TỔNG ĐƠN</small><b>${Number(s.totalOrders||0)}</b></div>
-            <div><small>ĐANG XỬ LÝ</small><b class="cyan">${Number(s.processingOrders||0)}</b></div>
-            <div><small>HOÀN TẤT</small><b class="green">${Number(s.completedOrders||0)}</b></div>
-            <div><small>ĐÃ HỦY</small><b>${Number(s.cancelledOrders||0)}</b></div>
-            <div><small>HOÀN TIỀN</small><b class="yellow">${Number(s.refundedOrders||0)}</b></div>
-          </section>
-        </div>
-        <div class="customer-summary-panel account-panel">
-          <div class="customer-panel-title green-title">▢ THỐNG KÊ TÀI KHOẢN</div>
-          <section class="customer-account-stats">
-            <div class="account-stat total"><small>TỔNG NẠP (VIP)</small><b>${money(u.totalDeposited)}</b></div>
-            <div class="account-stat"><small>POINT (CŨ)</small><b>${Number(u.pointOld||0).toLocaleString('vi-VN')}</b></div>
-            <div class="account-stat"><small>NẠP VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
-          </section>
-        </div>
-      </section>
-      <div class="customer-section-title">🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</div>
-      <section class="customer-linked">
-        <div><b>🔗 TÀI KHOẢN ĐÃ LIÊN KẾT</b><span>${data.accounts.length} tài khoản Mini Game</span></div>
-        <button class="btn" data-open="minigame">QUẢN LÝ</button>
-      </section>
-      <div class="customer-tabs" role="tablist" aria-label="Lịch sử khách hàng">
-        <button class="${selected==='active'?'active':''}" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button>
-        <button class="${selected==='orders'?'active':''}" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button>
-        <button class="${selected==='deposit'?'active':''}" data-customer-tab="deposit">💳 NẠP TIỀN</button>
-        <button class="${selected==='transactions'?'active':''}" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button>
-      </div>
-      <section class="customer-tab-content">${tabContent}</section>
-      <div class="customer-footer">💠 HENDY DIGITAL ECOSYSTEM · Công nghệ kết nối giá trị thật</div>`;
+        <section class="cc-tab">\${${tabContent}}</section>
+        <div class="customer-footer">💠 HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</div>
+        \${${orderDetailsMarkup}}
+      </div>`;
     syncMiniAppControls();
   }
 
@@ -862,6 +907,24 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     }
   }
   $('#app').addEventListener('click',async event=>{
+    const orderDetailButton=event.target.closest('[data-order-detail]');
+    if(orderDetailButton){
+      const order=(state.customerData?.orders||[]).find(item=>String(item.order_code||'')===String(orderDetailButton.dataset.orderDetail||''));
+      if(!order){showToast('Không tìm thấy thông tin đơn hàng.','error');return;}
+      $('#cc-order-content').innerHTML='<div class="cc-record"><div class="cc-record-top"><div><small>MÃ ĐƠN HÀNG</small><b>'+escapeHtml(order.order_code||'')+'</b></div><span class="cc-status">'+customerStatus(order.status)+'</span></div>'+
+        '<div class="cc-record-foot"><span>Dịch vụ</span><b>'+escapeHtml(order.product_name||'—')+'</b></div>'+
+        '<div class="cc-record-foot"><span>Giá trị</span><b>'+money(order.amount)+'</b></div>'+
+        '<div class="cc-record-foot"><span>Thời gian</span><b>'+new Date(order.created_at).toLocaleString('vi-VN')+'</b></div>'+
+        (order.delivery_text?'<div class="notice" style="margin-top:12px"><b>THÔNG TIN BÀN GIAO</b><br>'+escapeHtml(order.delivery_text)+'</div>':'')+
+        (order.admin_note?'<div class="notice" style="margin-top:12px"><b>GHI CHÚ CSKH</b><br>'+escapeHtml(order.admin_note)+'</div>':'')+
+        '</div>';
+      $('#cc-order-modal').hidden=false;
+      return;
+    }
+    if(event.target.closest('[data-close-order-detail]')||event.target.id==='cc-order-modal'){
+      const modal=$('#cc-order-modal');if(modal)modal.hidden=true;
+      return;
+    }
     const customerTab=event.target.closest('[data-customer-tab]');
     if(customerTab){
       document.querySelectorAll('[data-customer-tab]').forEach(button=>button.classList.toggle('active',button===customerTab));
