@@ -485,10 +485,6 @@ final class BotService
                     $url = $this->miniAppUrl();
                     if ($url !== '') $button['web_app'] = ['url' => $url . '&view=customer'];
                     else $button['callback_data'] = 'member:miniapp';
-                } elseif ($item['action'] === 'admin') {
-                    $url = $this->webAppUrl('admin');
-                    if ($url !== '') $button['web_app'] = ['url' => $url];
-                    else $button['callback_data'] = 'member:admin';
                 } else {
                     $button['callback_data'] = 'member:' . $item['action'];
                 }
@@ -515,9 +511,6 @@ final class BotService
                 if (($item['iconCustomEmojiId'] ?? '') !== '') $button['icon_custom_emoji_id'] = $item['iconCustomEmojiId'];
                 if ($item['action'] === 'miniapp') {
                     $url = $this->miniAppUrl();
-                    if ($url !== '') $button['web_app'] = ['url' => $url];
-                } elseif ($item['action'] === 'admin') {
-                    $url = $this->webAppUrl('admin');
                     if ($url !== '') $button['web_app'] = ['url' => $url];
                 }
                 $row[] = $button;
