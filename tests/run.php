@@ -54,6 +54,7 @@ $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'm�
 $assert(str_contains($botServiceSource, 'OperationsService::forBot') && str_contains($botServiceSource, '/status'), 'bot kiểm tra trạng thái bảo trì/nâng cấp và cho phép xem /status');
 $operationsSource = file_get_contents(dirname(__DIR__) . '/app/OperationsService.php');
 $assert(str_contains($operationsSource, 'maintenance') && str_contains($operationsSource, 'upgrade') && str_contains($operationsSource, 'Asia/Ho_Chi_Minh'), 'dịch vụ vận hành hỗ trợ bảo trì, nâng cấp và giờ Việt Nam');
+$assert(str_contains($operationsSource, '$effectiveMode = $active ? $mode : \'off\'') && str_contains($operationsSource, '$effectiveUntil = $active'), 'chế độ đã hết hạn trở lại trạng thái hoạt động và xóa lịch cũ trên giao diện');
 $proxyServiceSource = file_get_contents(dirname(__DIR__) . '/app/ProxyService.php');
 $assert(str_contains($proxyServiceSource, 'aes-256-gcm') && str_contains($proxyServiceSource, 'checkOnly') && str_contains($proxyServiceSource, 'rotatev2'), 'HomeProxy dùng AES-256-GCM, checkOnly và API xoay IP');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');

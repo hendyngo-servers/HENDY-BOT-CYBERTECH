@@ -25,7 +25,9 @@ final class OperationsService
         if ($message === '') $message = $mode === 'upgrade'
             ? 'HENDY BOT đang nâng cấp hệ thống để cải thiện tốc độ và độ ổn định.'
             : 'HENDY BOT đang bảo trì. Vui lòng quay lại sau.';
-        return ['botKey'=>$key,'mode'=>$mode,'active'=>$active,'message'=>$message,'until'=>$until !== '' ? $until : null];
+        $effectiveMode = $active ? $mode : 'off';
+        $effectiveUntil = $active && $until !== '' ? $until : null;
+        return ['botKey'=>$key,'mode'=>$effectiveMode,'active'=>$active,'message'=>$message,'until'=>$effectiveUntil];
     }
 
     public static function all(): array
