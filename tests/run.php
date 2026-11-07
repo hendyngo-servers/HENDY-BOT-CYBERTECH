@@ -56,7 +56,9 @@ $assert(!str_contains($adminUiSource, 'telegram-web-app.js'), 'Admin không tả
 $assert(str_contains($adminUiSource, 'value="inline_keyboard"'), 'trình quản lý menu chỉ lưu Inline Keyboard');
 $assert(str_contains($adminUiSource, 'name="hendy-build" content="2026.11.07.2"') && str_contains($adminUiSource, '--primary:#ff315d'), 'Admin có release marker và giao diện HENDY đỏ đen');
 $landingUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/landing.html');
-$assert(str_contains($landingUiSource, 'hendy-landing.css?v=2026.11.07.2') && str_contains($landingUiSource, 'name="hendy-build" content="2026.11.07.2"'), 'trang chủ có cache-busting và release marker');
+$assert(str_contains($landingUiSource, 'hendy-landing.css?v=2026.11.07.4') && str_contains($landingUiSource, 'name="hendy-build" content="2026.11.07.4"'), 'trang chủ có cache-busting và release marker');
+$assert(str_contains($landingUiSource, 'orbit-wrapper') && str_contains($landingUiSource, 'hero-bot-link') && str_contains($landingUiSource, 'group-link') && str_contains($landingUiSource, 'channel-link'), 'trang chủ giữ bố cục HENDY, liên kết Bot, Group và Channel');
+$assert(!str_contains($landingUiSource, 'Features Tags Grid') && !str_contains($landingUiSource, 'feature-tag'), 'trang chủ đã bỏ hoàn toàn khối Features Tags Grid');
 $publicRouterSource = file_get_contents(dirname(__DIR__) . '/public/index.php');
 $assert(str_contains($publicRouterSource, "header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');"), 'trang chủ không giữ HTML cũ trong cache');
 $productionHost = 'https://hendy-bot-cybertech-1.onrender.com';
