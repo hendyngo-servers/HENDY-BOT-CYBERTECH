@@ -911,11 +911,9 @@ final class ApiController
         if ($botKey === 'secondary' && TelegramAuth::token('secondary') === '') {
             throw new HttpException(409, 'BOT2_TOKEN chưa được cấu hình trong Environment.');
         }
-        $mode = (string) ($this->body['menuMode'] ?? '');
+        // Always normalize saved menu configuration to Inline Keyboard.
+        $mode = 'inline_keyboard';
         $columns = (int) ($this->body['menuColumns'] ?? 0);
-        if (!in_array($mode, ['reply_keyboard', 'inline_keyboard'], true)) {
-            throw new HttpException(400, 'Loại menu phải là reply_keyboard hoặc inline_keyboard.');
-        }
         if ($columns < 1 || $columns > 3) throw new HttpException(400, 'Số cột menu phải từ 1 đến 3.');
         $labels = $this->validateMap($this->body['buttonLabels'] ?? [], 'Tên nút', 60);
         $descriptions = $this->validateMap($this->body['buttonDescriptions'] ?? [], 'Mô tả nút', 160);
