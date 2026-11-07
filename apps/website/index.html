@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="hendy-build" content="2026.11.07.3">
+  <meta name="hendy-build" content="2026.11.07.5">
   <meta name="theme-color" content="#050509">
   <meta name="robots" content="noindex,nofollow">
-  <title>TRUNG TÂM KHÁCH HÀNG | HENDY CYBERTECH</title>
+  <title>HENDY CYBERTECH</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +31,6 @@
     .brand-copy strong{display:block;font-size:16px;letter-spacing:.08em}.brand-copy small{display:block;margin-top:3px;color:#9ca3b2;font-size:9px;letter-spacing:.13em;font-weight:800}
     .live-chip{display:inline-flex;align-items:center;gap:7px;max-width:48%;padding:8px 11px;border:1px solid #3b2931;border-radius:99px;background:#120b10;color:#ffc2d0;font-size:9px;font-weight:900;letter-spacing:.06em}
     .live-dot{width:7px;height:7px;border-radius:50%;background:#2ce596;box-shadow:0 0 10px #2ce596}
-    .build-label{color:#798293;font-size:8px;font-weight:800;letter-spacing:.08em;white-space:nowrap}
     .cc-dashboard{display:grid;gap:16px;max-width:1180px;margin:0 auto;color:#f5f7fb}
     .cc-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 2px 3px}
     .cc-page-eyebrow{display:flex;align-items:center;gap:8px;color:#ff829d;font-size:10px;font-weight:950;letter-spacing:.17em}
@@ -158,9 +157,9 @@
     <header class="topbar">
       <a class="brand" href="/" aria-label="HENDY CYBERTECH">
         <span class="brand-mark">💠</span>
-        <span class="brand-copy"><strong>HENDY <span style="color:#ff7895">CYBERTECH</span></strong><small>CUSTOMER CENTER · MEMBER PORTAL</small></span>
+        <span class="brand-copy"><strong>HENDY <span style="color:#ff7895">CYBERTECH</span></strong><small>HENDY DIGITAL ECOSYSTEM</small></span>
       </a>
-      <span class="live-chip"><span class="live-dot"></span><span id="connection-label">ĐANG KẾT NỐI</span><small class="build-label">· BUILD 2026.11.07.3</small></span>
+      <span class="live-chip"><span class="live-dot"></span><span id="connection-label">ĐANG KẾT NỐI</span></span>
     </header>
     <main id="app"><div class="loading">💠 Đang tải Trung tâm khách hàng HENDY...</div></main>
     <footer class="cc-footer">HENDY CYBERTECH · CÔNG NGHỆ KẾT NỐI — GIÁ TRỊ THẬT</footer>
@@ -176,6 +175,7 @@
     let savedBotKey = '';
     try { savedBotKey = params.has('bot') ? '' : (localStorage.getItem('hendy_bot_key') || ''); } catch (_) {}
     const botKey = params.get('bot') === 'secondary' || (!params.has('bot') && savedBotKey === 'secondary') ? 'secondary' : 'primary';
+    const MINI_APP_ROUTE = /^\/(?:miniapp|mini-app|app)\/?$/i.test(location.pathname);
     const state = {boot:null,center:null,orders:[],accounts:[],payments:[],tickets:[],vouchers:{eligibleOrders:[],requests:[]},vip:{},tab:'active',supportType:'support'};
     const $ = (selector,root=document) => root.querySelector(selector);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -222,6 +222,11 @@
       return {};
     }
     function loginView(config){
+      if(MINI_APP_ROUTE){
+        $('#connection-label').textContent='MỞ TRONG TELEGRAM';
+        $('#app').innerHTML='<section class="login-card"><div class="cc-notice warning">Mini App cần được mở bằng nút <b>📱 MỞ MINI APP HENDY</b> trong cuộc trò chuyện Telegram để Telegram cấp phiên xác thực tự động.</div></section>';
+        return;
+      }
       const bot=botKey==='secondary'?(config.secondaryBotUrl||''):(config.botUrl||'');
       const other=botKey==='secondary'?(config.botUrl||''):(config.secondaryBotUrl||'');
       const makeLink=url=>url?url+(url.includes('?')?'&':'?')+'start=web_login':'';
@@ -272,15 +277,14 @@
       const eligible=(state.vouchers.eligibleOrders||[]).length;
       const requests=(state.vouchers.requests||[]).length;
       const accountCount=state.accounts.length;
-      $('#app').innerHTML='<div class="cc-dashboard">'+
-        '<div class="cc-page-heading"><div><div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · MEMBER PORTAL</div><h1>TRUNG TÂM KHÁCH HÀNG</h1><p>Quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ trong một nơi.</p></div><span class="cc-page-chip">💠 KHU VỰC THÀNH VIÊN</span></div>'+
+      const pageHeading=MINI_APP_ROUTE?'':'<div class="cc-page-heading"><div><div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · MEMBER PORTAL</div><h1>TRUNG TÂM KHÁCH HÀNG</h1><p>Quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ trong một nơi.</p></div><span class="cc-page-chip">💠 KHU VỰC THÀNH VIÊN</span></div>';
+      const accountAndStats=MINI_APP_ROUTE?'':'<section class="cc-summary"><div class="cc-summary-card"><div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div><div class="cc-order-stats"><div class="cc-stat"><small>TỔNG ĐƠN</small><b>'+Number(stats.totalOrders||0)+'</b></div><div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>'+Number(stats.processingOrders||0)+'</b></div><div class="cc-stat green"><small>HOÀN TẤT</small><b>'+Number(stats.completedOrders||0)+'</b></div><div class="cc-stat"><small>ĐÃ HỦY</small><b>'+Number(stats.cancelledOrders||0)+'</b></div><div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>'+Number(stats.refundedOrders||0)+'</b></div></div></div><div class="cc-summary-card"><div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div><div class="cc-account-stats"><div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>'+money(total)+'</b></div><div class="cc-account-stat"><small>POINT (CŨ)</small><b>'+Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')+'</b></div><div class="cc-account-stat nyc"><small>VÍ NYC</small><b>'+money(u.nycWallet)+'</b></div><div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></div></section><div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div><section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>'+accountCount+' tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-action="manage-accounts">QUẢN LÝ</button></section>';
+      $('#app').innerHTML='<div class="cc-dashboard">'+pageHeading+
         '<section class="cc-profile"><div class="cc-profile-main"><div class="cc-profile-head"><div class="cc-avatar">'+initials(u)+'</div><div class="cc-identity"><h2>'+esc(name)+'</h2><span class="cc-id">🆔 TELEGRAM ID: '+esc(u.id||'')+'</span><small>'+(u.username?'@'+esc(String(u.username).replace(/^@/,'')):'HENDY MEMBER')+' · '+(botKey==='secondary'?'BOT THỬ NGHIỆM':'BOT CHÍNH')+'</small></div></div><div class="cc-vipline"><span class="cc-vip">💎 '+(level>0?'VIP '+level:'VIP 0 · THÀNH VIÊN')+'</span><span class="cc-bot-chip">HENDY CYBERTECH MEMBER</span></div><div class="cc-progress"><div class="cc-progress-label"><span>TỔNG NẠP TÍCH LŨY</span><strong>'+money(total)+'</strong></div><div class="cc-progress-track"><span style="width:'+progress+'%"></span></div><div class="cc-progress-label" style="margin-top:6px"><span>'+(vip.nextThreshold===null?'ĐÃ ĐẠT VIP TỐI ĐA':money(total)+' / '+next)+'</span><strong>'+progress+'%</strong></div></div></div><div class="cc-wallets"><div class="cc-wallet"><small>▣ VÍ CHÍNH (NẠP)</small><b>'+money(u.balance)+'</b></div><div class="cc-wallet voucher"><small>▣ VÍ VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></section>'+
         '<div class="cc-section-title"><span>⚡ KHU VỰC HỖ TRỢ & TÍNH NĂNG</span><small>'+Number(ticketCounts.total||0)+' ticket · '+requests+' yêu cầu voucher</small></div>'+
         '<section class="cc-support-grid"><button class="cc-support-card abuse" type="button" data-action="support-abuse"><span class="cc-number">1</span><b>HỖ TRỢ DÍNH LẠM (60%)</b><small>Gửi mã đơn đã hoàn thành để CSKH kiểm tra trường hợp chưa nhận được điểm. Không gửi mật khẩu, mã OTP hoặc PIN.</small></button><button class="cc-support-card ticket" type="button" data-action="support-general"><span class="cc-number">2</span><b>TICKET HỖ TRỢ</b><small>Tạo yêu cầu, khiếu nại và theo dõi phản hồi của đội ngũ chăm sóc khách hàng HENDY.</small></button><button class="cc-support-card voucher" type="button" data-action="open-vouchers"><span class="cc-number">3</span><b>VOUCHER 72H</b><small>'+(eligible?'Có '+eligible+' đơn đủ điều kiện để gửi yêu cầu.':'Kiểm tra đơn chờ xử lý quá 72 giờ. Voucher chỉ được cộng sau khi Admin duyệt.')+'</small></button></section>'+
         '<a class="cc-replay '+(replayValid?'':'disabled')+'" '+(replayValid?'href="'+esc(replayUrl)+'" target="_blank" rel="noopener noreferrer"':'aria-disabled="true"')+'><span class="cc-replay-icon">▶</span><div><b>KIỂM TRA REPLAY LIVE</b><small>'+(replayValid?'Xem lại video live các đơn hàng đã hoàn tất.':'Nguồn Replay Live chưa được cấu hình; tính năng đang được phát triển.')+'</small></div></a>'+
-        '<section class="cc-summary"><div class="cc-summary-card"><div class="cc-summary-head">▰ THỐNG KÊ ĐƠN HÀNG</div><div class="cc-order-stats"><div class="cc-stat"><small>TỔNG ĐƠN</small><b>'+Number(stats.totalOrders||0)+'</b></div><div class="cc-stat cyan"><small>ĐANG XỬ LÝ</small><b>'+Number(stats.processingOrders||0)+'</b></div><div class="cc-stat green"><small>HOÀN TẤT</small><b>'+Number(stats.completedOrders||0)+'</b></div><div class="cc-stat"><small>ĐÃ HỦY</small><b>'+Number(stats.cancelledOrders||0)+'</b></div><div class="cc-stat yellow"><small>HOÀN TIỀN</small><b>'+Number(stats.refundedOrders||0)+'</b></div></div></div><div class="cc-summary-card"><div class="cc-summary-head green">▢ THỐNG KÊ TÀI KHOẢN</div><div class="cc-account-stats"><div class="cc-account-stat main"><small>TỔNG NẠP (VIP)</small><b>'+money(total)+'</b></div><div class="cc-account-stat"><small>POINT (CŨ)</small><b>'+Number(vip.pointOld??u.pointOld??0).toLocaleString('vi-VN')+'</b></div><div class="cc-account-stat nyc"><small>VÍ NYC</small><b>'+money(u.nycWallet)+'</b></div><div class="cc-account-stat voucher"><small>NẠP VOUCHER</small><b>'+money(u.voucherWallet)+'</b></div></div></div></section>'+
-        '<div class="cc-section-title"><span>🗂️ QUẢN LÝ TÀI KHOẢN & HOẠT ĐỘNG</span></div>'+
-        '<section class="cc-linked"><div><b>🔗 TÀI KHOẢN MINI GAME ĐÃ LIÊN KẾT</b><small>'+accountCount+' tài khoản được lưu · chỉ lưu username, không lưu mật khẩu</small></div><button class="cc-btn" type="button" data-action="manage-accounts">QUẢN LÝ</button></section>'+
+        accountAndStats+
         '<div class="cc-tabs" role="tablist" aria-label="Lịch sử khách hàng"><button class="'+(state.tab==='active'?'active':'')+'" data-tab="active" data-customer-tab="active">🚀 ĐANG CHẠY & CHỜ XN</button><button class="'+(state.tab==='orders'?'active':'')+'" data-tab="orders" data-customer-tab="orders">📜 LỊCH SỬ ĐƠN HÀNG</button><button class="'+(state.tab==='deposit'?'active':'')+'" data-tab="deposit" data-customer-tab="deposit">💳 NẠP TIỀN</button><button class="'+(state.tab==='transactions'?'active':'')+'" data-tab="transactions" data-customer-tab="transactions">🛒 GD ĐƠN HÀNG</button></div>'+
         '<section class="cc-tab">'+renderTabs()+'</section></div>';
       updateMiniAppButton();
@@ -297,8 +301,9 @@
     }
     async function reloadData(){
       $('#connection-label').textContent='ĐANG ĐỒNG BỘ';
+      const linkedAccountsRequest=MINI_APP_ROUTE?Promise.resolve({accounts:[]}):api('/api/linked-accounts');
       const values=await Promise.all([
-        api('/api/bootstrap'),api('/api/customer-center'),api('/api/linked-accounts'),api('/api/orders'),
+        api('/api/bootstrap'),api('/api/customer-center'),linkedAccountsRequest,api('/api/orders'),
         api('/api/wallet/payment-requests'),api('/api/support/tickets'),api('/api/vouchers'),api('/api/vip')
       ]);
       const [boot,center,accounts,orders,payments,tickets,vouchers,vip]=values;

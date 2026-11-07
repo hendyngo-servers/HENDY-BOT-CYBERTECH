@@ -143,7 +143,7 @@ final class BotService
                 '/admin_jobs — Xem video jobs (Admin)',
                 '/help — Hướng dẫn sử dụng',
                 '',
-                'Bấm nút ở bàn phím phía dưới để mở chức năng.',
+                'Chọn một nút bên dưới tin nhắn để mở chức năng.',
             ]));
             return;
         }
@@ -252,7 +252,7 @@ final class BotService
         try {
             if ($callbackId !== '') {
                 try {
-                    $this->telegram->answerCallback($callbackId, 'Đã nhận, đang xử lý…');
+                    $this->telegram->answerCallback($callbackId);
                 } catch (Throwable $ackError) {
                     // Callback acknowledgement failure must not cancel the requested business action.
                     error_log('[telegram:' . $this->botKey . '] Callback acknowledgement failed: ' . $ackError->getMessage());
@@ -325,7 +325,7 @@ final class BotService
         try {
             $this->telegram->sendMessage(
                 $chatId,
-                '♻️ Menu HENDY đã chuyển sang Inline Menu mới. Các nút hiện hiển thị ngay bên dưới tin nhắn.',
+                '👋 Chào mừng bạn đến với HENDY BOT!',
                 ['reply_markup' => ['remove_keyboard' => true]]
             );
         } catch (Throwable $error) {
@@ -366,7 +366,7 @@ final class BotService
         ));
         $botLabel = 'HENDY BOT';
         $vipLevel = (int) ($user['vip_level'] ?? 0);
-        $intro = trim((string) ($config['intro_text'] ?? ''));
+        $intro = self::truncate(trim((string) ($config['intro_text'] ?? '')), 220);
 
         $lines = [
             '💠 <b>⩤ HENDY DIGITAL ECOSYSTEM ⩥</b>',
@@ -396,7 +396,7 @@ final class BotService
         $caption = implode("\n", $lines);
         $replyMarkup = ['reply_markup' => $this->menuMarkup($items, $config)];
         $homePhoto = trim((string) Env::get('BOT_HOME_PHOTO', ''));
-        if ($homePhoto === '') $homePhoto = 'https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1';
+        if ($homePhoto === '') $homePhoto = 'https://i.postimg.cc/02qznt32/anh-quan-cao.png?dl=1';
         $validPhoto = self::isHttpsUrl($homePhoto)
             || preg_match('/\\A[A-Za-z0-9_-]{30,512}\\z/D', $homePhoto) === 1;
         if ($validPhoto && mb_strlen($caption, 'UTF-8') <= 1000) {
@@ -496,9 +496,9 @@ final class BotService
             foreach ($group as $item) {
                 $button = ['text' => $item['label'], 'style' => $item['style']];
                 if (($item['iconCustomEmojiId'] ?? '') !== '') $button['icon_custom_emoji_id'] = $item['iconCustomEmojiId'];
-                if (in_array($item['action'], ['miniapp', 'customer'], true)) {
+                if ($item['action'] === 'miniapp') {
                     $url = $this->miniAppUrl();
-                    if ($url !== '') $button['web_app'] = ['url' => $url . '&view=customer'];
+                    if ($url !== '') $button['web_app'] = ['url' => $url];
                     else $button['callback_data'] = 'member:miniapp';
                 } else {
                     $button['callback_data'] = 'member:' . $item['action'];
@@ -1228,31 +1228,19 @@ final class BotService
         $linkedCount = (int) Database::value('SELECT COUNT(*) FROM linked_accounts WHERE user_id = ?', [$userId]);
 
         $miniAppUrl = $this->miniAppUrl();
-        $legacyUrl = '';
-        try {
-            $legacyUrl = $this->createWebsiteLoginUrl($userId);
-        } catch (Throwable $error) {
-            error_log('[customer-center] Không tạo được link web cũ: ' . $error->getMessage());
-        }
-
         $rows = [];
         if ($miniAppUrl !== '') {
             $rows[] = [[
-                'text' => '🚀 MINI APP HENDY | KHUYẾN NGHỊ',
-                'web_app' => ['url' => $miniAppUrl . '&view=customer'],
+                'text' => '📱 MỞ MINI APP HENDY',
+                'web_app' => ['url' => $miniAppUrl],
             ]];
-        }
-        if ($legacyUrl !== '') {
-            $rows[] = [['text' => '🌐 ĐĂNG NHẬP WEBSITE (WEB CŨ)', 'url' => $legacyUrl]];
         }
         $rows[] = [['text' => '↩️ TRỞ VỀ MENU CHÍNH', 'callback_data' => 'member:home']];
 
         $lines = [
             '💠 <b>TRUNG TÂM KHÁCH HÀNG HENDY</b>',
             '',
-            'Chọn một trong hai cách truy cập bên dưới:',
-            '• <b>Mini App:</b> Trải nghiệm mới, mượt mà hơn (khuyến nghị).',
-            '• <b>Website truyền thống:</b> Liên kết bảo mật dùng một lần, hiệu lực 5 phút.',
+            'Mở Mini App để quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ ngay trong Telegram.',
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '👤 Thành viên: <b>' . self::escape($user['name'] ?: 'Thành viên') . '</b>',
@@ -1270,10 +1258,6 @@ final class BotService
         if ($miniAppUrl === '') {
             $lines[] = '';
             $lines[] = '⚠️ Mini App chưa khả dụng: cần cấu hình APP_URL HTTPS hoặc RENDER_EXTERNAL_URL.';
-        }
-        if ($legacyUrl === '') {
-            $lines[] = '';
-            $lines[] = '⚠️ Phiên bản web cũ hiện chưa tạo được liên kết đăng nhập. Vui lòng dùng Mini App hoặc liên hệ CSKH.';
         }
         $this->telegram->sendMessage($chatId, implode("\n", $lines), [
             'reply_markup' => $this->inlineMenu($rows),

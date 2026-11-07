@@ -39,15 +39,22 @@ $assert(TelegramLink::normalize('https://user@t.me/HendySupportGroup') === '', '
 $assert(TelegramLink::normalize('https://t.me/hendy_cyber_bot?start=old') === 'https://t.me/hendy_cyber_bot', 'chuẩn hóa public URL bot và loại query có sẵn');
 $assert(TelegramLink::normalize('https://example.com/hendy_cyber_bot') === '', 'từ chối URL public bot ngoài Telegram');
 
-$assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','tools','codes','wallet','otp','viptools','customer','matchmaking','ref','vip','group','news','gift','support'], 'menu có đủ 14 mục theo giao diện HENDY mới');
-$assert(BotMenuDefinition::LAYOUT === [['live','tools'],['codes'],['wallet','otp'],['viptools'],['customer'],['matchmaking'],['ref','vip'],['group','news'],['gift','support'],['admin']], 'layout đúng thứ tự hai cột và các hàng toàn chiều rộng');
+$assert(array_column(BotMenuDefinition::ITEMS, 'action') === ['live','tools','codes','wallet','otp','viptools','customer','miniapp','matchmaking','ref','vip','group','news','gift','support'], 'menu có nút Mini App riêng bên cạnh Trung tâm khách hàng');
+$assert(BotMenuDefinition::LAYOUT === [['live','tools'],['codes'],['wallet','otp'],['viptools'],['customer'],['miniapp'],['matchmaking'],['ref','vip'],['group','news'],['gift','support'],['admin']], 'layout có hàng mở Mini App riêng trong Inline Menu');
 $botServiceSource = file_get_contents(dirname(__DIR__) . '/app/BotService.php');
 $assert(str_contains($botServiceSource, "'menu_mode' => 'inline_keyboard'"), 'menu mặc định là Inline Keyboard');
 $assert(str_contains($botServiceSource, "return ['inline_keyboard' => \$rows];"), 'menu luôn gửi Inline Keyboard, kể cả cấu hình cũ');
+$assert(str_contains($botServiceSource, "if (\$item['action'] === 'miniapp')") && str_contains($botServiceSource, "'web_app' => ['url' => \$url]"), 'nút Mở Mini App dùng Telegram Web App trực tiếp');
+$assert(str_contains($botServiceSource, '$this->telegram->answerCallback($callbackId);') && !str_contains($botServiceSource, 'Đã nhận, đang xử lý…'), 'callback được xác nhận ngầm, không hiện thông báo kỹ thuật');
+$assert(str_contains($botServiceSource, '👋 Chào mừng bạn đến với HENDY BOT!') && !str_contains($botServiceSource, '♻️ Menu HENDY đã chuyển sang Inline Menu mới.'), 'gỡ Reply Keyboard bằng lời chào tự nhiên thay cho thông báo kỹ thuật');
+$assert(str_contains($botServiceSource, 'https://i.postimg.cc/02qznt32/anh-quan-cao.png?dl=1'), 'banner Telegram dùng direct-image URL');
 $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
 $assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');
-$assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.3"') && str_contains($customerUiSource, 'cc-page-heading') && str_contains($customerUiSource, 'TRUNG TÂM KHÁCH HÀNG'), 'Customer Center độc lập có release marker và tiêu đề thành viên');
+$assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.5"') && str_contains($customerUiSource, 'const MINI_APP_ROUTE'), 'Customer portal giữ marker ẩn và nhận diện route Mini App');
+$assert(!str_contains($customerUiSource, 'build-label') && !str_contains($customerUiSource, 'BUILD 2026.11.07.3'), 'không hiển thị nhãn build trên giao diện thành viên');
+$assert(str_contains($customerUiSource, "if(MINI_APP_ROUTE)") && str_contains($customerUiSource, "MINI_APP_ROUTE?'':'<div class=\"cc-page-heading\""), 'Mini App không hiển thị tiêu đề Customer Center hoặc cổng login web');
+$assert(str_contains($customerUiSource, "const accountAndStats=MINI_APP_ROUTE?'':'<section class=\"cc-summary\"") && str_contains($customerUiSource, "linkedAccountsRequest=MINI_APP_ROUTE?Promise.resolve"), 'Mini App ẩn thống kê/quản lý tài khoản Mini Game và không gọi API liên kết');
 $assert(str_contains($customerUiSource, "api('/api/customer-center')") && str_contains($customerUiSource, "api('/api/wallet/payment-requests')") && str_contains($customerUiSource, "api('/api/vouchers')"), 'Customer Center lấy số liệu ví, đơn hàng và voucher từ API thật');
 $assert(!preg_match('/<input[^>]+type=["\']password/i', $customerUiSource) && !str_contains($customerUiSource, 'name="abuse_account_name"'), 'Customer Center không thu thập mật khẩu tài khoản game');
 $assert(!str_contains($customerUiSource, '8639286417') && !str_contains($customerUiSource, 'Hendyngok') && !str_contains($customerUiSource, 'AVATAR/5.gif'), 'Customer Center không hard-code Telegram ID, username hoặc avatar cá nhân');
