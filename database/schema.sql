@@ -228,7 +228,7 @@ WHERE key = 'GROUP_URL' AND value = 'https://t.me/lethituanem_nhomchat';
 
 CREATE TABLE IF NOT EXISTS bot_menu_configs (
     bot_key TEXT PRIMARY KEY CHECK (bot_key IN ('primary','secondary')),
-    menu_mode TEXT NOT NULL DEFAULT 'reply_keyboard' CHECK (menu_mode IN ('reply_keyboard','inline_keyboard')),
+    menu_mode TEXT NOT NULL DEFAULT 'inline_keyboard' CHECK (menu_mode IN ('reply_keyboard','inline_keyboard')),
     intro_text TEXT NOT NULL DEFAULT '',
     menu_columns SMALLINT NOT NULL DEFAULT 2 CHECK (menu_columns BETWEEN 1 AND 3),
     persistent_keyboard BOOLEAN NOT NULL DEFAULT TRUE,
@@ -302,6 +302,8 @@ SET menu_mode = 'reply_keyboard',
         "support": "primary"
     }'::jsonb,
     updated_at = NOW();
+
+UPDATE bot_menu_configs SET menu_mode = 'inline_keyboard' WHERE menu_mode IS DISTINCT FROM 'inline_keyboard';
 
 CREATE TABLE IF NOT EXISTS admin_audit (
     id BIGSERIAL PRIMARY KEY,
