@@ -674,7 +674,6 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
             <div><small>HOÀN TẤT</small><b class="green">${Number(s.completedOrders||0)}</b></div>
             <div><small>ĐÃ HỦY</small><b>${Number(s.cancelledOrders||0)}</b></div>
             <div><small>HOÀN TIỀN</small><b class="yellow">${Number(s.refundedOrders||0)}</b></div>
-            <div><small>TICKET CSKH</small><b>${Number(counts.total||0)}</b></div>
           </section>
         </div>
         <div class="customer-summary-panel account-panel">
@@ -683,7 +682,6 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
             <div class="account-stat total"><small>TỔNG NẠP (VIP)</small><b>${money(u.totalDeposited)}</b></div>
             <div class="account-stat"><small>POINT (CŨ)</small><b>${Number(u.pointOld||0).toLocaleString('vi-VN')}</b></div>
             <div class="account-stat"><small>NẠP VOUCHER</small><b>${money(u.voucherWallet)}</b></div>
-            <div class="account-stat nyc"><small>VÍ NYC</small><b>${money(u.nycWallet)}</b></div>
           </section>
         </div>
       </section>
