@@ -47,7 +47,7 @@ $assert(str_contains($botServiceSource, "return ['inline_keyboard' => \$rows];")
 $assert(str_contains($botServiceSource, "if (\$item['action'] === 'miniapp')") && str_contains($botServiceSource, "'web_app' => ['url' => \$url]"), 'nút Mở Mini App dùng Telegram Web App trực tiếp');
 $assert(str_contains($botServiceSource, '$this->telegram->answerCallback($callbackId);') && !str_contains($botServiceSource, 'Đã nhận, đang xử lý…'), 'callback được xác nhận ngầm, không hiện thông báo kỹ thuật');
 $assert(str_contains($botServiceSource, '👋 Chào mừng bạn đến với HENDY BOT!') && !str_contains($botServiceSource, '♻️ Menu HENDY đã chuyển sang Inline Menu mới.'), 'gỡ Reply Keyboard bằng lời chào tự nhiên thay cho thông báo kỹ thuật');
-$assert(str_contains($botServiceSource, 'https://i.postimg.cc/02qznt32/anh-quan-cao.png?dl=1'), 'banner Telegram dùng direct-image URL');
+$assert(str_contains($botServiceSource, 'https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1'), 'banner Telegram dùng direct-image URL');
 $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
 $assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');

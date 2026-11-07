@@ -396,7 +396,7 @@ final class BotService
         $caption = implode("\n", $lines);
         $replyMarkup = ['reply_markup' => $this->menuMarkup($items, $config)];
         $homePhoto = trim((string) Env::get('BOT_HOME_PHOTO', ''));
-        if ($homePhoto === '') $homePhoto = 'https://i.postimg.cc/02qznt32/anh-quan-cao.png?dl=1';
+        if ($homePhoto === '') $homePhoto = 'https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1';
         $validPhoto = self::isHttpsUrl($homePhoto)
             || preg_match('/\\A[A-Za-z0-9_-]{30,512}\\z/D', $homePhoto) === 1;
         if ($validPhoto && mb_strlen($caption, 'UTF-8') <= 1000) {
