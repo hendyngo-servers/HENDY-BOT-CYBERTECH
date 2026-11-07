@@ -26,7 +26,8 @@
 (async()=>{
   const state=document.getElementById('state');
   const params=new URLSearchParams(location.search);
-  const ticket=params.get('ticket')||'';\n  const scope=params.get('scope')==='admin'?'admin':'customer';
+  const ticket=params.get('ticket')||'';
+  const scope=params.get('scope')==='admin'?'admin':'customer';
   history.replaceState(null,'',location.pathname);
   if(!/^[a-f0-9]{64}$/i.test(ticket)){
     state.textContent='Liên kết không hợp lệ. Hãy quay lại bot Telegram và tạo link mới.';
@@ -44,7 +45,8 @@
     profile.textContent='Xin chào '+(result.user?.name||result.user?.username||'thành viên')+' · Telegram ID: '+(result.user?.id||'');
     state.appendChild(profile);
     const bot = result.botKey === 'secondary' ? 'secondary' : 'primary';
-    const destination = result.scope === 'admin' ? '/admin?bot='+bot : '/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot='+bot+'&view=customer';\n    window.setTimeout(()=>{ window.location.replace(destination); },700);
+    const destination = result.scope === 'admin' ? '/admin?bot='+bot : '/KHACH-HANG/TRUNG-TAM-KHACH-HANG/index.php?bot='+bot+'&view=customer';
+    window.setTimeout(()=>{ window.location.replace(destination); },700);
   }catch(error){
     state.textContent=error.message||'Không thể xác minh phiên đăng nhập. Hãy tạo link mới từ bot.';
   }
