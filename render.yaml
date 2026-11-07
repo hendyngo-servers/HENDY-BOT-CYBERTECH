@@ -27,7 +27,7 @@ services:
       - key: BOT2_TOKEN
         sync: false
       - key: BOT_HOME_PHOTO
-        sync: false
+        value: https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1
       - key: BOT1_PUBLIC_URL
         sync: false
       - key: BOT2_PUBLIC_URL
