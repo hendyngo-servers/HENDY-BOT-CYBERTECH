@@ -18,6 +18,8 @@ services:
         value: production
       - key: PORT
         value: "10000"
+      - key: APP_URL
+        value: https://hendy-bot-cybertech-1.onrender.com
       - key: RUN_MIGRATIONS_ON_START
         value: "true"
       - key: DB_STARTUP_WAIT_SECONDS
@@ -51,7 +53,7 @@ services:
       - key: TELEGRAM_INIT_DATA_MAX_AGE_SECONDS
         value: "3600"
       - key: ALLOWED_ORIGINS
-        value: https://hendy-bot-cybertech.onrender.com
+        value: https://hendy-bot-cybertech-1.onrender.com
       - key: VIETQR_BANK_ID
         sync: false
       - key: VIETQR_ACCOUNT_NO
@@ -71,7 +73,7 @@ services:
       - key: WEBSOCKET_URL
         value: wss://hendy-bot-cybertech-1.onrender.com/ws
       - key: WEBSOCKET_ALLOWED_ORIGINS
-        value: https://hendy-bot-cybertech.onrender.com
+        value: https://hendy-bot-cybertech-1.onrender.com
       - key: WEBSOCKET_MAX_CONNECTIONS
         value: "250"
       - key: WEBSOCKET_BIND
