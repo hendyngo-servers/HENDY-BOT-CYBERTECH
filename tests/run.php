@@ -47,9 +47,15 @@ $assert(str_contains($botServiceSource, "return ['inline_keyboard' => \$rows];")
 $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
 $assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');
+$assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.1"') && str_contains($customerUiSource, 'cc-page-heading'), 'Customer Center có release marker và tiêu đề thành viên');
 $adminUiSource = file_get_contents(dirname(__DIR__) . '/apps/admin-dashboard/index.html');
 $assert(!str_contains($adminUiSource, 'telegram-web-app.js'), 'Admin không tải Telegram Mini App SDK');
 $assert(str_contains($adminUiSource, 'value="inline_keyboard"'), 'trình quản lý menu chỉ lưu Inline Keyboard');
+$assert(str_contains($adminUiSource, 'name="hendy-build" content="2026.11.07.1"') && str_contains($adminUiSource, '--primary:#ff315d'), 'Admin có release marker và giao diện HENDY đỏ đen');
+$landingUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/landing.html');
+$assert(str_contains($landingUiSource, 'hendy-landing.css?v=2026.11.07.1') && str_contains($landingUiSource, 'name="hendy-build" content="2026.11.07.1"'), 'trang chủ có cache-busting và release marker');
+$publicRouterSource = file_get_contents(dirname(__DIR__) . '/public/index.php');
+$assert(str_contains($publicRouterSource, "header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');"), 'trang chủ không giữ HTML cũ trong cache');
 $webhookSecret = 'sample-webhook-secret-for-tests-000001';
 $assert(WebhookSecurity::verifySecret($webhookSecret, $webhookSecret), 'webhook secret đúng được chấp nhận');
 $assert(!WebhookSecurity::verifySecret($webhookSecret, 'wrong-webhook-secret-for-tests-000001'), 'webhook secret sai bị từ chối');

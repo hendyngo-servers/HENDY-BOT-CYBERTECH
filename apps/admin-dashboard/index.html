@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="hendy-build" content="2026.11.07.1">
   <meta name="theme-color" content="#05050a">
   <meta name="description" content="HENDY CYBERTECH — Bảng điều khiển quản trị hệ thống">
   <title>HENDY ADMIN DASHBOARD PRO</title>
@@ -247,6 +248,65 @@
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
   <link rel="stylesheet" href="/styles/buttons.css">
+
+  <style id="hendy-admin-brand-refresh">
+    /* HENDY ADMIN — red / black production theme, 2026.11.07.1 */
+    :root{
+      --primary:#ff315d;--secondary:#ff0877;--success:#27d69a;
+      --warning:#ffc247;--danger:#ff5572;--panel-border:rgba(255,65,100,.19);
+    }
+    html,body{background:#050408;color:#f8f5f7}
+    body:before{
+      background-image:linear-gradient(to right,#ff315d08 1px,transparent 1px),linear-gradient(to bottom,#ff315d08 1px,transparent 1px);
+      opacity:.8;
+    }
+    .sidebar{background:linear-gradient(180deg,#10070c 0%,#08080d 58%,#06060a 100%);border-right-color:#3a1723;box-shadow:16px 0 48px #0008}
+    .sidebar-header{border-bottom-color:#3a1723}
+    .logo-icon{transform:none;border:1px solid #ff7895;background:linear-gradient(135deg,#ff315d,#a30e42 72%,#4a0b2b);color:#fff;box-shadow:0 0 25px #ff174f42}
+    .sidebar-header h2 span{background:linear-gradient(120deg,#ff7895,#ff1f65);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .menu-title{color:#d36a83}
+    .menu-item{margin:2px 10px;width:calc(100% - 20px);padding:11px 12px;border-left:3px solid transparent;border-radius:10px}
+    .menu-item:hover,.menu-item.active{
+      color:#fff;border-left-color:#ff315d;
+      background:linear-gradient(100deg,#541022aa,#24101b88);
+      box-shadow:inset 0 0 22px #ff315d10,0 6px 16px #0004;
+    }
+    .sidebar-footer a{border-color:#48202d;background:#100a10;color:#e8c4ce}
+    .sidebar-footer a:hover{border-color:#ff315d;color:#fff}
+    .main-content{background:transparent}
+    .top-header{background:rgba(8,5,10,.88);border-bottom-color:#3b1925}
+    .top-header-title{color:#ff6f8e}
+    .top-header-subtitle{color:#9b8790}
+    .menu-toggle{border-color:#542433;background:#160b11;color:#ffeaf0}
+    .admin-profile{border-color:#4a202e;background:#110a10}
+    .admin-avatar{background:linear-gradient(140deg,#ff315d,#7c1237);color:#fff}
+    .content-body{color:#f8f5f7}
+    .admin-heading h1,.section-head h3,.section-head h2{color:#fff}
+    .stat,.card,.record,.panel,.chart-card,.shortcut-card{
+      border-color:#38202a;background:linear-gradient(145deg,#151016,#0a090d);box-shadow:0 12px 28px #0005;
+    }
+    .stat{border-top-color:#ff315d}
+    .stat small,.muted,.json-help{color:#a99aa1}
+    .stat b,.record b,.card b{color:#fff}
+    .section-head span{color:#a99aa1}
+    input:not([type=checkbox]),textarea,select{
+      border-color:#472633;background:#09080d;color:#fff;
+    }
+    input:not([type=checkbox]):focus,textarea:focus,select:focus{
+      border-color:#ff5578;box-shadow:0 0 0 3px #ff315d25;outline:none;
+    }
+    table{color:#f6edf0}
+    th{background:#1a0c13;color:#ffb2c4;border-bottom-color:#4a2432}
+    td{border-bottom-color:#30202a}
+    .menu-item:focus-visible,.sidebar-footer a:focus-visible,.top-header button:focus-visible{
+      outline:2px solid #ff7895;outline-offset:2px;
+    }
+    #toast{border-color:#71243a;background:#180d13;color:#fff}
+    @media(max-width:760px){
+      .sidebar{background:linear-gradient(180deg,#10070c,#07070b)}
+      body.sidebar-open:after{background:rgba(3,2,5,.76)}
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị HENDY">

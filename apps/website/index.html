@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="hendy-build" content="2026.11.07.1">
 <meta name="theme-color" content="#080b18">
 <title>HENDY WEBSITE</title>
 <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
@@ -244,6 +245,45 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 .cc-deposit-form{display:grid;gap:9px;margin-bottom:13px;padding:14px;border:1px solid #2b4261;border-radius:13px;background:#0d1423}.cc-field{width:100%;border:1px solid #33415a;border-radius:10px;padding:11px 12px;background:#070c15;color:#fff;outline:none}.cc-field:focus{border-color:#1eb8df;box-shadow:0 0 0 3px #1eb8df22}.cc-record{margin-bottom:8px;padding:12px;border:1px solid #27354a;border-radius:11px;background:#0d1320}.cc-record:last-child{margin-bottom:0}.cc-record-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.cc-record small{display:block;margin-top:4px;color:#91a0b8;font-size:9px}.cc-record-foot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#a4aec0;font-size:10px}.cc-positive{color:#4be49a}.cc-negative{color:#ff7b8d}.cc-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#000b;backdrop-filter:blur(8px)}.cc-modal[hidden]{display:none}.cc-modal-card{width:min(100%,520px);max-height:min(82vh,700px);overflow:auto;padding:18px;border:1px solid #48556b;border-radius:16px;background:#0a0e16;box-shadow:0 24px 80px #000b}.cc-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.cc-modal-head h3{margin:0;font-size:15px}.cc-modal-close{border:1px solid #39475c;border-radius:9px;padding:7px 10px;background:#151e2e;color:#fff}
 @media(max-width:760px){.cc-dashboard{gap:11px}.cc-profile{grid-template-columns:1fr;gap:14px;padding:16px}.cc-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-wallet{min-height:84px}.cc-summary{grid-template-columns:1fr;gap:11px}.cc-support-grid{grid-template-columns:1fr}.cc-support-card{min-height:0;display:grid;grid-template-columns:34px 1fr;column-gap:10px}.cc-support-card .cc-number{grid-row:span 2;margin:0}.cc-support-card b{margin:1px 0 5px}.cc-support-card small{grid-column:2}.cc-order-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.cc-identity h2{font-size:19px}}
 @media(max-width:430px){.cc-order-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-summary-head{font-size:12px}.cc-wallet b{font-size:20px}.cc-identity h2{font-size:17px}.cc-profile{padding:14px}}
+
+
+/* HENDY member portal release 2026.11.07.1 — unified browser + Telegram Mini App skin */
+body:has(.cc-dashboard){
+  background:
+    radial-gradient(ellipse at 4% 12%,#5b10221f,transparent 34%),
+    radial-gradient(ellipse at 95% 15%,#8f16301b,transparent 30%),
+    #050509;
+}
+.cc-dashboard{max-width:1180px;gap:16px;padding-top:5px}
+.cc-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 2px 3px}
+.cc-page-eyebrow{display:flex;align-items:center;gap:8px;color:#ff829d;font-size:10px;font-weight:950;letter-spacing:.17em}
+.cc-page-eyebrow span{width:7px;height:7px;border-radius:50%;background:#ff315d;box-shadow:0 0 12px #ff315d}
+.cc-page-heading h1{margin:8px 0 5px;color:#fff;font-size:clamp(22px,3.4vw,31px);font-weight:1000;letter-spacing:.015em}
+.cc-page-heading p{margin:0;color:#aab0bf;font-size:12px;line-height:1.55}
+.cc-page-chip{flex:none;padding:9px 12px;border:1px solid #71243a;border-radius:999px;background:#180912;color:#ffb7c8;font-size:10px;font-weight:900;letter-spacing:.04em}
+.cc-profile{border-color:#a72a3d;background:repeating-linear-gradient(125deg,transparent 0 13%,#ff26350b 13.2% 13.5%,transparent 13.7% 26%),radial-gradient(ellipse at 94% 8%,#53101d88,transparent 38%),linear-gradient(115deg,#030405,#0b0c10 60%,#18070b);box-shadow:0 14px 42px #0008,0 0 24px #ff26351b,inset 0 0 30px #8a11221e}
+.cc-avatar{background:linear-gradient(145deg,#2a111a,#08090d);border-color:#ffe4eb;box-shadow:0 0 20px #ff315d35}
+.cc-wallet{background:linear-gradient(145deg,#101016,#07070b);border-color:#3c2730}
+.cc-support-card,.cc-summary-card,.cc-linked,.cc-tab{box-shadow:0 10px 28px #0005}
+.cc-support-card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.cc-support-card:focus-visible,.cc-btn:focus-visible,.cc-tabs button:focus-visible{outline:2px solid #ff7895;outline-offset:3px}
+.cc-support-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px #0008,0 0 18px #ff315d16}
+.cc-replay{border-color:#8e2550;background:linear-gradient(110deg,#1b0711,#0b080d)}
+.cc-replay:not(.disabled):hover{border-color:#ff4b79;box-shadow:0 0 22px #ff315d24}
+.cc-tabs{border-bottom-color:#45202c}
+.cc-tabs button.active{border-color:#ff315d;background:linear-gradient(135deg,#551226,#220b15);color:#fff;box-shadow:0 0 18px #ff315d1f}
+.cc-order,.cc-deposit,.cc-transaction{border-color:#37232c;background:linear-gradient(145deg,#101016,#08080c)}
+.cc-btn{border-color:#a62c49;background:linear-gradient(110deg,#981b3b,#e72f5c);color:#fff}
+.cc-btn:hover{filter:brightness(1.12)}
+@media(max-width:760px){
+  .cc-page-heading{align-items:flex-start;flex-direction:column;gap:10px}
+  .cc-page-chip{padding:7px 10px}
+  .cc-dashboard{gap:12px}
+}
+@media(max-width:430px){
+  .cc-page-heading h1{font-size:21px}
+  .cc-page-heading p{font-size:11px}
+}
 
 </style>
 </head>
@@ -680,6 +720,14 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
 
     $('#app').innerHTML=`
       <div class="cc-dashboard">
+        <div class="cc-page-heading">
+          <div>
+            <div class="cc-page-eyebrow"><span></span> HENDY CYBERTECH · MEMBER PORTAL</div>
+            <h1>TRUNG TÂM KHÁCH HÀNG</h1>
+            <p>Quản lý hồ sơ, ví tiền, đơn hàng và yêu cầu hỗ trợ trong một nơi.</p>
+          </div>
+          <span class="cc-page-chip">💠 KHU VỰC THÀNH VIÊN</span>
+        </div>
         <section class="cc-profile">
           <div class="cc-profile-main">
             <div class="cc-profile-head">
