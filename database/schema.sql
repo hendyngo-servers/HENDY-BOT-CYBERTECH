@@ -514,3 +514,39 @@ CREATE TABLE IF NOT EXISTS store_integrations (
 UPDATE app_settings
 SET is_public = FALSE, updated_at = NOW()
 WHERE key IN ('VIETQR_BANK_ID', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME');
+
+
+-- HENDY operations controls for independent primary/secondary bot maintenance.
+INSERT INTO app_settings (key,value,is_public) VALUES
+ ('ops_primary_mode','off',FALSE),
+ ('ops_primary_message','HENDY BOT đang bảo trì. Vui lòng quay lại sau.',FALSE),
+ ('ops_primary_until','',FALSE),
+ ('ops_secondary_mode','off',FALSE),
+ ('ops_secondary_message','HENDY BOT thử nghiệm đang bảo trì. Vui lòng quay lại sau.',FALSE),
+ ('ops_secondary_until','',FALSE),
+ ('homeproxy_enabled','0',FALSE)
+ON CONFLICT (key) DO NOTHING;
+
+-- Per-member HomeProxy API keys are stored only as AES-256-GCM ciphertext.
+-- The encryption key lives in Render Environment, never in PostgreSQL.
+CREATE TABLE IF NOT EXISTS homeproxy_accounts (
+ user_id TEXT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+ token_ciphertext TEXT NOT NULL,
+ token_nonce TEXT NOT NULL,
+ token_tag TEXT NOT NULL,
+ last_action TEXT,
+ last_status TEXT,
+ last_action_at TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS homeproxy_logs (
+ id BIGSERIAL PRIMARY KEY,
+ user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+ action TEXT NOT NULL CHECK (action IN ('check','rotate')),
+ status TEXT NOT NULL CHECK (status IN ('success','failed')),
+ provider_message TEXT NOT NULL DEFAULT '',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_homeproxy_logs_created ON homeproxy_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_homeproxy_logs_user_created ON homeproxy_logs(user_id,created_at DESC);

@@ -12,6 +12,8 @@ require dirname(__DIR__) . '/app/VideoJobService.php';
 require dirname(__DIR__) . '/app/WebServiceContract.php';
 require dirname(__DIR__) . '/app/WebServiceKernel.php';
 require dirname(__DIR__) . '/app/SystemWebService.php';
+require dirname(__DIR__) . '/app/OperationsService.php';
+require dirname(__DIR__) . '/app/ProxyService.php';
 
 use Hendy\VideoJobService;
 use Hendy\TelegramAuth;
@@ -49,6 +51,11 @@ $assert(str_contains($botServiceSource, '$this->telegram->answerCallback($callba
 $assert(str_contains($botServiceSource, '👋 Chào mừng bạn đến với HENDY BOT!') && !str_contains($botServiceSource, '♻️ Menu HENDY đã chuyển sang Inline Menu mới.'), 'gỡ Reply Keyboard bằng lời chào tự nhiên thay cho thông báo kỹ thuật');
 $assert(str_contains($botServiceSource, 'https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1'), 'banner Telegram dùng direct-image URL');
 $assert(str_contains($botServiceSource, 'TÍNH NĂNG ĐANG PHÁT TRIỂN'), 'mục chưa triển khai có thông báo trạng thái rõ ràng');
+$assert(str_contains($botServiceSource, 'OperationsService::forBot') && str_contains($botServiceSource, '/status'), 'bot kiểm tra trạng thái bảo trì/nâng cấp và cho phép xem /status');
+$operationsSource = file_get_contents(dirname(__DIR__) . '/app/OperationsService.php');
+$assert(str_contains($operationsSource, 'maintenance') && str_contains($operationsSource, 'upgrade') && str_contains($operationsSource, 'Asia/Ho_Chi_Minh'), 'dịch vụ vận hành hỗ trợ bảo trì, nâng cấp và giờ Việt Nam');
+$proxyServiceSource = file_get_contents(dirname(__DIR__) . '/app/ProxyService.php');
+$assert(str_contains($proxyServiceSource, 'aes-256-gcm') && str_contains($proxyServiceSource, 'checkOnly') && str_contains($proxyServiceSource, 'rotatev2'), 'HomeProxy dùng AES-256-GCM, checkOnly và API xoay IP');
 $customerUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/index.html');
 $assert(str_contains($customerUiSource, 'class="cc-dashboard"') && str_contains($customerUiSource, 'cc-order-modal'), 'trung tâm khách hàng dùng layout tham chiếu và chi tiết đơn hàng');
 $assert(str_contains($customerUiSource, 'name="hendy-build" content="2026.11.07.5"') && str_contains($customerUiSource, 'const MINI_APP_ROUTE'), 'Customer portal giữ marker ẩn và nhận diện route Mini App');
@@ -62,6 +69,9 @@ $adminUiSource = file_get_contents(dirname(__DIR__) . '/apps/admin-dashboard/ind
 $assert(!str_contains($adminUiSource, 'telegram-web-app.js'), 'Admin không tải Telegram Mini App SDK');
 $assert(str_contains($adminUiSource, 'value="inline_keyboard"'), 'trình quản lý menu chỉ lưu Inline Keyboard');
 $assert(str_contains($adminUiSource, 'name="hendy-build" content="2026.11.07.2"') && str_contains($adminUiSource, '--primary:#ff315d'), 'Admin có release marker và giao diện HENDY đỏ đen');
+$assert(str_contains($adminUiSource, 'data-admin-tab="operations"') && str_contains($adminUiSource, 'adminOperations()'), 'Admin có bảng điều khiển bảo trì/nâng cấp cho từng bot');
+$assert(str_contains($adminUiSource, 'data-admin-tab="proxy"') && str_contains($adminUiSource, 'adminProxy()'), 'Admin có trang quản lý HomeProxy');
+$assert(str_contains($adminUiSource, 'homeproxy-connect-form') && str_contains($adminUiSource, 'data-homeproxy-action="check"') && str_contains($adminUiSource, 'data-homeproxy-action="rotate"'), 'Mini App có luồng kết nối, kiểm tra và xoay IP HomeProxy');
 $landingUiSource = file_get_contents(dirname(__DIR__) . '/apps/website/landing.html');
 $assert(str_contains($landingUiSource, 'hendy-landing.css?v=2026.11.07.4') && str_contains($landingUiSource, 'name="hendy-build" content="2026.11.07.4"'), 'trang chủ có cache-busting và release marker');
 $assert(str_contains($landingUiSource, 'orbit-wrapper') && str_contains($landingUiSource, 'hero-bot-link') && str_contains($landingUiSource, 'group-link') && str_contains($landingUiSource, 'channel-link'), 'trang chủ giữ bố cục HENDY, liên kết Bot, Group và Channel');
@@ -82,6 +92,7 @@ $deployScript = file_get_contents(dirname(__DIR__) . '/scripts/deploy-verify-ren
 $syncScript = file_get_contents(dirname(__DIR__) . '/scripts/sync-render-env.sh');
 $assert(str_contains($landingSource, $productionHost) && str_contains($privacySource, $productionHost) && str_contains($termsSource, $productionHost), 'canonical và OG URL dùng hostname Render production');
 $assert(str_contains($renderSource, 'value: ' . $productionHost) && str_contains($renderSource, 'value: wss://hendy-bot-cybertech-1.onrender.com/ws'), 'Render Blueprint dùng đúng HTTPS/WSS production');
+$assert(str_contains($renderSource, 'key: HOMEPROXY_ENCRYPTION_KEY') && str_contains($envManifest, 'HOMEPROXY_ENCRYPTION_KEY'), 'HomeProxy encryption secret được khai báo trong Render manifest');
 $assert(str_contains($envManifest, $productionHost) && str_contains($runtimeWorkflow, $productionHost), 'manifest và workflow đồng bộ runtime dùng đúng hostname');
 $assert(str_contains($sitemapSource, $productionHost) && str_contains($robotsSource, $productionHost), 'sitemap và robots dùng đúng hostname');
 $assert(str_contains($databaseSchema, $productionHost) && str_contains($databaseSchema, "'https://hendy-bot-tele.onrender.com'"), 'migration đổi URL mặc định cũ nhưng giữ điều kiện nhận diện an toàn');

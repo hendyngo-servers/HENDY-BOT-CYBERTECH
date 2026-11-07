@@ -94,6 +94,9 @@ final class BotService
         if (!preg_match('/^\d{5,20}$/', $userId) || $chatId === '' || $text === '') {
             return;
         }
+        if (preg_match('/^\/status(?:@\w+)?$/u', $text)) { $this->sendOperationalNotice($chatId); return; }
+        $operation=OperationsService::forBot($this->botKey);
+        if ($operation['active'] && !TelegramAuth::isAdmin($userId)) { $this->sendOperationalNotice($chatId); return; }
 
         $firstName = trim((string) ($from['first_name'] ?? ''));
         $lastName = trim((string) ($from['last_name'] ?? ''));
@@ -261,6 +264,8 @@ final class BotService
             if (!preg_match('/^\d{5,20}$/', $userId)) {
                 return;
             }
+            $operation=OperationsService::forBot($this->botKey);
+            if ($operation['active'] && !TelegramAuth::isAdmin($userId)) { $this->sendOperationalNotice($chatId); return; }
             if (str_starts_with($data, 'member:')) {
                 $this->dispatchAction($chatId, $userId, substr($data, 7));
                 return;
@@ -318,6 +323,22 @@ final class BotService
         return is_array($parts)
             && strtolower((string) ($parts['scheme'] ?? '')) === 'https'
             && !empty($parts['host']);
+    }
+
+    private function sendOperationalNotice(string $chatId): void
+    {
+        $operation=OperationsService::forBot($this->botKey);
+        if (!$operation['active']) { $this->telegram->sendMessage($chatId,'✅ HENDY BOT đang hoạt động bình thường.'); return; }
+        $title=$operation['mode']==='upgrade'?'🚀 <b>HENDY BOT ĐANG NÂNG CẤP</b>':'🛠️ <b>HENDY BOT ĐANG BẢO TRÌ</b>';
+        $lines=[$title,'━━━━━━━━━━━━━━━━━━━━',self::escape($operation['message'])];
+        if (!empty($operation['until'])) {
+            try {
+                $until=(new \DateTimeImmutable((string)$operation['until']))->setTimezone(new \DateTimeZone('Asia/Ho_Chi_Minh'))->format('H:i d/m/Y');
+                $lines[]='⏰ Dự kiến hoàn tất: <b>'.$until.' (giờ Việt Nam)</b>';
+            } catch (Throwable) { /* notice stays available if a stored date is invalid */ }
+        }
+        $lines[]='Vui lòng thử lại sau. Cảm ơn bạn đã thông cảm!';
+        $this->telegram->sendMessage($chatId,implode("\n",$lines));
     }
 
     private function removeLegacyReplyKeyboard(string $chatId): void

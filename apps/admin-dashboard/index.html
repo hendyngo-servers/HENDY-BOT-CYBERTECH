@@ -330,6 +330,8 @@
       <div class="menu-title">Hệ thống Bot</div>
       <button class="menu-item" type="button" data-admin-tab="bot-menus"><span class="menu-icon">🎛️</span>Trình tạo Menu Bot</button>
       <button class="menu-item" type="button" data-admin-tab="runtime"><span class="menu-icon">🛰️</span>Trạng thái hệ thống</button>
+      <button class="menu-item" type="button" data-admin-tab="operations"><span class="menu-icon">🛠️</span>Bảo trì & nâng cấp</button>
+      <button class="menu-item" type="button" data-admin-tab="proxy"><span class="menu-icon">🌐</span>Proxy / HomeProxy</button>
       <button class="menu-item" type="button" data-admin-tab="modules"><span class="menu-icon">🧩</span>Tệp & module</button>
       <button class="menu-item" type="button" data-admin-tab="video-jobs"><span class="menu-icon">🎬</span>Video Jobs</button>
       <button class="menu-item" type="button" data-admin-tab="settings"><span class="menu-icon">⚙️</span>Cấu hình chung</button>
@@ -388,7 +390,7 @@
   let welcomeSloganTimer = null;
   let welcomeSloganSwap = null;
   const requestedView = new URLSearchParams(window.location.search).get('view') || (window.location.pathname.startsWith('/admin') ? 'admin' : '');
-  const state = { boot:null, page:requestedView === 'admin' ? 'admin' : (requestedView === 'customer' ? 'customer' : 'home'), category:'minigame', adminTab:'overview', wallet:null, orders:[], tickets:[], adminData:{}, editingProductId:null };
+  const state = { boot:null, page:requestedView === 'admin' ? 'admin' : (requestedView === 'customer' ? 'customer' : 'home'), category:'minigame', adminTab:'overview', wallet:null, orders:[], tickets:[], adminData:{}, editingProductId:null, homeProxyStatus:null, homeProxyResult:null };
 
   function hapticImpact(style='light'){
     try{if(typeof tg?.HapticFeedback?.impactOccurred==='function')tg.HapticFeedback.impactOccurred(style);}catch(_){}
@@ -693,6 +695,18 @@
       (state.boot.isAdmin ? '<div class="notice good" style="margin-top:12px">Tài khoản quản trị đã được xác thực. Mục Quản trị chỉ hiển thị với Admin.</div>' : '');
   }
 
+  function renderHomeProxyPanel() {
+    const status=state.homeProxyStatus||{},result=state.homeProxyResult;
+    const readiness=!status.enabled?'<div class="notice warn">Tích hợp HomeProxy đang được Admin tạm tắt.</div>':(!status.encryptionConfigured?'<div class="notice warn">Máy chủ chưa cấu hình khóa mã hóa HomeProxy. Vui lòng liên hệ Admin.</div>':'');
+    const connection=status.connected
+      ? '<div class="list-row"><div><b>🔐 Key Xoay đã kết nối</b><small>Key được mã hóa ở máy chủ; giao diện không lưu lại giá trị.</small></div><span class="status completed">Đã kết nối</span></div><div class="two-col"><button type="button" class="secondary" data-homeproxy-action="check">🔎 KIỂM TRA IP</button><button type="button" class="primary" data-homeproxy-action="rotate">🔄 XOAY IP</button></div><button type="button" class="tiny-btn" data-homeproxy-disconnect="1" style="margin-top:9px">Ngắt kết nối Key Xoay</button>'
+      : '<form class="form" id="homeproxy-connect-form"><div class="field"><label>API Key Xoay HomeProxy</label><input name="apiKey" type="password" minlength="16" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="Nhập Key Xoay lấy từ HomeProxy" required></div><button class="primary" '+(!status.enabled||!status.encryptionConfigured?'disabled':'')+'>Lưu kết nối an toàn</button></form>';
+    return '<section class="card"><div class="section-head"><h3>🔐 KẾT NỐI HOMEProxy API</h3><span>'+(status.connected?'Đã liên kết':'Chưa liên kết')+'</span></div><p class="small muted">Dùng Key Xoay cá nhân lấy sau khi mua Proxy tại HomeProxy. Không gửi Key qua tin nhắn Bot hoặc cho người khác.</p>'+readiness+connection+
+      (status.lastActionAt?'<div class="notice">Lần gần nhất: '+escapeHtml(status.lastAction||'')+' · '+escapeHtml(status.lastStatus||'')+' · '+new Date(status.lastActionAt).toLocaleString('vi-VN')+'</div>':'')+
+      (result?'<div class="notice"><b>Kết quả HomeProxy</b><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0">'+escapeHtml(JSON.stringify(result,null,2))+'</pre></div>':'')+
+      '<div class="notice warn">Kiểm tra IP chỉ gửi checkOnly=true và không đổi IP. Xoay IP mới gửi yêu cầu thay IP theo API HomeProxy. HENDY không lưu Key ở trình duyệt sau khi gửi.</div></section>';
+  }
+
   function renderCatalog(category) {
     const products = (state.boot.products || []).filter(product => product.category === category);
     const title = labels[category] || 'Dịch vụ';
@@ -700,7 +714,7 @@
       '<button class="tab ' + (key === category ? 'active' : '') + '" data-category="' + key + '">' +
       escapeHtml(labels[key]) + '</button>'
     ).join('');
-    return '<div class="tabs">' + tabs + '</div><div class="section-head"><h3>' + escapeHtml(title) + '</h3><span>' + products.length + ' sản phẩm</span></div>' +
+    return '<div class="tabs">' + tabs + '</div>' + (category === 'proxy' ? renderHomeProxyPanel() : '') + '<div class="section-head"><h3>' + escapeHtml(title) + '</h3><span>' + products.length + ' sản phẩm</span></div>' +
       (products.length ? products.map(productCard).join('') : empty('Chưa có sản phẩm đang bán','Danh mục này chưa có sản phẩm được kích hoạt. Quản trị viên có thể thêm sản phẩm trong Bảng điều khiển.')) +
       '<div class="notice">Đơn hàng được thanh toán bằng số dư ví. Sau khi tạo đơn, bạn có thể theo dõi trạng thái và thông tin bàn giao trong mục Đơn hàng.</div>';
   }
@@ -947,6 +961,8 @@
     if (tab === 'payments') state.adminData.payments = (await api('/api/admin/payments')).payments || [];
     if (tab === 'vouchers') state.adminData.vouchers = (await api('/api/admin/vouchers')).requests || [];
     if (tab === 'runtime') state.adminData.runtime = await api('/api/admin/runtime');
+    if (tab === 'operations') state.adminData.operations = (await api('/api/admin/operations')).bots || {};
+    if (tab === 'proxy') state.adminData.proxy = await api('/api/admin/proxy');
     if (tab === 'audit') state.adminData.audit = (await api('/api/admin/audit-log?limit=50')).events || [];
     if (tab === 'video-jobs') {
       const result = await api('/api/admin/video-jobs');
@@ -969,6 +985,37 @@
       (data.bots || []).map(bot => '<div class="list-row"><div><b>' + (bot.key === 'primary' ? '🤖 Bot chính' : '🧪 Bot thử nghiệm') + '</b><small>' + (bot.configured ? 'Token đã cấu hình trong máy chủ' : 'Chưa cấu hình token') + '</small></div><span class="status ' + (bot.configured ? 'completed' : 'pending') + '">' + (bot.configured ? 'Đã cấu hình' : 'Đang tắt') + '</span></div>').join('') +
       '</div><div class="notice warn">Không hiển thị token, webhook secret hoặc DATABASE_URL. Quản lý credential tại Render Environment.</div>';
   }
+  function adminOperations() {
+    const bots=state.adminData.operations||{};
+    const formFor=(key,title)=>{
+      const bot=bots[key]||{mode:'off',message:'',until:null,active:false};
+      let untilValue='';
+      if(bot.until){const date=new Date(bot.until);untilValue=Number.isNaN(date.getTime())?'':new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+      return '<form class="card form" id="admin-operations-form" data-bot-key="'+key+'">'+
+        '<div class="record-top"><div><b>'+title+'</b><small>'+(bot.active?'Bot đang áp dụng chế độ giới hạn dịch vụ.':'Bot đang hoạt động bình thường.')+'</small></div><span class="status '+(bot.active?'pending':'completed')+'">'+(bot.active?(bot.mode==='upgrade'?'Đang nâng cấp':'Đang bảo trì'):'Hoạt động')+'</span></div>'+
+        '<div class="field"><label>Chế độ vận hành</label><select name="mode"><option value="off"'+(bot.mode==='off'?' selected':'')+'>Hoạt động bình thường</option><option value="maintenance"'+(bot.mode==='maintenance'?' selected':'')+'>Bảo trì</option><option value="upgrade"'+(bot.mode==='upgrade'?' selected':'')+'>Đang nâng cấp</option></select></div>'+
+        '<div class="field"><label>Thông báo gửi thành viên</label><textarea name="message" maxlength="1000">'+escapeHtml(bot.message||'')+'</textarea></div>'+
+        '<div class="field"><label>Dự kiến kết thúc (giờ trên thiết bị)</label><input type="datetime-local" name="until" value="'+escapeHtml(untilValue)+'"></div>'+
+        '<button class="primary">Lưu trạng thái '+(key==='primary'?'Bot chính':'Bot thử nghiệm')+'</button></form>';
+    };
+    return '<div class="app-banner"><div><b>🛠️ BẢO TRÌ & NÂNG CẤP BOT</b><small>Tạm dừng tương tác thành viên; Admin vẫn được phép quản trị.</small></div><span class="banner-icon">🛰️</span></div>'+
+      formFor('primary','🤖 BOT CHÍNH')+formFor('secondary','🧪 BOT THỬ NGHIỆM')+
+      '<div class="notice warn">Khi bật bảo trì/nâng cấp, thành viên không thể gọi chức năng Bot hoặc thao tác Inline Menu. Lệnh /status vẫn hiển thị thông báo. Admin được miễn giới hạn. Hẹn giờ kết thúc tự hết hiệu lực, không cần restart thủ công.</div>';
+  }
+
+  function adminProxy() {
+    const d=state.adminData.proxy||{},logs=d.recentLogs||[];
+    return '<div class="app-banner"><div><b>🌐 HOMEProxy · QUẢN LÝ TÍCH HỢP PROXY</b><small>Key Xoay riêng của thành viên được mã hóa ở backend; Admin không thể xem lại key.</small></div><span class="banner-icon">🔐</span></div>'+
+      '<div class="stat-grid"><div class="stat"><small>Thành viên đã kết nối</small><b>'+Number(d.connectedMembers||0)+'</b></div><div class="stat"><small>Lượt gọi hôm nay</small><b>'+Number(d.requestsToday||0)+'</b></div><div class="stat"><small>Thành công</small><b>'+Number(d.successToday||0)+'</b></div><div class="stat"><small>Thất bại</small><b>'+Number(d.failedToday||0)+'</b></div></div>'+
+      '<form class="card form" id="admin-proxy-form"><b>Cấu hình nhà cung cấp</b><div class="list-row"><span>Khóa mã hóa AES-256-GCM trên Render</span><span class="status '+(d.encryptionConfigured?'completed':'pending')+'">'+(d.encryptionConfigured?'Đã cấu hình':'Thiếu Environment')+'</span></div>'+
+      '<div class="field"><label>Tích hợp HomeProxy</label><select name="enabled"><option value="false"'+(!d.enabled?' selected':'')+'>Tạm tắt</option><option value="true"'+(d.enabled?' selected':'')+'>Bật cho thành viên</option></select></div><button class="primary">Lưu cấu hình HomeProxy</button></form>'+
+      (!d.encryptionConfigured?'<div class="notice warn">Cần đặt HOMEPROXY_ENCRYPTION_KEY (ít nhất 32 ký tự ngẫu nhiên) trong Render Environment trước khi thành viên lưu Key Xoay. Không dùng API Key HomeProxy làm khóa mã hóa.</div>':'')+
+      '<div class="notice">Mỗi thành viên tự nhập Key Xoay lấy từ tài khoản HomeProxy của họ trong Mini App. HENDY gọi API v3 rotatev2 qua HTTPS; Kiểm tra IP dùng checkOnly=true, Xoay IP mới gửi yêu cầu thay đổi IP. Giá và tồn kho gói Proxy được quản lý trong Dịch vụ & sản phẩm.</div>'+
+      '<div class="section-head"><h3>Nhật ký Proxy gần đây</h3><button type="button" class="tiny-btn" data-admin-tab="products">Quản lý gói Proxy</button></div>'+
+      (logs.length?logs.map(item=>'<div class="list-row"><div><b>'+escapeHtml(item.action==='rotate'?'Xoay IP':'Kiểm tra IP')+' · '+escapeHtml(item.user_id)+'</b><small>'+escapeHtml(item.provider_message||'')+' · '+new Date(item.created_at).toLocaleString('vi-VN')+'</small></div><span class="status '+(item.status==='success'?'completed':'rejected')+'">'+(item.status==='success'?'Thành công':'Thất bại')+'</span></div>').join(''):empty('Chưa có hoạt động Proxy','Nhật ký sẽ xuất hiện khi thành viên kiểm tra hoặc xoay IP.'))+
+      '<div class="notice warn">Không nhập Key Xoay của thành viên tại trang Admin và không gửi API key qua Telegram. Credential được mã hóa, không ghi vào nhật ký.</div>';
+  }
+
   function adminAudit() {
     const rows = state.adminData.audit || [];
     return '<div class="app-banner"><div><b>🧾 NHẬT KÝ QUẢN TRỊ</b><small>Lịch sử hành động quản trị lưu trong PostgreSQL.</small></div><span class="banner-icon">🔎</span></div>' +
@@ -1173,6 +1220,8 @@
     if (state.adminTab === 'vouchers') body = adminVouchers();
     if (state.adminTab === 'video-jobs') body = adminVideoJobs();
     if (state.adminTab === 'runtime') body = adminRuntime();
+    if (state.adminTab === 'operations') body = adminOperations();
+    if (state.adminTab === 'proxy') body = adminProxy();
     if (state.adminTab === 'audit') body = adminAudit();
     return '<div class="admin-heading"><div><h2>🛡️ HENDY CONTROL CENTER</h2><p>Xin chào ' + escapeHtml(state.boot.user.name || 'Admin') + ' · ID ' + escapeHtml(state.boot.user.id) + '</p></div><span class="vip-pill">ADMIN VERIFIED</span></div>' +
       '<div class="admin-shortcuts"><button class="admin-shortcut" data-admin-tab="payments"><span>💳</span> Duyệt nạp tiền</button><button class="admin-shortcut" data-admin-tab="orders"><span>🧾</span> Xử lý đơn hàng</button><button class="admin-shortcut" data-admin-tab="tickets"><span>🎧</span> Ticket CSKH</button><button class="admin-shortcut" data-admin-tab="users"><span>👥</span> Thành viên</button></div>' +
@@ -1187,7 +1236,11 @@
     try {
       let html = '';
       if (page === 'home') html = renderHome();
-      else if (['minigame','tools','codes','otp','proxy'].includes(page)) html = renderCatalog(page);
+      else if (page === 'proxy') {
+        state.homeProxyStatus = await api('/api/proxy/homeproxy/status');
+        html = renderCatalog('proxy');
+      }
+      else if (['minigame','tools','codes','otp'].includes(page)) html = renderCatalog(page);
       else if (page === 'wallet') html = await renderWallet();
       else if (page === 'orders') html = await renderOrders();
       else if (page === 'customer') html = await renderCustomer();
@@ -1320,6 +1373,18 @@
       document.body.classList.remove('sidebar-open');
       await renderPage();
       return;
+    }
+    const homeProxyAction=event.target.closest('[data-homeproxy-action]');
+    if(homeProxyAction){
+      const action=homeProxyAction.dataset.homeproxyAction;homeProxyAction.disabled=true;
+      try{const response=await api('/api/proxy/homeproxy/'+action,'POST',{});state.homeProxyResult=response.result||null;toast(action==='check'?'Đã lấy thông tin IP hiện tại.':'Đã gửi yêu cầu xoay IP.');await renderPage();}
+      catch(error){toast(error.message,'error');homeProxyAction.disabled=false;}return;
+    }
+    const homeProxyDisconnect=event.target.closest('[data-homeproxy-disconnect]');
+    if(homeProxyDisconnect){
+      if(!window.confirm('Ngắt kết nối Key Xoay HomeProxy khỏi tài khoản HENDY?'))return;
+      try{const response=await api('/api/proxy/homeproxy/connection','DELETE');state.homeProxyStatus=response.status;state.homeProxyResult=null;toast(response.message);await renderPage();}
+      catch(error){toast(error.message,'error');}return;
     }
     const vipCheckin = event.target.closest('[data-vip-checkin]');
     if (vipCheckin) {
@@ -1465,6 +1530,11 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Không thể tải tệp lên.');
         toast(result.message); await renderPage();
+      } else if (form.id === 'homeproxy-connect-form') {
+        const apiKey=String(data.apiKey||'').trim();
+        if(apiKey.length<16||apiKey.length>512)throw new Error('API Key Xoay không đúng độ dài.');
+        const result=await api('/api/proxy/homeproxy/connect','POST',{apiKey});
+        state.homeProxyStatus=result.status;state.homeProxyResult=null;form.reset();toast(result.message);await renderPage();
       } else if (form.id === 'custom-topup') {
         const amount = Number(data.amount);
         if (!Number.isSafeInteger(amount) || amount < 10000) throw new Error('Số tiền tối thiểu là 10.000 VNĐ.');
@@ -1506,6 +1576,14 @@
         await api('/api/admin/settings','PATCH',data);
         toast('Đã lưu cấu hình.');
         await renderPage();
+      } else if (form.id === 'admin-operations-form') {
+        const botKey=form.dataset.botKey,until=data.until||null,payload={bots:{}};
+        payload.bots[botKey]={mode:data.mode,message:data.message||'',until};
+        await api('/api/admin/operations','PATCH',payload);
+        toast('Đã cập nhật trạng thái vận hành '+(botKey==='primary'?'Bot chính':'Bot thử nghiệm')+'.');await renderPage();
+      } else if (form.id === 'admin-proxy-form') {
+        await api('/api/admin/proxy','PATCH',{enabled:data.enabled==='true'});
+        toast('Đã cập nhật tích hợp HomeProxy.');await renderPage();
       } else if (form.id === 'admin-bot-menu-form') {
         const parseJson = (value,label) => {
           try {

@@ -30,6 +30,8 @@ services:
         sync: false
       - key: BOT_HOME_PHOTO
         value: https://i.postimg.cc/rcD583NW/anh-quan-cao.png?dl=1
+      - key: HOMEPROXY_ENCRYPTION_KEY
+        sync: false
       - key: BOT1_PUBLIC_URL
         sync: false
       - key: BOT2_PUBLIC_URL

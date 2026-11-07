@@ -473,6 +473,19 @@ final class ApiController
             ]);
         }
 
+        if ($path === '/api/proxy/homeproxy/status' && $method === 'GET') return self::response(ProxyService::userStatus($userId));
+        if ($path === '/api/proxy/homeproxy/connect' && $method === 'POST') {
+            try { $status=ProxyService::connect($userId,(string)($this->body['apiKey']??'')); }
+            catch (RuntimeException $error) { throw new HttpException(409,$error->getMessage()); }
+            return self::response(['status'=>$status,'message'=>'Đã lưu kết nối HomeProxy an toàn. API Key được mã hóa ở máy chủ.']);
+        }
+        if ($path === '/api/proxy/homeproxy/connection' && $method === 'DELETE') return self::response(['status'=>ProxyService::disconnect($userId),'message'=>'Đã ngắt kết nối HomeProxy.']);
+        if (in_array($path,['/api/proxy/homeproxy/check','/api/proxy/homeproxy/rotate'],true) && $method === 'POST') {
+            try { $result=$path==='/api/proxy/homeproxy/check'?ProxyService::check($userId):ProxyService::rotate($userId); }
+            catch (RuntimeException $error) { throw new HttpException(409,$error->getMessage()); }
+            return self::response(['result'=>$result]);
+        }
+
         if (str_starts_with($path, '/api/admin/')) {
             $this->requireAdmin();
             return $this->handleAdmin($method, $path);
@@ -569,6 +582,23 @@ final class ApiController
                 'timestamp' => gmdate(DATE_ATOM),
             ]);
         }
+        if ($method === 'GET' && $path === '/api/admin/operations') return self::response(OperationsService::all());
+        if ($method === 'PATCH' && $path === '/api/admin/operations') {
+            try { $result=OperationsService::update($this->body); }
+            catch (RuntimeException $error) { throw new HttpException(400,$error->getMessage()); }
+            $modes=[];
+            foreach (($this->body['bots']??[]) as $botKey=>$settings) if(is_array($settings)) $modes[$botKey]=['mode'=>$settings['mode']??'off','until'=>$settings['until']??null];
+            $this->audit('operations.update','telegram-bots',$modes);
+            return self::response(['operations'=>$result,'message'=>'Đã cập nhật chế độ vận hành bot.']);
+        }
+        if ($method === 'GET' && $path === '/api/admin/proxy') return self::response(ProxyService::adminStatus());
+        if ($method === 'PATCH' && $path === '/api/admin/proxy') {
+            $enabled=$this->toBool($this->body['enabled']??false);
+            $result=ProxyService::setEnabled($enabled);
+            $this->audit('proxy.homeproxy.toggle','homeproxy',['enabled'=>$enabled]);
+            return self::response(['proxy'=>$result,'message'=>$enabled?'Đã bật tích hợp HomeProxy.':'Đã tạm tắt tích hợp HomeProxy.']);
+        }
+
         if ($method === 'GET' && $path === '/api/admin/products') {
             $category = $this->text($this->query['category'] ?? '', 32);
             return self::response(['products' => $this->listProducts($category !== '' ? $category : null, true)]);
