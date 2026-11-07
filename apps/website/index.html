@@ -299,7 +299,7 @@
     }
     function showModal(title,body){
       const root=$('#modal-root');
-      root.innerHTML='<div class="cc-modal show" role="dialog" aria-modal="true"><section class="cc-modal-card"><div class="cc-modal-head"><h3>'+esc(title)+'</h3><button class="cc-modal-close" type="button" data-close-modal>ĐÓNG ✕</button></div><div class="cc-modal-body">'+body+'</div></section></div>';
+      root.innerHTML='<div id="cc-order-modal" class="cc-modal show" role="dialog" aria-modal="true"><section class="cc-modal-card"><div class="cc-modal-head"><h3>'+esc(title)+'</h3><button class="cc-modal-close" type="button" data-close-modal>ĐÓNG ✕</button></div><div class="cc-modal-body">'+body+'</div></section></div>';
       root.querySelector('.cc-modal').addEventListener('click',e=>{if(e.target.classList.contains('cc-modal'))closeModal();});
     }
     function closeModal(){$('#modal-root').innerHTML='';}
