@@ -948,11 +948,12 @@ final class ApiController
     private function exchangeLegacySession(): array
     {
         $ticket = $this->text($this->body['ticket'] ?? '', 128);
-        if (!preg_match('/^[a-f0-9]{64}$/i', $ticket)) {
-            throw new HttpException(400, 'Login ticket không hợp lệ.');
+        $scope = $this->text($this->body['scope'] ?? 'customer', 16);
+        if (!preg_match('/^[a-f0-9]{64}$/i', $ticket) || !in_array($scope, ['customer', 'admin'], true)) {
+            throw new HttpException(400, 'Login ticket hoặc phạm vi đăng nhập không hợp lệ.');
         }
 
-        $identity = Database::transaction(function () use ($ticket): array {
+        $identity = Database::transaction(function () use ($ticket, $scope): array {
             $hash = hash('sha256', $ticket);
             $found = Database::one(
                 'SELECT user_id, bot_key FROM legacy_login_tickets WHERE token_hash = ? AND consumed_at IS NULL AND expires_at > NOW() FOR UPDATE',
@@ -965,6 +966,9 @@ final class ApiController
             $user = Database::one('SELECT user_id, name, username, vip_level, balance FROM users WHERE user_id = ?', [$found['user_id']]);
             if ($user === null) {
                 throw new HttpException(404, 'Không tìm thấy hồ sơ thành viên.');
+            }
+            if ($scope === 'admin' && !TelegramAuth::isAdmin((string) $user['user_id'])) {
+                throw new HttpException(403, 'Tài khoản này không nằm trong danh sách Admin được phép.');
             }
             return ['identity' => $found, 'user' => $user];
         });
@@ -980,7 +984,7 @@ final class ApiController
             'name' => (string) $identity['user']['name'],
             'username' => (string) $identity['user']['username'],
             'bot' => (string) $identity['identity']['bot_key'],
-            'aud' => 'hendy-legacy-account',
+            'aud' => $scope === 'admin' ? 'hendy-admin-dashboard' : 'hendy-legacy-account',
             'iat' => $now,
             'exp' => $now + $sessionTtl,
         ], JSON_UNESCAPED_UNICODE));
@@ -997,6 +1001,7 @@ final class ApiController
         ]);
         return self::response([
             'authenticated' => true,
+            'scope' => $scope,
             'botKey' => (string) $identity['identity']['bot_key'],
             'expiresInSeconds' => $sessionTtl,
             'user' => [
