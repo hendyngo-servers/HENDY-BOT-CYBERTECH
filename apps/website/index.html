@@ -665,7 +665,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit}
     }
 
     const replayUrl=String(state.boot.settings?.replay_live_url||'').trim();
-    const replayValid=/^https:\/\/\//i.test(replayUrl);
+    const replayValid=(()=>{try{return new URL(replayUrl).protocol==='https:'&&Boolean(new URL(replayUrl).hostname);}catch(_){return false;}})();
     const currentLevel=Number(vip.currentLevel??u.vipLevel??0);
     const vipLabel=currentLevel>0?'VIP '+currentLevel:'VIP 0 · THÀNH VIÊN';
     const totalDeposited=Number(vip.totalDeposited??u.totalDeposited??0);
