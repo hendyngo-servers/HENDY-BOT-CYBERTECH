@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Hendy;
 
-/** Canonical persistent Telegram menu shared by both bot instances. */
+/** Canonical Telegram Inline Keyboard shared by both bot instances. */
 final class BotMenuDefinition
 {
     public const ITEMS = [
